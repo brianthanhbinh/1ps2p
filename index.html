@@ -715,6 +715,8 @@
       } else if (data.type === 'ACTION') {
         processAction(data.action);
         broadcastState({ type: 'ACTION', action: data.action });
+        // Broadcast updated world state after action (like damage) so health syncs instantly
+        broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
       }
     }
 
@@ -726,6 +728,7 @@
       if (isHost) {
         processAction(action);
         broadcastState({ type: 'ACTION', action });
+        broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
       } else if (hostConn && hostConn.open) {
         hostConn.send({ type: 'ACTION', action });
       }
@@ -1081,12 +1084,16 @@
 
         if (activeSupplyPlane.progress >= 1) {
           const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
-          groundItems[itemId] = {
+          const dropItem = {
             x: activeSupplyPlane.targetX,
             y: activeSupplyPlane.targetY,
             type: 'gun',
             subtype: activeSupplyPlane.gunType
           };
+          groundItems[itemId] = dropItem;
+          if (isHost) {
+            broadcastState({ type: 'SPAWN_ITEM', id: itemId, x: dropItem.x, y: dropItem.y, itemType: dropItem.type, subtype: dropItem.subtype });
+          }
           activeSupplyPlane = null;
         }
       }
