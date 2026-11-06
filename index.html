@@ -531,21 +531,30 @@
       updateTabOverlay();
     }
 
+    // Ping / Heartbeat Keep-Alive System (Prevents idle timeouts during snack breaks)
     setInterval(() => {
       const now = Date.now();
       if (isHost) {
         Object.keys(connections).forEach(id => {
-          if (now - connections[id].lastPing > 4000) {
+          // Send heartbeat ping to keep WebRTC channel alive
+          if (connections[id].conn && connections[id].conn.open) {
+            connections[id].conn.send({ type: 'PING' });
+          }
+          // Disconnect only if inactive for over 15 seconds
+          if (now - connections[id].lastPing > 15000) {
             connections[id].conn.close();
             removePeer(id);
           }
         });
+      } else if (hostConn && hostConn.open) {
+        hostConn.send({ type: 'PING' });
       }
       updateTabOverlay();
-    }, 2000);
+    }, 2500);
 
     function handleHostReceiveData(senderId, data) {
       if (connections[senderId]) connections[senderId].lastPing = Date.now();
+      if (data.type === 'PING') return; // Keep-alive response handled
 
       if (data.type === 'PLAYER_SYNC') {
         if (connections[senderId]) {
@@ -760,6 +769,7 @@
         });
 
         hostConn.on('data', (data) => {
+          if (data.type === 'PING') return; // Respond/maintain heartbeat timestamp
           if (data.type === 'SETUP_INFO') {
             gameMode = data.gameMode;
             showTeamPicker(gameMode, (teamName, teamColor) => {
