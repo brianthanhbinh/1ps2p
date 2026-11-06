@@ -62,6 +62,12 @@
     #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
     .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
+    /* Team Chat Box */
+    #chat-container { position: absolute; bottom: 95px; left: 15px; width: 300px; pointer-events: auto; z-index: 14; display: flex; flex-direction: column; gap: 4px; }
+    #chat-messages { background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+    .chat-msg { word-break: break-all; }
+    #chat-input { background: rgba(15,15,20,0.9); border: 1px solid #555; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
+
     #status-msg { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; }
   </style>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -85,7 +91,13 @@
     <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">--s</span></div>
     <button id="pause-btn" onclick="leaveRoom()">⏸️ Leave Room (ESC)</button>
     <div id="status-msg">Click Host or Join to Start (Hold TAB for Peers)</div>
-    <div id="controls-tip">WASD: Move | Left-Click: Attack/Shoot/Place | Q: Drop | F: Pick Up | R: Self-Destruct | ESC: Leave</div>
+    <div id="controls-tip">WASD: Move | Left-Click: Use Item/Attack | Q: Drop | F: Pick Up | R: Self-Destruct | Enter: Team Chat</div>
+
+    <!-- Team Chat UI -->
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+      <input type="text" id="chat-input" placeholder="Type team message & press Enter..." maxlength="120" />
+    </div>
 
     <div id="lobby-panel">
       <h2>2D P2P Arena</h2>
@@ -116,6 +128,7 @@
       <div class="slot" id="slot-4" onclick="switchSlot(4)"><span>5</span><b id="gun-slot-1-label">Empty</b></div>
       <div class="slot" id="slot-5" onclick="switchSlot(5)"><span>6</span><b id="gun-slot-2-label">Empty</b></div>
       <div class="slot" id="slot-6" onclick="switchSlot(6)"><span>7</span><b id="grenade-label">Grenade x3</b></div>
+      <div class="slot" id="slot-7" onclick="switchSlot(7)"><span>8</span><b id="bandage-label">Bandage x2</b></div>
     </div>
   </div>
 
@@ -150,10 +163,13 @@
     let hp = 100;
     let stamina = 100;
     const maxStamina = 100;
+    let isSpawnProtected = true;
+    let spawnProtectTimer = 5;
 
     let activeSlot = 0;
     let gunSlots = [null, null, null];
     let grenadeCount = 3;
+    let bandageCount = 2;
     let blockCooldown = false;
     let attackCooldown = false;
 
@@ -177,10 +193,9 @@
       return APP_PREFIX + code.trim().toLowerCase();
     }
 
-    // Hotbar Management
     function switchSlot(slotIdx) {
       activeSlot = slotIdx;
-      for (let i = 0; i <= 6; i++) {
+      for (let i = 0; i <= 7; i++) {
         const slotEl = document.getElementById(`slot-${i}`);
         if (slotEl) slotEl.classList.toggle('active', i === activeSlot);
       }
@@ -191,15 +206,25 @@
       document.getElementById('gun-slot-1-label').innerText = gunSlots[1] ? gunSlots[1].toUpperCase() : 'Empty';
       document.getElementById('gun-slot-2-label').innerText = gunSlots[2] ? gunSlots[2].toUpperCase() : 'Empty';
       document.getElementById('grenade-label').innerText = `Grenade x${grenadeCount}`;
+      document.getElementById('bandage-label').innerText = `Bandage x${bandageCount}`;
     }
 
-    // Input Event Handling
     window.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
     });
 
     window.addEventListener('keydown', (e) => {
+      if (document.getElementById('chat-input') === document.activeElement) {
+        if (e.code === 'Enter') {
+          sendTeamChat();
+        } else if (e.code === 'Escape') {
+          document.getElementById('chat-input').blur();
+          document.getElementById('chat-input').style.display = 'none';
+        }
+        return;
+      }
+
       keys[e.code] = true;
       if (e.code === 'Digit1') switchSlot(0);
       if (e.code === 'Digit2') switchSlot(1);
@@ -208,11 +233,18 @@
       if (e.code === 'Digit5') switchSlot(4);
       if (e.code === 'Digit6') switchSlot(5);
       if (e.code === 'Digit7') switchSlot(6);
+      if (e.code === 'Digit8') switchSlot(7);
 
       if (e.code === 'KeyQ') dropEquippedItem();
       if (e.code === 'KeyF') tryPickupItem();
       if (e.code === 'KeyR') selfDestruct();
       if (e.code === 'Escape') leaveRoom();
+      if (e.code === 'Enter') {
+        e.preventDefault();
+        const chatInput = document.getElementById('chat-input');
+        chatInput.style.display = 'block';
+        chatInput.focus();
+      }
 
       if (e.code === 'Tab') {
         e.preventDefault();
@@ -230,10 +262,10 @@
 
     window.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || document.getElementById('lobby-panel').style.display !== 'none') return;
+      if (document.getElementById('chat-input') === document.activeElement) return;
       handleMouseAction();
     });
 
-    // Action Triggers
     function handleMouseAction() {
       if (attackCooldown) return;
 
@@ -265,11 +297,11 @@
         const gunType = gunSlots[activeSlot - 3];
         if (!gunType) return;
         attackCooldown = true;
-        let cooldown = 300; let speed = 12; let dmg = 25;
-        if (gunType === 'shotgun') { cooldown = 750; speed = 10; dmg = 45; }
-        if (gunType === 'sniper') { cooldown = 1100; speed = 18; dmg = 85; }
-        if (gunType === 'smg') { cooldown = 120; speed = 14; dmg = 15; }
-        if (gunType === 'rocket') { cooldown = 1200; speed = 8; dmg = 90; }
+        let cooldown = 300; let speed = 12;
+        if (gunType === 'shotgun') { cooldown = 750; speed = 10; }
+        if (gunType === 'sniper') { cooldown = 1100; speed = 18; }
+        if (gunType === 'smg') { cooldown = 120; speed = 14; }
+        if (gunType === 'rocket') { cooldown = 1200; speed = 8; }
 
         setTimeout(() => attackCooldown = false, cooldown);
         dispatchNetworkAction({
@@ -295,49 +327,104 @@
           targetY: worldTargetY,
           ownerId: myId
         });
+      } else if (activeSlot === 7) { // Bandage (Click to heal yourself or click to drop/share)
+        if (bandageCount <= 0 || hp >= 100) return;
+        bandageCount--;
+        hp = Math.min(100, hp + 40);
+        updateHotbarLabels();
+        attackCooldown = true;
+        setTimeout(() => attackCooldown = false, 500);
       }
     }
 
-    function checkMeleeHit(nx, ny, reach, dmg) {
+    function sendTeamChat() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      input.value = '';
+      input.blur();
+      input.style.display = 'none';
+
+      if (!text) return;
+
+      const chatPacket = {
+        type: 'TEAM_CHAT',
+        senderName: myName,
+        team: myTeam,
+        text,
+        gameMode
+      };
+
+      appendChatMessage(myName, gameMode === 'ffa' ? 'GLOBAL' : myTeam, text);
+      dispatchNetworkAction(chatPacket);
+    }
+
+    function appendChatMessage(sender, badge, text) {
+      const box = document.getElementById('chat-messages');
+      if (!box) return;
+      const div = document.createElement('div');
+      div.className = 'chat-msg';
+      div.innerHTML = `<span style="color:#ffca28;">[${badge}]</span> <b>${sender}:</b> ${escapeHtml(text)}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function checkMeleeHit(nx, ny, range, damage) {
+      const hitX = myX + nx * range;
+      const hitY = myY + ny * range;
       Object.keys(players).forEach(pid => {
-        const p = players[pid];
-        if (gameMode !== 'ffa' && p.team === myTeam) return;
-        const pdx = p.x - myX;
-        const pdy = p.y - myY;
-        const pDist = Math.hypot(pdx, pdy);
-        if (pDist <= reach + PLAYER_RADIUS) {
-          const dot = (pdx * nx + pdy * ny) / (pDist || 1);
-          if (dot > 0.5) {
-            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: dmg });
-          }
+        const pl = players[pid];
+        if (gameMode !== 'ffa' && pl.team === myTeam) return;
+        if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 15) {
+          dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage });
         }
       });
     }
 
-    function checkMiningHit(tx, ty) {
-      const bx = Math.floor(tx / 40);
-      const by = Math.floor(ty / 40);
+    function checkMiningHit(targetX, targetY) {
+      const bx = Math.floor(targetX / 40);
+      const by = Math.floor(targetY / 40);
       const key = `${bx},${by}`;
       if (placedBlocks[key]) {
         dispatchNetworkAction({ type: 'BREAK_BLOCK', key });
       }
-      Object.keys(groundItems).forEach(id => {
-        const item = groundItems[id];
-        if (Math.hypot(item.x - tx, item.y - ty) < 30) {
-          dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
-        }
-      });
     }
 
     function dropEquippedItem() {
+      let droppedType = null;
+      let droppedSubtype = null;
+
       if (activeSlot >= 3 && activeSlot <= 5) {
-        const gunType = gunSlots[activeSlot - 3];
-        if (gunType) {
-          gunSlots[activeSlot - 3] = null;
+        const gunIdx = activeSlot - 3;
+        if (gunSlots[gunIdx]) {
+          droppedType = 'gun';
+          droppedSubtype = gunSlots[gunIdx];
+          gunSlots[gunIdx] = null;
           updateHotbarLabels();
-          const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
-          dispatchNetworkAction({ type: 'SPAWN_ITEM', id: itemId, x: myX, y: myY, itemType: 'gun', subtype: gunType });
         }
+      } else if (activeSlot === 6 && grenadeCount > 0) {
+        grenadeCount--;
+        droppedType = 'grenade';
+        updateHotbarLabels();
+      } else if (activeSlot === 7 && bandageCount > 0) {
+        bandageCount--;
+        droppedType = 'bandage';
+        updateHotbarLabels();
+      }
+
+      if (droppedType) {
+        const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+        dispatchNetworkAction({
+          type: 'SPAWN_ITEM',
+          id: itemId,
+          x: myX + 25,
+          y: myY + 25,
+          itemType: droppedType,
+          subtype: droppedSubtype
+        });
       }
     }
 
@@ -352,6 +439,14 @@
               updateHotbarLabels();
               dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
             }
+          } else if (item.type === 'bandage') {
+            bandageCount++;
+            updateHotbarLabels();
+            dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
+          } else if (item.type === 'grenade') {
+            grenadeCount++;
+            updateHotbarLabels();
+            dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
           }
         }
       });
@@ -359,29 +454,31 @@
 
     function selfDestruct() {
       hp = 0;
-      triggerExplosion(myX, myY, 80);
       alert('You Self-Destructed!');
-      myX = WORLD_SIZE / 2;
-      myY = WORLD_SIZE / 2;
-      hp = 100;
+      respawnPlayer();
     }
 
     function triggerExplosion(x, y, radius) {
       explosions.push({ x, y, radius, life: 15 });
       Object.keys(players).forEach(pid => {
-        const p = players[pid];
-        const dist = Math.hypot(p.x - x, p.y - y);
-        if (dist < radius + PLAYER_RADIUS) {
-          const dmg = Math.round((1 - dist / (radius + PLAYER_RADIUS)) * 75);
-          dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: dmg });
+        const pl = players[pid];
+        if (Math.hypot(pl.x - x, pl.y - y) < radius + PLAYER_RADIUS) {
+          if (isHost || pid === myId) {
+            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: 75 });
+          }
         }
       });
       if (Math.hypot(myX - x, myY - y) < radius + PLAYER_RADIUS) {
-        hp = Math.max(0, hp - 60);
+        if (!isSpawnProtected) {
+          hp = Math.max(0, hp - 75);
+          if (hp <= 0) {
+            alert('Eliminated by Explosion!');
+            respawnPlayer();
+          }
+        }
       }
     }
 
-    // Network Actions Logic
     function processAction(action) {
       if (action.type === 'PLACE_BLOCK') {
         placedBlocks[action.key] = { color: action.color };
@@ -391,16 +488,21 @@
         groundItems[action.id] = { x: action.x, y: action.y, type: action.itemType, subtype: action.subtype };
       } else if (action.type === 'REMOVE_ITEM') {
         delete groundItems[action.id];
+      } else if (action.type === 'TEAM_CHAT') {
+        if (action.gameMode === 'ffa' || gameMode === 'ffa' || action.team === myTeam) {
+          appendChatMessage(action.senderName, action.gameMode === 'ffa' ? 'GLOBAL' : action.team, action.text);
+        }
       } else if (action.type === 'FIRE_BULLET') {
         projectiles.push({ x: action.x, y: action.y, vx: action.vx, vy: action.vy, gunType: action.gunType, ownerId: action.ownerId });
       } else if (action.type === 'THROW_GRENADE') {
         projectiles.push({ x: action.x, y: action.y, vx: (action.targetX - action.x) * 0.05, vy: (action.targetY - action.y) * 0.05, gunType: 'grenade', ownerId: action.ownerId });
       } else if (action.type === 'PLAYER_HIT') {
         if (action.targetId === myId) {
+          if (isSpawnProtected) return;
           hp = Math.max(0, hp - action.damage);
           if (hp <= 0) {
             alert('You Were Eliminated!');
-            myX = WORLD_SIZE / 2; myY = WORLD_SIZE / 2; hp = 100;
+            respawnPlayer();
           }
         } else if (players[action.targetId]) {
           players[action.targetId].hp = Math.max(0, (players[action.targetId].hp || 100) - action.damage);
@@ -408,16 +510,69 @@
       }
     }
 
-    function dispatchNetworkAction(action) {
-      processAction(action);
-      if (isHost) {
-        broadcastState({ type: 'ACTION', action });
-      } else if (hostConn && hostConn.open) {
-        hostConn.send({ type: 'ACTION', action });
+    function respawnPlayer() {
+      hp = 100;
+      isSpawnProtected = true;
+      spawnProtectTimer = 5;
+
+      if (gameMode === '2team') {
+        if (myTeam === 'Red') { myX = 200; myY = 200; }
+        else { myX = WORLD_SIZE - 200; myY = WORLD_SIZE - 200; }
+      } else if (gameMode === '4team') {
+        if (myTeam === 'Red') { myX = 200; myY = 200; }
+        else if (myTeam === 'Blue') { myX = WORLD_SIZE - 200; myY = WORLD_SIZE - 200; }
+        else if (myTeam === 'Green') { myX = 200; myY = WORLD_SIZE - 200; }
+        else { myX = WORLD_SIZE - 200; myY = 200; }
+      } else {
+        myX = Math.random() * (WORLD_SIZE - 400) + 200;
+        myY = Math.random() * (WORLD_SIZE - 400) + 200;
       }
     }
 
-    // Modal Pickers
+    function scheduleNextAirdropHost() {
+      if (!isHost) return;
+      const seconds = Math.floor(Math.random() * 15) + 15;
+      broadcastState({ type: 'AIRDROP_TIMER', seconds });
+      startAirdropTimer(seconds);
+
+      setTimeout(() => {
+        const dropX = Math.random() * (WORLD_SIZE - 200) + 100;
+        const dropY = Math.random() * (WORLD_SIZE - 200) + 100;
+        const roll = Math.random();
+
+        if (roll < 0.3) {
+          const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+          broadcastState({ type: 'SPAWN_ITEM', id: itemId, x: dropX, y: dropY, itemType: 'bandage' });
+          processAction({ type: 'SPAWN_ITEM', id: itemId, x: dropX, y: dropY, itemType: 'bandage' });
+        } else if (roll < 0.5) {
+          const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+          broadcastState({ type: 'SPAWN_ITEM', id: itemId, x: dropX, y: dropY, itemType: 'grenade' });
+          processAction({ type: 'SPAWN_ITEM', id: itemId, x: dropX, y: dropY, itemType: 'grenade' });
+        } else {
+          const guns = ['pistol', 'shotgun', 'sniper', 'smg', 'rocket'];
+          const assignedGun = guns[Math.floor(Math.random() * guns.length)];
+          broadcastState({ type: 'SPAWN_DROP', x: dropX, y: dropY, gunType: assignedGun });
+          spawnSupplyDrop(dropX, dropY, assignedGun);
+        }
+        scheduleNextAirdropHost();
+      }, seconds * 1000);
+    }
+
+    function spawnSupplyDrop(x, y, gunType) {
+      activeSupplyPlane = { x: 0, y: 0, targetX: x, targetY: y, progress: 0, gunType };
+    }
+
+    function startAirdropTimer(seconds) {
+      airdropCountdown = seconds;
+      clearInterval(airdropTimerInterval);
+      airdropTimerInterval = setInterval(() => {
+        airdropCountdown--;
+        const timerEl = document.getElementById('airdrop-timer');
+        if (timerEl) timerEl.innerText = `${Math.max(0, airdropCountdown)}s`;
+        if (airdropCountdown <= 0) clearInterval(airdropTimerInterval);
+      }, 1000);
+    }
+
     function showGamemodePicker(onChosen) {
       const overlay = document.getElementById('modal-overlay');
       const title = document.getElementById('modal-title');
@@ -469,41 +624,6 @@
       if (document.getElementById('t-ffa')) document.getElementById('t-ffa').onclick = () => { overlay.style.display = 'none'; onTeamChosen('FFA', '#7b1fa2'); };
     }
 
-    // Airdrop Logic
-    function startAirdropTimer(seconds) {
-      airdropCountdown = seconds;
-      clearInterval(airdropTimerInterval);
-      airdropTimerInterval = setInterval(() => {
-        airdropCountdown--;
-        const el = document.getElementById('airdrop-timer');
-        if (el) el.innerText = `${Math.max(0, airdropCountdown)}s`;
-        if (airdropCountdown <= 0) clearInterval(airdropTimerInterval);
-      }, 1000);
-    }
-
-    function scheduleNextAirdropHost() {
-      if (!isHost) return;
-      const seconds = Math.floor(Math.random() * 15) + 15;
-      broadcastState({ type: 'AIRDROP_TIMER', seconds });
-      startAirdropTimer(seconds);
-
-      setTimeout(() => {
-        const dropX = Math.random() * (WORLD_SIZE - 200) + 100;
-        const dropY = Math.random() * (WORLD_SIZE - 200) + 100;
-        const guns = ['pistol', 'shotgun', 'sniper', 'smg', 'rocket'];
-        const assignedGun = guns[Math.floor(Math.random() * guns.length)];
-
-        broadcastState({ type: 'SPAWN_DROP', x: dropX, y: dropY, gunType: assignedGun });
-        spawnSupplyDrop(dropX, dropY, assignedGun);
-        scheduleNextAirdropHost();
-      }, seconds * 1000);
-    }
-
-    function spawnSupplyDrop(x, y, gunType) {
-      activeSupplyPlane = { x: 0, y: 0, targetX: x, targetY: y, progress: 0, gunType };
-    }
-
-    // Networking Setup
     function initPeer(customId, callback) {
       if (peer) peer.destroy();
       peer = new Peer(customId);
@@ -537,7 +657,6 @@
       updateTabOverlay();
     }
 
-    // Heartbeat Pings
     setInterval(() => {
       const now = Date.now();
       if (isHost) {
@@ -574,6 +693,15 @@
 
     function broadcastState(msg) {
       Object.values(connections).forEach(c => c.conn.send(msg));
+    }
+
+    function dispatchNetworkAction(action) {
+      if (isHost) {
+        processAction(action);
+        broadcastState({ type: 'ACTION', action });
+      } else if (hostConn && hostConn.open) {
+        hostConn.send({ type: 'ACTION', action });
+      }
     }
 
     function serializePlayers() {
@@ -632,6 +760,7 @@
       groundItems = {};
       projectiles = [];
       explosions = [];
+      document.getElementById('chat-messages').innerHTML = '';
 
       document.getElementById('lobby-panel').style.display = 'block';
       document.getElementById('pause-btn').style.display = 'none';
@@ -652,6 +781,7 @@
           myTeam = teamName;
           myTeamColor = teamColor;
           isHost = true;
+          respawnPlayer();
 
           initPeer(getFormattedPeerId(currentRoomCode), () => {
             document.getElementById('lobby-panel').style.display = 'none';
@@ -693,6 +823,7 @@
             showTeamPicker(gameMode, (teamName, teamColor) => {
               myTeam = teamName;
               myTeamColor = teamColor;
+              respawnPlayer();
 
               document.getElementById('lobby-panel').style.display = 'none';
               document.getElementById('pause-btn').style.display = 'block';
@@ -717,7 +848,6 @@
       });
     });
 
-    // --- MAIN GAME LOOP ---
     let lastTime = performance.now();
 
     function gameLoop() {
@@ -727,7 +857,11 @@
       const delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Movement & Sprint
+      if (isSpawnProtected) {
+        spawnProtectTimer -= delta;
+        if (spawnProtectTimer <= 0) isSpawnProtected = false;
+      }
+
       const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
       let speed = 3.5;
       if (isSprinting && stamina > 0) {
@@ -761,7 +895,6 @@
         myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myY));
       }
 
-      // Update Projectiles
       for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
         p.x += p.vx;
@@ -795,7 +928,6 @@
         });
       }
 
-      // Update Supply Plane
       if (activeSupplyPlane) {
         activeSupplyPlane.progress += delta * 0.5;
         activeSupplyPlane.x += (activeSupplyPlane.targetX - activeSupplyPlane.x) * 0.05;
@@ -813,7 +945,6 @@
         }
       }
 
-      // Sync position to network
       if (now % 50 < 16) {
         const payload = {
           type: 'PLAYER_SYNC',
@@ -831,13 +962,11 @@
         }
       }
 
-      // RENDER
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.save();
       ctx.translate(canvas.width / 2 - myX, canvas.height / 2 - myY);
 
-      // Draw World Grid
       ctx.strokeStyle = 'rgba(255,255,255,0.08)';
       ctx.lineWidth = 1;
       for (let x = 0; x <= WORLD_SIZE; x += 100) {
@@ -847,7 +976,28 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
       }
 
-      // Draw Placed Blocks
+      const drawSpawnProtector = (cx, cy, color) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 90, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = color === '#e53935' ? 'rgba(229,57,53,0.15)' : (color === '#1e88e5' ? 'rgba(30,136,229,0.15)' : (color === '#43a047' ? 'rgba(67,160,71,0.15)' : 'rgba(251,192,45,0.15)'));
+        ctx.fill();
+        ctx.restore();
+      };
+
+      if (gameMode === '2team') {
+        drawSpawnProtector(200, 200, '#e53935');
+        drawSpawnProtector(WORLD_SIZE - 200, WORLD_SIZE - 200, '#1e88e5');
+      } else if (gameMode === '4team') {
+        drawSpawnProtector(200, 200, '#e53935');
+        drawSpawnProtector(WORLD_SIZE - 200, WORLD_SIZE - 200, '#1e88e5');
+        drawSpawnProtector(200, WORLD_SIZE - 200, '#43a047');
+        drawSpawnProtector(WORLD_SIZE - 200, 200, '#fbc02d');
+      }
+
       Object.keys(placedBlocks).forEach(key => {
         const [bx, by] = key.split(',').map(Number);
         ctx.fillStyle = placedBlocks[key].color;
@@ -856,23 +1006,20 @@
         ctx.strokeRect(bx * 40, by * 40, 40, 40);
       });
 
-      // Draw Ground Items
       Object.keys(groundItems).forEach(id => {
         const item = groundItems[id];
-        ctx.fillStyle = '#ffca28';
+        ctx.fillStyle = item.type === 'bandage' ? '#e91e63' : (item.type === 'grenade' ? '#333' : '#ffca28');
         ctx.beginPath(); ctx.arc(item.x, item.y, 10, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
         ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(item.subtype || item.type, item.x, item.y - 14);
+        ctx.fillText(item.type === 'bandage' ? 'Bandage' : (item.type === 'grenade' ? 'Grenade' : (item.subtype || item.type)), item.x, item.y - 14);
       });
 
-      // Draw Projectiles
       projectiles.forEach(p => {
         ctx.fillStyle = p.gunType === 'grenade' ? '#333' : '#ffff00';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.gunType === 'grenade' ? 6 : 4, 0, Math.PI * 2); ctx.fill();
       });
 
-      // Draw Explosions
       explosions.forEach((ex, idx) => {
         ctx.fillStyle = `rgba(255, 100, 0, ${ex.life / 15})`;
         ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2); ctx.fill();
@@ -880,7 +1027,6 @@
         if (ex.life <= 0) explosions.splice(idx, 1);
       });
 
-      // Draw Supply Plane
       if (activeSupplyPlane) {
         ctx.fillStyle = '#444';
         ctx.fillRect(activeSupplyPlane.x - 25, activeSupplyPlane.y - 10, 50, 20);
@@ -889,7 +1035,6 @@
         ctx.fillText('✈️ SUPPLY DROP', activeSupplyPlane.x - 45, activeSupplyPlane.y - 18);
       }
 
-      // Draw Other Players
       Object.keys(players).forEach(id => {
         const p = players[id];
         ctx.fillStyle = p.color || '#2196f3';
@@ -900,10 +1045,11 @@
         ctx.fillText(`${p.name} [${p.hp}HP]`, p.x, p.y - 22);
       });
 
-      // Draw Local Player
       ctx.fillStyle = myTeamColor;
       ctx.beginPath(); ctx.arc(myX, myY, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = isSpawnProtected ? '#00ffff' : '#fff';
+      ctx.lineWidth = isSpawnProtected ? 4 : 2;
+      ctx.stroke();
 
       ctx.fillStyle = '#ffca28'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(`${myName} (You) [${hp}HP]`, myX, myY - 22);
