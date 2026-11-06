@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2D P2P Arena Shooter</title>
+  <title>2D P2P Arena Shooter & Builder</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    #game-canvas { width: 100%; height: 100%; display: block; background: #222; }
+    #game-canvas { width: 100%; height: 100%; display: block; background: #2b4c3f; }
     
     #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     
+    /* Lobby Panel */
     #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.95); color: #fff; padding: 24px; border-radius: 12px; text-align: center; pointer-events: auto; width: 380px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 20; }
     #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; font-size: 22px; }
     #lobby-panel input, #lobby-panel button, #lobby-panel select { width: 100%; margin: 6px 0; padding: 10px 12px; border: none; border-radius: 6px; font-family: inherit; font-size: 14px; }
@@ -19,7 +20,8 @@
     #lobby-panel button:hover { background: #45a049; }
     #peer-id-display { font-size: 12px; color: #ffca28; margin-top: 8px; font-weight: bold; word-break: break-all; }
 
-    #modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 30; }
+    /* Modal */
+    #modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 25; }
     .modal-window { background: #1a1a24; color: #fff; border: 2px solid #444; border-radius: 12px; width: 360px; padding: 24px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
     .modal-window h3 { margin-bottom: 15px; color: #ffca28; font-size: 20px; }
     .modal-window button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
@@ -29,6 +31,7 @@
     .team-btn-yellow { background: #fbc02d; color: #000; }
     .team-btn-ffa { background: #7b1fa2; color: #fff; }
 
+    /* HUD */
     #hud-container { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; width: 220px; }
     .bar-wrapper { background: rgba(0,0,0,0.6); padding: 4px; border-radius: 6px; border: 1px solid #444; }
     .bar-label { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 2px; display: flex; justify-content: space-between; }
@@ -40,18 +43,25 @@
     #airdrop-pill { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
     #airdrop-timer { color: #ffca28; }
 
+    /* Controls instruction */
+    #controls-tip { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 12px; pointer-events: none; text-align: center; }
+
+    /* Hotbar */
+    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 10px; border: 1px solid #555; pointer-events: auto; }
+    .slot { width: 52px; height: 52px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; overflow: hidden; cursor: pointer; }
+    .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
+    .slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; }
+    .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 100%; background: rgba(229,57,53,0.5); width: 0%; transition: width 0.05s linear; }
+
+    /* Tab Overlay */
     #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 15; }
     #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
     .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
-    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 8px; border: 1px solid #555; pointer-events: auto; }
-    .slot { width: 56px; height: 56px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 11px; position: relative; overflow: hidden; cursor: pointer; }
-    .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
-    .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 100%; background: rgba(229,57,53,0.5); width: 0%; transition: width 0.05s linear; }
-
-    #status-msg { position: absolute; top: 55px; width: 100%; text-align: center; color: #aaa; font-size: 13px; }
+    #status-msg { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -70,10 +80,11 @@
     </div>
 
     <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">--s</span></div>
-    <div id="status-msg">Click Host or Join to Start</div>
+    <div id="status-msg">Click Host or Join to Start (Hold TAB for Peers)</div>
+    <div id="controls-tip">WASD to Move | Click to Shoot/Attack | Q: Drop Item | F: Pick Up | R: Self-Destruct</div>
 
     <div id="lobby-panel">
-      <h2>2D P2P Arena Shooter</h2>
+      <h2>2D P2P Arena</h2>
       <input type="text" id="player-name-input" placeholder="Your Display Name" value="Player">
       <select id="room-select">
         <option value="room1">Room 1</option>
@@ -103,24 +114,28 @@
       <div class="slot active" id="slot-0" onclick="switchSlot(0)"><span>1</span><b>Sword</b></div>
       <div class="slot" id="slot-1" onclick="switchSlot(1)"><span>2</span><b>Pickaxe</b></div>
       <div class="slot" id="slot-2" onclick="switchSlot(2)"><span>3</span><b>Block</b><div class="slot-cooldown" id="block-cd"></div></div>
-      <div class="slot" id="slot-3" onclick="switchSlot(3)"><span>4</span><b id="gun-slot-label">Empty</b></div>
+      <div class="slot" id="slot-3" onclick="switchSlot(3)"><span id="gun-slot-0-num">4</span><b id="gun-slot-0-label">Empty</b></div>
+      <div class="slot" id="slot-4" onclick="switchSlot(4)"><span id="gun-slot-1-num">5</span><b id="gun-slot-1-label">Empty</b></div>
+      <div class="slot" id="slot-5" onclick="switchSlot(5)"><span id="gun-slot-2-num">6</span><b id="gun-slot-2-label">Empty</b></div>
+      <div class="slot" id="slot-6" onclick="switchSlot(6)"><span>7</span><b>Grenade</b></div>
     </div>
   </div>
 
   <script>
     const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
 
     function resizeCanvas() {
+      if (!canvas) return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    const WORLD_SIZE = 2000;
-    const TILE_SIZE = 40;
-
+    const WORLD_SIZE = 2500;
+    const PLAYER_RADIUS = 16;
+    
     let isHost = false;
     let peer = null;
     let myId = '';
@@ -135,38 +150,54 @@
 
     let myX = WORLD_SIZE / 2;
     let myY = WORLD_SIZE / 2;
-    let myAngle = 0;
     let hp = 100;
     let stamina = 100;
     const maxStamina = 100;
 
+    // Hotbar items: 0: Sword, 1: Pickaxe, 2: Block, 3: Gun1, 4: Gun2, 5: Gun3, 6: Grenade
     let activeSlot = 0;
-    let currentGun = null;
-    let gunCooldown = false;
+    let gunSlots = [null, null, null]; // holds gun types ('pistol', 'shotgun', 'sniper', 'smg', 'rocket')
+    let grenadeCount = 3;
     let blockCooldown = false;
+    let gunCooldown = false;
+    let grenadeCooldown = false;
 
-    let players = {};
-    let placedBlocks = {}; // key: "gx,gy" -> true
-    let activeCrates = {}; // id -> {x, y, gunType}
-    let bullets = []; // {x, y, vx, vy, color, owner}
-
-    const keys = {};
+    let keys = {};
     let mouseX = 0;
     let mouseY = 0;
     let isMouseDown = false;
 
-    const APP_PREFIX = "brian-2d-v1-";
+    let players = {};
+    let placedBlocks = {}; // key: "x,y", value: {color}
+    let groundItems = {}; // id: {x, y, type, subtype}
+    let projectiles = {}; // id: {x, y, vx, vy, type, ownerId}
+    let explosions = []; // {x, y, radius, life}
+
+    let airdropCountdown = 30;
+    let airdropTimerInterval = null;
+    let activeSupplyPlane = null;
+
+    const APP_PREFIX = "brian-2d-arena-v1-";
 
     function getFormattedPeerId(code) {
       return APP_PREFIX + code.trim().toLowerCase();
     }
 
+    // Input Listeners
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
       if (e.code === 'Digit1') switchSlot(0);
       if (e.code === 'Digit2') switchSlot(1);
       if (e.code === 'Digit3') switchSlot(2);
-      if (e.code === 'Digit4' && currentGun) switchSlot(3);
+      if (e.code === 'Digit4') switchSlot(3);
+      if (e.code === 'Digit5') switchSlot(4);
+      if (e.code === 'Digit6') switchSlot(5);
+      if (e.code === 'Digit7') switchSlot(6);
+
+      if (e.code === 'KeyQ') dropEquippedItem();
+      if (e.code === 'KeyF') tryPickupItem();
+      if (e.code === 'KeyR') selfDestruct();
+
       if (e.code === 'Tab') {
         e.preventDefault();
         document.getElementById('tab-overlay').style.display = 'block';
@@ -184,106 +215,461 @@
     canvas.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      const screenCenterX = canvas.width / 2;
-      const screenCenterY = canvas.height / 2;
-      myAngle = Math.atan2(mouseY - screenCenterY, mouseX - screenCenterX);
     });
 
     canvas.addEventListener('mousedown', (e) => {
-      if (document.getElementById('lobby-panel').style.display !== 'none' || document.getElementById('modal-overlay').style.display !== 'none') return;
-      isMouseDown = true;
-      handleAction();
+      if (e.button === 0) {
+        isMouseDown = true;
+        handleActionClick();
+      }
     });
 
-    canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+    canvas.addEventListener('mouseup', (e) => {
+      if (e.button === 0) isMouseDown = false;
+    });
 
-    function switchSlot(idx) {
-      activeSlot = idx;
-      for (let i = 0; i < 4; i++) {
+    function switchSlot(slotIdx) {
+      activeSlot = slotIdx;
+      for (let i = 0; i < 7; i++) {
         const el = document.getElementById(`slot-${i}`);
         if (el) el.classList.toggle('active', i === activeSlot);
       }
     }
 
-    function handleAction() {
-      const screenCenterX = canvas.width / 2;
-      const screenCenterY = canvas.height / 2;
-      const worldTargetX = myX + (mouseX - screenCenterX);
-      const worldTargetY = myY + (mouseY - screenCenterY);
-
-      if (activeSlot === 2 && !blockCooldown) {
-        // Place Block
-        const gx = Math.floor(worldTargetX / TILE_SIZE);
-        const gy = Math.floor(worldTargetY / TILE_SIZE);
-        const key = `${gx},${gy}`;
-        if (!placedBlocks[key]) {
-          dispatchNetworkAction({ type: 'PLACE_BLOCK', key });
-          blockCooldown = true;
-          triggerCooldownBar('block-cd', 1000, () => blockCooldown = false);
-        }
-      } else if (activeSlot === 1) {
-        // Pickaxe: break block or collect crate
-        const gx = Math.floor(worldTargetX / TILE_SIZE);
-        const gy = Math.floor(worldTargetY / TILE_SIZE);
-        const key = `${gx},${gy}`;
-        if (placedBlocks[key]) {
-          dispatchNetworkAction({ type: 'BREAK_BLOCK', key });
-        } else {
-          // Check crate collection
-          for (let cid in activeCrates) {
-            const c = activeCrates[cid];
-            const dist = Math.hypot(c.x - worldTargetX, c.y - worldTargetY);
-            if (dist < 40) {
-              dispatchNetworkAction({ type: 'COLLECT_CRATE', crateId: cid, gunType: c.gunType });
-              break;
-            }
+    function updateHotbarDisplay() {
+      for (let i = 0; i < 3; i++) {
+        const gun = gunSlots[i];
+        const label = document.getElementById(`gun-slot-${i}-label`);
+        if (label) {
+          if (gun) {
+            label.innerText = gun.toUpperCase();
+            label.style.color = '#ffca28';
+          } else {
+            label.innerText = 'Empty';
+            label.style.color = '#fff';
           }
         }
-      } else if (activeSlot === 0) {
-        // Sword melee
-        for (let pid in players) {
-          const p = players[pid];
-          const dist = Math.hypot(p.x - myX, p.y - myY);
-          if (dist < 50) {
-            if (gameMode !== 'ffa' && p.team === myTeam) continue;
-            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: 35 });
-          }
-        }
-      } else if (activeSlot === 3 && currentGun && !gunCooldown) {
-        // Shoot Gun
-        let cd = 300, dmg = 25, speed = 12;
-        if (currentGun === 'shotgun') { cd = 700; dmg = 45; speed = 10; }
-        if (currentGun === 'sniper') { cd = 1000; dmg = 80; speed = 20; }
-
-        gunCooldown = true;
-        setTimeout(() => gunCooldown = false, cd);
-
-        const vx = Math.cos(myAngle) * speed;
-        const vy = Math.sin(myAngle) * speed;
-        bullets.push({ x: myX, y: myY, vx, vy, color: myTeamColor, owner: myId, damage: dmg });
-        dispatchNetworkAction({ type: 'SPAWN_BULLET', x: myX, y: myY, vx, vy, color: myTeamColor, owner: myId, damage: dmg });
       }
     }
 
-    function triggerCooldownBar(barId, duration, onComplete) {
-      const bar = document.getElementById(barId);
-      bar.style.width = '100%';
+    // --- ACTIONS: DROP, PICKUP, SELF-DESTRUCT ---
+    function dropEquippedItem() {
+      let droppedType = null;
+      let subtype = null;
+
+      if (activeSlot >= 3 && activeSlot <= 5) {
+        const gIdx = activeSlot - 3;
+        if (gunSlots[gIdx]) {
+          droppedType = 'gun';
+          subtype = gunSlots[gIdx];
+          gunSlots[gIdx] = null;
+          updateHotbarDisplay();
+          switchSlot(0);
+        }
+      } else if (activeSlot === 6 && grenadeCount > 0) {
+        droppedType = 'grenade';
+        grenadeCount--;
+      }
+
+      if (droppedType) {
+        const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+        const dropX = myX + (Math.random() - 0.5) * 40;
+        const dropY = myY + (Math.random() - 0.5) * 40;
+        dispatchNetworkAction({ type: 'DROP_ITEM', itemId, x: dropX, y: dropY, itemType: droppedType, subtype });
+      }
+    }
+
+    function tryPickupItem() {
+      let closestId = null;
+      let minDist = 50;
+
+      Object.keys(groundItems).forEach(id => {
+        const item = groundItems[id];
+        const dist = Math.hypot(item.x - myX, item.y - myY);
+        if (dist < minDist) {
+          minDist = dist;
+          closestId = id;
+        }
+      });
+
+      if (closestId) {
+        dispatchNetworkAction({ type: 'PICKUP_ITEM', itemId: closestId });
+      }
+    }
+
+    function selfDestruct() {
+      if (confirm('Are you sure you want to self-destruct?')) {
+        dispatchNetworkAction({ type: 'PLAYER_DIE', targetId: myId });
+        hp = 0;
+        alert('You self-destructed!');
+        respawnPlayer();
+      }
+    }
+
+    function respawnPlayer() {
+      myX = 200 + Math.random() * (WORLD_SIZE - 400);
+      myY = 200 + Math.random() * (WORLD_SIZE - 400);
+      hp = 100;
+      gunSlots = [null, null, null];
+      grenadeCount = 3;
+      updateHotbarDisplay();
+      switchSlot(0);
+    }
+
+    // --- ACTION CLICK LOGIC ---
+    function handleActionClick() {
+      const screenCenterX = canvas.width / 2;
+      const screenCenterY = canvas.height / 2;
+      const angle = Math.atan2(mouseY - screenCenterY, mouseX - screenCenterX);
+
+      if (activeSlot === 0) {
+        // Sword Slash
+        const attackX = myX + Math.cos(angle) * 35;
+        const attackY = myY + Math.sin(angle) * 35;
+        
+        Object.keys(players).forEach(id => {
+          const p = players[id];
+          if (gameMode !== 'ffa' && p.team === myTeam) return;
+          if (Math.hypot(p.x - attackX, p.y - attackY) < 30) {
+            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: id, damage: 30 });
+          }
+        });
+      } else if (activeSlot === 1) {
+        // Pickaxe / Mine
+        const targetX = myX + Math.cos(angle) * 40;
+        const targetY = myY + Math.sin(angle) * 40;
+        const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+        if (placedBlocks[bKey]) {
+          dispatchNetworkAction({ type: 'BREAK_BLOCK', key: bKey });
+        }
+      } else if (activeSlot === 2 && !blockCooldown) {
+        // Place Block
+        const targetX = myX + Math.cos(angle) * 50;
+        const targetY = myY + Math.sin(angle) * 50;
+        const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+        if (!placedBlocks[bKey]) {
+          dispatchNetworkAction({ type: 'PLACE_BLOCK', key: bKey, color: '#8d5b4c' });
+          triggerBlockCooldown();
+        }
+      } else if (activeSlot >= 3 && activeSlot <= 5) {
+        // Gun Shoot
+        const gIdx = activeSlot - 3;
+        const gun = gunSlots[gIdx];
+        if (gun && !gunCooldown) {
+          let cooldown = 250;
+          let damage = 25;
+          let pSpeed = 14;
+          if (gun === 'shotgun') { cooldown = 600; damage = 45; }
+          if (gun === 'sniper') { cooldown = 900; damage = 85; pSpeed = 22; }
+          if (gun === 'smg') { cooldown = 1200; damage = 15; }
+          if (gun === 'rocket') { cooldown = 1000; damage = 70; }
+
+          gunCooldown = true;
+          setTimeout(() => gunCooldown = false, cooldown);
+
+          const projId = 'proj_' + Math.random().toString(36).substr(2, 9);
+          dispatchNetworkAction({
+            type: 'SPAWN_PROJECTILE',
+            projId,
+            x: myX,
+            y: myY,
+            vx: Math.cos(angle) * pSpeed,
+            vy: Math.sin(angle) * pSpeed,
+            projType: gun,
+            ownerId: myId
+          });
+        }
+      } else if (activeSlot === 6 && grenadeCount > 0 && !grenadeCooldown) {
+        // Throw Grenade
+        grenadeCooldown = true;
+        setTimeout(() => grenadeCooldown = false, 800);
+        grenadeCount--;
+
+        const projId = 'grenade_' + Math.random().toString(36).substr(2, 9);
+        dispatchNetworkAction({
+          type: 'SPAWN_PROJECTILE',
+          projId,
+          x: myX,
+          y: myY,
+          vx: Math.cos(angle) * 8,
+          vy: Math.sin(angle) * 8,
+          projType: 'grenade',
+          ownerId: myId
+        });
+      }
+    }
+
+    function triggerBlockCooldown() {
+      blockCooldown = true;
+      const cd = document.getElementById('block-cd');
+      if (cd) cd.style.width = '100%';
       let elapsed = 0;
       const interval = setInterval(() => {
         elapsed += 50;
-        bar.style.width = `${Math.max(0, 100 - (elapsed / duration) * 100)}%`;
-        if (elapsed >= duration) {
+        if (cd) cd.style.width = `${Math.max(0, 100 - (elapsed / BLOCK_COOLDOWN_MS) * 100)}%`;
+        if (elapsed >= BLOCK_COOLDOWN_MS) {
           clearInterval(interval);
-          onComplete();
+          blockCooldown = false;
         }
       }, 50);
     }
+    const BLOCK_COOLDOWN_MS = 1000;
 
+    // --- LOCAL ACTIONS & NETWORKING ---
+    function placeBlockLocally(key, color) {
+      placedBlocks[key] = { color };
+    }
+
+    function breakBlockLocally(key) {
+      delete placedBlocks[key];
+    }
+
+    function spawnProjectileLocally(projId, x, y, vx, vy, projType, ownerId) {
+      projectiles[projId] = { x, y, vx, vy, projType, ownerId };
+    }
+
+    function triggerExplosion(x, y, radius = 80) {
+      explosions.push({ x, y, radius, life: 20 });
+      // Check player damage
+      if (Math.hypot(myX - x, myY - y) < radius + PLAYER_RADIUS) {
+        hp = Math.max(0, hp - 50);
+        if (hp <= 0) respawnPlayer();
+      }
+      Object.keys(players).forEach(id => {
+        const p = players[id];
+        if (Math.hypot(p.x - x, p.y - y) < radius + PLAYER_RADIUS) {
+          if (id === myId) {
+            hp = Math.max(0, hp - 50);
+            if (hp <= 0) respawnPlayer();
+          }
+        }
+      });
+    }
+
+    // --- AIRDROP SYSTEM ---
+    function spawnSupplyDrop(targetX, targetY, crateId, gunType) {
+      activeSupplyPlane = {
+        x: targetX - 400,
+        y: targetY - 200,
+        targetX,
+        targetY,
+        crateId,
+        gunType,
+        progress: 0
+      };
+    }
+
+    function startAirdropTimer(secs) {
+      airdropCountdown = secs;
+      clearInterval(airdropTimerInterval);
+      airdropTimerInterval = setInterval(() => {
+        airdropCountdown--;
+        const el = document.getElementById('airdrop-timer');
+        if (el) el.innerText = `${Math.max(0, airdropCountdown)}s`;
+        if (airdropCountdown <= 0) clearInterval(airdropTimerInterval);
+      }, 1000);
+    }
+
+    function scheduleNextAirdropHost() {
+      if (!isHost) return;
+      const secs = Math.floor(Math.random() * 15) + 20;
+      broadcastState({ type: 'AIRDROP_TIMER', seconds: secs });
+      startAirdropTimer(secs);
+
+      setTimeout(() => {
+        const dropX = 200 + Math.random() * (WORLD_SIZE - 400);
+        const dropY = 200 + Math.random() * (WORLD_SIZE - 400);
+        const crateId = 'crate_' + Math.random().toString(36).substr(2, 9);
+        const gunTypes = ['pistol', 'shotgun', 'sniper', 'smg', 'rocket'];
+        const assignedGun = gunTypes[Math.floor(Math.random() * gunTypes.length)];
+
+        broadcastState({ type: 'SPAWN_DROP', x: dropX, y: dropY, crateId, gunType: assignedGun });
+        spawnSupplyDrop(dropX, dropY, crateId, assignedGun);
+        scheduleNextAirdropHost();
+      }, secs * 1000);
+    }
+
+    // --- PEERJS SETUP ---
+    function initPeer(customId, callback) {
+      if (peer) peer.destroy();
+      peer = new Peer(customId);
+
+      peer.on('open', (id) => {
+        myId = id;
+        const el = document.getElementById('peer-id-display');
+        if (el) el.innerText = `Online ✅ (${currentRoomCode.toUpperCase()})`;
+        if (callback) callback();
+      });
+
+      peer.on('error', (err) => {
+        const el = document.getElementById('peer-id-display');
+        if (el) el.innerText = `Error: ${err.type}`;
+        if (err.type === 'unavailable-id') {
+          alert("Room '" + currentRoomCode.toUpperCase() + "' is already hosted! Choose 'Join Room' instead.");
+        } else {
+          alert("Connection error: " + err.type);
+        }
+      });
+
+      peer.on('connection', (conn) => {
+        if (!isHost) return;
+
+        conn.on('open', () => {
+          connections[conn.peer] = { conn, lastPing: Date.now(), name: 'Peer', team: 'FFA', color: '#2196f3' };
+          conn.send({ type: 'SETUP_INFO', gameMode });
+          updateTabOverlay();
+        });
+
+        conn.on('data', (data) => handleHostReceiveData(conn.peer, data));
+        conn.on('close', () => removePeer(conn.peer));
+      });
+    }
+
+    function removePeer(peerId) {
+      delete players[peerId];
+      delete connections[peerId];
+      updateTabOverlay();
+    }
+
+    setInterval(() => {
+      const now = Date.now();
+      if (isHost) {
+        Object.keys(connections).forEach(id => {
+          if (now - connections[id].lastPing > 4000) {
+            connections[id].conn.close();
+            removePeer(id);
+          }
+        });
+      }
+      updateTabOverlay();
+    }, 2000);
+
+    function handleHostReceiveData(senderId, data) {
+      if (connections[senderId]) connections[senderId].lastPing = Date.now();
+
+      if (data.type === 'PLAYER_SYNC') {
+        if (connections[senderId]) {
+          connections[senderId].name = data.name;
+          connections[senderId].team = data.team;
+          connections[senderId].color = data.color;
+        }
+
+        players[senderId] = {
+          x: data.x,
+          y: data.y,
+          name: data.name,
+          team: data.team,
+          color: data.color,
+          hp: data.hp
+        };
+
+        broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
+      } else if (data.type === 'ACTION') {
+        processAction(data.action);
+        broadcastState({ type: 'ACTION', action: data.action });
+      }
+    }
+
+    function processAction(action) {
+      if (action.type === 'PLACE_BLOCK') placeBlockLocally(action.key, action.color);
+      if (action.type === 'BREAK_BLOCK') breakBlockLocally(action.key);
+      if (action.type === 'SPAWN_PROJECTILE') spawnProjectileLocally(action.projId, action.x, action.y, action.vx, action.vy, action.projType, action.ownerId);
+      if (action.type === 'DROP_ITEM') {
+        groundItems[action.itemId] = { x: action.x, y: action.y, type: action.itemType, subtype: action.subtype };
+      }
+      if (action.type === 'PICKUP_ITEM') {
+        const item = groundItems[action.itemId];
+        if (item) {
+          delete groundItems[action.itemId];
+          // If I picked it up
+          if (action.pickerId === myId) {
+            if (item.type === 'gun') {
+              let emptySlot = gunSlots.findIndex(s => s === null);
+              if (emptySlot !== -1) {
+                gunSlots[emptySlot] = item.subtype;
+                updateHotbarDisplay();
+                switchSlot(emptySlot + 3);
+              }
+            } else if (item.type === 'grenade') {
+              grenadeCount++;
+            }
+          }
+        }
+      }
+      if (action.type === 'PLAYER_HIT') {
+        if (action.targetId === myId) {
+          hp = Math.max(0, hp - action.damage);
+          if (hp <= 0) respawnPlayer();
+        } else if (players[action.targetId]) {
+          players[action.targetId].hp = Math.max(0, players[action.targetId].hp - action.damage);
+        }
+      }
+      if (action.type === 'PLAYER_DIE') {
+        if (players[action.targetId]) players[action.targetId].hp = 0;
+      }
+    }
+
+    function broadcastState(msg) {
+      Object.values(connections).forEach(c => c.conn.send(msg));
+    }
+
+    function dispatchNetworkAction(action) {
+      if (action.type === 'PICKUP_ITEM') {
+        action.pickerId = myId;
+      }
+
+      if (isHost) {
+        processAction(action);
+        broadcastState({ type: 'ACTION', action });
+      } else if (hostConn) {
+        hostConn.send({ type: 'ACTION', action });
+      }
+    }
+
+    function serializePlayers() {
+      const state = {};
+      Object.keys(players).forEach(id => {
+        state[id] = players[id];
+      });
+      state[myId] = { x: myX, y: myY, name: myName, team: myTeam, color: myTeamColor, hp };
+      return state;
+    }
+
+    function updateTabOverlay() {
+      const container = document.getElementById('peer-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const localRow = document.createElement('div');
+      localRow.className = 'player-row';
+      localRow.innerHTML = `<span><b>${myName} (You)</b> [${myTeam}]</span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
+      container.appendChild(localRow);
+
+      if (isHost) {
+        Object.keys(connections).forEach(id => {
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.innerHTML = `<span>${connections[id].name || 'Peer'} [${connections[id].team}]</span><span style="color:#29b6f6;">CONNECTED</span>`;
+          container.appendChild(row);
+        });
+      } else {
+        Object.keys(players).forEach(id => {
+          if (id === myId) return;
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.innerHTML = `<span>${players[id].name || 'Peer'} [${players[id].team || 'FFA'}]</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
+          container.appendChild(row);
+        });
+      }
+    }
+
+    // Modal pickers
     function showGamemodePicker(onChosen) {
       const overlay = document.getElementById('modal-overlay');
       const title = document.getElementById('modal-title');
       const buttons = document.getElementById('modal-buttons');
       
+      if (!overlay) return;
       title.innerText = "Select Game Mode";
       buttons.innerHTML = `
         <button class="team-btn-blue" id="mode-2t">2 Teams (Red vs Blue)</button>
@@ -302,6 +688,7 @@
       const title = document.getElementById('modal-title');
       const buttons = document.getElementById('modal-buttons');
 
+      if (!overlay) return;
       title.innerText = "Choose Your Team";
       let html = '';
       if (mode === '2team') {
@@ -330,141 +717,6 @@
       if (document.getElementById('t-ffa')) document.getElementById('t-ffa').onclick = () => { overlay.style.display = 'none'; onTeamChosen('FFA', '#7b1fa2'); };
     }
 
-    function initPeer(customId, callback) {
-      if (peer) peer.destroy();
-      peer = new Peer(customId);
-
-      peer.on('open', (id) => {
-        myId = id;
-        document.getElementById('peer-id-display').innerText = `Online ✅ (${currentRoomCode.toUpperCase()})`;
-        if (callback) callback();
-      });
-
-      peer.on('error', (err) => {
-        document.getElementById('peer-id-display').innerText = `Error: ${err.type}`;
-        if (err.type === 'unavailable-id') {
-          alert("Room '" + currentRoomCode.toUpperCase() + "' is already hosted! Choose 'Join Room' instead.");
-        } else {
-          alert("Connection error: " + err.type);
-        }
-      });
-
-      peer.on('connection', (conn) => {
-        if (!isHost) return;
-
-        conn.on('open', () => {
-          connections[conn.peer] = { conn, lastPing: Date.now(), name: 'Peer', team: 'FFA', color: '#2196f3' };
-          conn.send({ type: 'SETUP_INFO', gameMode, placedBlocks, activeCrates });
-          updateTabOverlay();
-        });
-
-        conn.on('data', (data) => handleHostReceiveData(conn.peer, data));
-        conn.on('close', () => removePeer(conn.peer));
-      });
-    }
-
-    function removePeer(peerId) {
-      delete players[peerId];
-      delete connections[peerId];
-      updateTabOverlay();
-    }
-
-    function handleHostReceiveData(senderId, data) {
-      if (connections[senderId]) connections[senderId].lastPing = Date.now();
-
-      if (data.type === 'PLAYER_SYNC') {
-        if (connections[senderId]) {
-          connections[senderId].name = data.name;
-          connections[senderId].team = data.team;
-          connections[senderId].color = data.color;
-        }
-
-        players[senderId] = {
-          x: data.x, y: data.y, angle: data.angle, name: data.name, team: data.team, color: data.color, hp: data.hp
-        };
-
-        broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
-      } else if (data.type === 'ACTION') {
-        processAction(data.action);
-        broadcastState({ type: 'ACTION', action: data.action });
-      }
-    }
-
-    function processAction(action) {
-      if (action.type === 'PLACE_BLOCK') {
-        placedBlocks[action.key] = true;
-      } else if (action.type === 'BREAK_BLOCK') {
-        delete placedBlocks[action.key];
-      } else if (action.type === 'COLLECT_CRATE') {
-        if (activeCrates[action.crateId]) {
-          delete activeCrates[action.crateId];
-          if (action.collectorId === myId || isHost) {
-            // handle gun assignment if needed
-          }
-        }
-      } else if (action.type === 'PLAYER_HIT') {
-        if (action.targetId === myId) {
-          hp = Math.max(0, hp - action.damage);
-          if (hp <= 0) alert('You Died!');
-        } else if (players[action.targetId]) {
-          players[action.targetId].hp = Math.max(0, (players[action.targetId].hp || 100) - action.damage);
-        }
-      } else if (action.type === 'SPAWN_BULLET') {
-        bullets.push({ x: action.x, y: action.y, vx: action.vx, vy: action.vy, color: action.color, owner: action.owner, damage: action.damage });
-      }
-    }
-
-    function broadcastState(msg) {
-      Object.values(connections).forEach(c => {
-        if (c.conn && c.conn.open) c.conn.send(msg);
-      });
-    }
-
-    function dispatchNetworkAction(action) {
-      processAction(action);
-      if (isHost) {
-        broadcastState({ type: 'ACTION', action });
-      } else if (hostConn && hostConn.open) {
-        hostConn.send({ type: 'ACTION', action });
-      }
-    }
-
-    function serializePlayers() {
-      const state = {};
-      Object.keys(players).forEach(id => {
-        state[id] = players[id];
-      });
-      state[myId] = { x: myX, y: myY, angle: myAngle, name: myName, team: myTeam, color: myTeamColor, hp: hp };
-      return state;
-    }
-
-    function updateTabOverlay() {
-      const container = document.getElementById('peer-list-container');
-      container.innerHTML = '';
-
-      const localRow = document.createElement('div');
-      localRow.className = 'player-row';
-      localRow.innerHTML = `<span><b>${myName} (You)</b> [${myTeam}]</span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
-      container.appendChild(localRow);
-
-      if (isHost) {
-        Object.keys(connections).forEach(id => {
-          const row = document.createElement('div');
-          row.className = 'player-row';
-          row.innerHTML = `<span>${connections[id].name || 'Peer'} [${connections[id].team}]</span><span style="color:#29b6f6;">CONNECTED</span>`;
-          container.appendChild(row);
-        });
-      } else {
-        Object.keys(players).forEach(id => {
-          if (id === myId) return;
-          const row = document.createElement('div');
-          row.className = 'player-row';
-          row.innerHTML = `<span>${players[id].name || 'Peer'} [${players[id].team || 'FFA'}]</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
-          container.appendChild(row);
-        });
-      }
-    }
-
     document.getElementById('btn-host').addEventListener('click', () => {
       myName = document.getElementById('player-name-input').value.trim() || 'Host';
       currentRoomCode = document.getElementById('room-select').value;
@@ -478,8 +730,9 @@
 
           initPeer(getFormattedPeerId(currentRoomCode), () => {
             document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('status-msg').innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
-            startAirdropTimerLoop();
+            const msg = document.getElementById('status-msg');
+            if (msg) msg.innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
+            scheduleNextAirdropHost();
             updateTabOverlay();
           });
         });
@@ -491,34 +744,31 @@
       currentRoomCode = document.getElementById('room-select').value;
       
       isHost = false;
-      document.getElementById('peer-id-display').innerText = "Locating Host...";
+      const idDisplay = document.getElementById('peer-id-display');
+      if (idDisplay) idDisplay.innerText = "Connecting to host...";
 
       initPeer(null, () => {
         const targetHostId = getFormattedPeerId(currentRoomCode);
-        document.getElementById('peer-id-display').innerText = "Connecting to Host...";
-        
         hostConn = peer.connect(targetHostId, { reliable: true });
 
         hostConn.on('open', () => {
-          document.getElementById('peer-id-display').innerText = "Connected! Waiting for Setup...";
+          if (idDisplay) idDisplay.innerText = "Connected! Awaiting Mode...";
         });
 
         hostConn.on('error', () => {
-          alert('Failed to connect to host room!');
+          alert('Failed to connect to host. Make sure someone is hosting "' + currentRoomCode.toUpperCase() + '" first!');
         });
 
         hostConn.on('data', (data) => {
           if (data.type === 'SETUP_INFO') {
             gameMode = data.gameMode;
-            if (data.placedBlocks) placedBlocks = data.placedBlocks;
-            if (data.activeCrates) activeCrates = data.activeCrates;
-
             showTeamPicker(gameMode, (teamName, teamColor) => {
               myTeam = teamName;
               myTeamColor = teamColor;
 
               document.getElementById('lobby-panel').style.display = 'none';
-              document.getElementById('status-msg').innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
+              const msg = document.getElementById('status-msg');
+              if (msg) msg.innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
               updateTabOverlay();
             });
           } else if (data.type === 'WORLD_STATE') {
@@ -530,107 +780,119 @@
           } else if (data.type === 'ACTION') {
             processAction(data.action);
           } else if (data.type === 'SPAWN_DROP') {
-            activeCrates[data.crateId] = { x: data.x, y: data.y, gunType: data.gunType };
+            spawnSupplyDrop(data.x, data.y, data.crateId, data.gunType);
           } else if (data.type === 'AIRDROP_TIMER') {
-            startAirdropCountdown(data.seconds);
+            startAirdropTimer(data.seconds);
           }
         });
       });
     });
 
-    let airdropCountdown = 20;
-    function startAirdropTimerLoop() {
-      if (!isHost) return;
-      setInterval(() => {
-        airdropCountdown--;
-        broadcastState({ type: 'AIRDROP_TIMER', seconds: airdropCountdown });
-        startAirdropCountdown(airdropCountdown);
-
-        if (airdropCountdown <= 0) {
-          airdropCountdown = 25;
-          const dropX = Math.random() * (WORLD_SIZE - 200) + 100;
-          const dropY = Math.random() * (WORLD_SIZE - 200) + 100;
-          const crateId = 'crate_' + Math.random().toString(36).substr(2, 9);
-          const gunTypes = ['pistol', 'shotgun', 'sniper'];
-          const assignedGun = gunTypes[Math.floor(Math.random() * gunTypes.length)];
-
-          activeCrates[crateId] = { x: dropX, y: dropY, gunType: assignedGun };
-          broadcastState({ type: 'SPAWN_DROP', crateId, x: dropX, y: dropY, gunType: assignedGun });
-        }
-      }, 1000);
-    }
-
-    function startAirdropCountdown(secs) {
-      document.getElementById('airdrop-timer').innerText = `${Math.max(0, secs)}s`;
-    }
-
+    // --- MAIN GAME LOOP ---
     let lastTime = performance.now();
 
-    function gameLoop(now) {
+    function gameLoop() {
       requestAnimationFrame(gameLoop);
+
+      const now = performance.now();
       const delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Movement & Sprinting (Shift key instead of Ctrl)
+      // Movement & Sprint
       const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
-      let speed = 4;
-      if (isSprinting && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']) && stamina > 0) {
-        speed *= 1.7;
-        stamina = Math.max(0, stamina - delta * 30);
+      let speed = 3.5;
+      if (isSprinting && stamina > 0) {
+        speed = 6.0;
+        stamina = Math.max(0, stamina - delta * 35);
       } else {
-        stamina = Math.min(maxStamina, stamina + delta * 15);
+        stamina = Math.min(maxStamina, stamina + delta * 20);
       }
 
-      document.getElementById('stamina-fill').style.width = `${stamina}%`;
-      document.getElementById('stamina-val').innerText = Math.round(stamina);
-      document.getElementById('hp-fill').style.width = `${hp}%`;
-      document.getElementById('hp-val').innerText = hp;
+      const staminaFill = document.getElementById('stamina-fill');
+      const staminaVal = document.getElementById('stamina-val');
+      if (staminaFill) staminaFill.style.width = `${stamina}%`;
+      if (staminaVal) staminaVal.innerText = Math.round(stamina);
+
+      const hpFill = document.getElementById('hp-fill');
+      const hpVal = document.getElementById('hp-val');
+      if (hpFill) hpFill.style.width = `${hp}%`;
+      if (hpVal) hpVal.innerText = hp;
 
       let dx = 0, dy = 0;
-      if (keys['KeyW']) dy -= speed;
-      if (keys['KeyS']) dy += speed;
-      if (keys['KeyA']) dx -= speed;
-      if (keys['KeyD']) dx += speed;
+      if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+      if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+      if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
+      if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
 
-      if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+      if (dx !== 0 || dy !== 0) {
+        const len = Math.hypot(dx, dy);
+        myX += (dx / len) * speed;
+        myY += (dy / len) * speed;
+        myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myX));
+        myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myY));
+      }
 
-      myX = Math.max(20, Math.min(WORLD_SIZE - 20, myX + dx));
-      myY = Math.max(20, Math.min(WORLD_SIZE - 20, myY + dy));
+      // Update Projectiles
+      Object.keys(projectiles).forEach(id => {
+        const p = projectiles[id];
+        p.x += p.vx;
+        p.y += p.vy;
 
-      // Bullet Physics
-      for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.x += b.vx;
-        b.y += b.vy;
-
-        // Check collision with placed blocks
-        const bgx = Math.floor(b.x / TILE_SIZE);
-        const bgy = Math.floor(b.y / TILE_SIZE);
-        if (placedBlocks[`${bgx},${bgy}`]) {
-          bullets.splice(i, 1);
-          continue;
+        // Grenade or Rocket collision
+        if (p.projType === 'grenade' || p.projType === 'rocket') {
+          // Explode on obstacle or after distance
+          if (Math.hypot(p.vx, p.vy) < 1 || Math.random() < 0.02) {
+            triggerExplosion(p.x, p.y, p.projType === 'rocket' ? 90 : 70);
+            delete projectiles[id];
+            return;
+          }
         }
 
-        // Check collision with players
-        for (let pid in players) {
-          if (pid === myId || pid === b.owner) continue;
-          const p = players[pid];
-          if (Math.hypot(p.x - b.x, p.y - b.y) < 20) {
-            if (gameMode !== 'ffa' && p.team === myTeam) continue;
-            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: b.damage });
-            bullets.splice(i, 1);
-            break;
+        // Check hits against players
+        Object.keys(players).forEach(pid => {
+          const pl = players[pid];
+          if (gameMode !== 'ffa' && pl.team === myTeam) return;
+          if (Math.hypot(pl.x - p.x, pl.y - p.y) < PLAYER_RADIUS + 5) {
+            if (isHost || p.ownerId === myId) {
+              let dmg = 25;
+              if (p.projType === 'shotgun') dmg = 45;
+              if (p.projType === 'sniper') dmg = 85;
+              if (p.projType === 'smg') dmg = 15;
+              dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage: dmg });
+            }
+            delete projectiles[id];
           }
+        });
+      });
+
+      // Update Supply Plane
+      if (activeSupplyPlane) {
+        activeSupplyPlane.progress += delta * 0.5;
+        activeSupplyPlane.x += (activeSupplyPlane.targetX - activeSupplyPlane.x) * 0.05;
+        activeSupplyPlane.y += (activeSupplyPlane.targetY - activeSupplyPlane.y) * 0.05;
+
+        if (activeSupplyPlane.progress >= 1) {
+          const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+          groundItems[itemId] = {
+            x: activeSupplyPlane.targetX,
+            y: activeSupplyPlane.targetY,
+            type: 'gun',
+            subtype: activeSupplyPlane.gunType
+          };
+          activeSupplyPlane = null;
         }
       }
 
-      // Sync position with host/peers
-      if (Math.random() < 0.3) {
+      // Sync position to network
+      if (now % 50 < 16) {
         const payload = {
           type: 'PLAYER_SYNC',
           name: myName,
-          x: myX, y: myY, angle: myAngle,
-          team: myTeam, color: myTeamColor, hp: hp
+          x: myX,
+          y: myY,
+          team: myTeam,
+          color: myTeamColor,
+          hp
         };
         if (isHost) {
           broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
@@ -639,88 +901,89 @@
         }
       }
 
-      // RENDER
+      // --- RENDER ---
+      if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       ctx.save();
       ctx.translate(canvas.width / 2 - myX, canvas.height / 2 - myY);
 
-      // Draw Grid / Arena Background
-      ctx.strokeStyle = '#2d2d3d';
+      // Draw World Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
       ctx.lineWidth = 1;
-      for (let x = 0; x <= WORLD_SIZE; x += TILE_SIZE) {
+      for (let x = 0; x <= WORLD_SIZE; x += 100) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_SIZE); ctx.stroke();
       }
-      for (let y = 0; y <= WORLD_SIZE; y += TILE_SIZE) {
+      for (let y = 0; y <= WORLD_SIZE; y += 100) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
       }
 
       // Draw Placed Blocks
-      ctx.fillStyle = '#8d5b4c';
-      ctx.strokeStyle = '#5c382b';
-      for (let key in placedBlocks) {
-        const [gx, gy] = key.split(',').map(Number);
-        ctx.fillRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        ctx.strokeRect(gx * TILE_SIZE, gy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
+      Object.keys(placedBlocks).forEach(key => {
+        const [bx, by] = key.split(',').map(Number);
+        ctx.fillStyle = placedBlocks[key].color;
+        ctx.fillRect(bx * 40, by * 40, 40, 40);
+        ctx.strokeStyle = '#333';
+        ctx.strokeRect(bx * 40, by * 40, 40, 40);
+      });
 
-      // Draw Airdrop Crates
-      for (let cid in activeCrates) {
-        const c = activeCrates[cid];
-        ctx.fillStyle = c.gunType === 'sniper' ? '#2c5e3b' : (c.gunType === 'shotgun' ? '#b85d19' : '#d4a373');
-        ctx.fillRect(c.x - 15, c.y - 15, 30, 30);
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('📦 ' + c.gunType.toUpperCase(), c.x - 20, c.y - 20);
-      }
+      // Draw Ground Items (Pickupable)
+      Object.keys(groundItems).forEach(id => {
+        const item = groundItems[id];
+        ctx.fillStyle = '#ffca28';
+        ctx.beginPath(); ctx.arc(item.x, item.y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(item.subtype || item.type, item.x, item.y - 14);
+      });
 
-      // Draw Players
-      const allPlayers = { ...players };
-      allPlayers[myId] = { x: myX, y: myY, angle: myAngle, name: myName, team: myTeam, color: myTeamColor, hp: hp };
+      // Draw Projectiles
+      Object.keys(projectiles).forEach(id => {
+        const p = projectiles[id];
+        ctx.fillStyle = p.projType === 'grenade' ? '#333' : '#ffff00';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.projType === 'grenade' ? 6 : 4, 0, Math.PI * 2); ctx.fill();
+      });
 
-      for (let pid in allPlayers) {
-        const p = allPlayers[pid];
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
+      // Draw Explosions
+      explosions.forEach((ex, idx) => {
+        ctx.fillStyle = `rgba(255, 100, 0, ${ex.life / 20})`;
+        ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2); ctx.fill();
+        ex.life--;
+        if (ex.life <= 0) explosions.splice(idx, 1);
+      });
 
-        // Body
-        ctx.fillStyle = p.color || '#2196f3';
-        ctx.beginPath();
-        ctx.arc(0, 0, 16, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-
-        // Gun barrel
+      // Draw Supply Plane if active
+      if (activeSupplyPlane) {
         ctx.fillStyle = '#444';
-        ctx.fillRect(0, -4, 22, 8);
-        ctx.restore();
-
-        // Name tag & HP bar
-        ctx.fillStyle = '#fff';
+        ctx.fillRect(activeSupplyPlane.x - 25, activeSupplyPlane.y - 10, 50, 20);
+        ctx.fillStyle = '#ffca28';
         ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(p.name + ` [${p.team}]`, p.x, p.y - 25);
-
-        ctx.fillStyle = '#e53935';
-        ctx.fillRect(p.x - 20, p.y - 22, 40, 5);
-        ctx.fillStyle = '#4caf50';
-        ctx.fillRect(p.x - 20, p.y - 22, 40 * (p.hp / 100), 5);
+        ctx.fillText('✈️ SUPPLY DROP', activeSupplyPlane.x - 45, activeSupplyPlane.y - 18);
       }
 
-      // Draw Bullets
-      for (let b of bullets) {
-        ctx.fillStyle = b.color || '#ffeb3b';
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Draw Other Players
+      Object.keys(players).forEach(id => {
+        const p = players[id];
+        ctx.fillStyle = p.color || '#2196f3';
+        ctx.beginPath(); ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`${p.name} [${p.hp}HP]`, p.x, p.y - 22);
+      });
+
+      // Draw Local Player
+      ctx.fillStyle = myTeamColor;
+      ctx.beginPath(); ctx.arc(myX, myY, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = '#ffca28'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`${myName} (You) [${hp}HP]`, myX, myY - 22);
 
       ctx.restore();
     }
 
-    requestAnimationFrame(gameLoop);
+    gameLoop();
   </script>
 </body>
 </html>
