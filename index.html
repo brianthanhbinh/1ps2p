@@ -34,10 +34,10 @@
     #airdrop-pill { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
     #airdrop-timer { color: #ffca28; }
 
-    /* Player List (TAB Overlay) */
-    #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.9); border: 1px solid #444; border-radius: 10px; width: 340px; padding: 16px; color: #fff; display: none; pointer-events: none; }
-    #tab-overlay h3 { font-size: 14px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; color: #29b6f6; }
-    .player-row { display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.05); margin-bottom: 4px; border-radius: 4px; font-size: 13px; }
+    /* Player List / Available Peers Panel (Hold TAB) */
+    #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
+    .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
     /* Hotbar */
     #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 8px; border: 1px solid #555; }
@@ -75,25 +75,19 @@
     </div>
 
     <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">--s</span></div>
-    <div id="status-msg">Click Host or Join to Start</div>
+    <div id="status-msg">Click Host or Join to Start (Hold TAB for Peers)</div>
 
     <div id="lobby-panel">
       <h2>3D P2P FPS Arena</h2>
       <input type="text" id="player-name-input" placeholder="Your Display Name" value="Player">
-      <select id="room-select">
-        <option value="room1">Room 1</option>
-        <option value="room2">Room 2</option>
-        <option value="room3">Room 3</option>
-        <option value="room4">Room 4</option>
-        <option value="room5">Room 5</option>
-      </select>
+      <input type="text" id="custom-room-input" placeholder="Simple Room Code (e.g. room1)">
       <button id="btn-host">Host Room</button>
       <button id="btn-join">Join Room</button>
-      <div id="peer-id-display">Status: Ready</div>
+      <div id="peer-id-display">Room Code: Not connected</div>
     </div>
 
     <div id="tab-overlay">
-      <h3>ACTIVE PEERS (TAB)</h3>
+      <h3>ONLINE PLAYERS & AVAILABLE PEERS (TAB)</h3>
       <div id="peer-list-container"></div>
     </div>
 
@@ -154,11 +148,11 @@
     let airdropCountdown = 0;
     let airdropTimerInterval = null;
 
-    // Fixed PeerJS prefix so everyone on the same dropdown room code instantly locks onto the exact same host target ID
-    const APP_PREFIX = "brian-fps-v2-";
+    const APP_PREFIX = "brian-fps-v3-";
 
     function getFormattedPeerId(code) {
-      return APP_PREFIX + code.trim().toLowerCase();
+      const clean = code.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      return APP_PREFIX + (clean || 'room1');
     }
 
     // --- THREE.JS SETUP ---
@@ -634,15 +628,23 @@
       updateTabOverlay();
     }
 
+    // Heartbeat timeout check for active peers list
     setInterval(() => {
-      if (!isHost) return;
       const now = Date.now();
-      Object.keys(connections).forEach(id => {
-        if (now - connections[id].lastPing > 4000) {
-          connections[id].conn.close();
-          removePeer(id);
+      if (isHost) {
+        Object.keys(connections).forEach(id => {
+          if (now - connections[id].lastPing > 4000) {
+            connections[id].conn.close();
+            removePeer(id);
+          }
+        });
+      } else {
+        // Client side check if host stopped responding
+        if (hostConn && hostConn.open && (now - (hostConn.lastPing || now) > 5000)) {
+          // If needed
         }
-      });
+      }
+      updateTabOverlay();
     }, 2000);
 
     function handleHostReceiveData(senderId, data) {
@@ -716,18 +718,30 @@
       const container = document.getElementById('peer-list-container');
       container.innerHTML = '';
 
+      // Local player
       const localRow = document.createElement('div');
       localRow.className = 'player-row';
-      localRow.innerHTML = `<span>${myName} (You)</span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
+      localRow.innerHTML = `<span><b>${myName} (You)</b></span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
       container.appendChild(localRow);
 
-      Object.keys(players).forEach(id => {
-        if (id === myId) return;
-        const row = document.createElement('div');
-        row.className = 'player-row';
-        row.innerHTML = `<span>${players[id].name || 'Peer'}</span><span style="color:#29b6f6;">PLAYER [HP: ${players[id].hp || 100}]</span>`;
-        container.appendChild(row);
-      });
+      // Connected Peers list
+      if (isHost) {
+        Object.keys(connections).forEach(id => {
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.innerHTML = `<span>${connections[id].name || 'Peer'}</span><span style="color:#29b6f6;">CONNECTED</span>`;
+          container.appendChild(row);
+        });
+      } else {
+        // Client sees other peers received from host state
+        Object.keys(players).forEach(id => {
+          if (id === myId) return;
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.innerHTML = `<span>${players[id].name || 'Peer'}</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
+          container.appendChild(row);
+        });
+      }
     }
 
     // HOST BUTTON
@@ -738,14 +752,14 @@
       isHost = true;
       initPeer(getFormattedPeerId(currentRoomCode), () => {
         document.getElementById('lobby-panel').style.display = 'none';
-        document.getElementById('status-msg').innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}"`;
+        document.getElementById('status-msg').innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" (Hold TAB for Peers)`;
         scheduleNextAirdropHost();
         updateTabOverlay();
         canvas.requestPointerLock();
       });
     });
 
-    // JOIN BUTTON (Bulletproof connection handler)
+    // JOIN BUTTON
     document.getElementById('btn-join').addEventListener('click', () => {
       myName = document.getElementById('player-name-input').value.trim() || 'Client';
       currentRoomCode = document.getElementById('room-select').value;
@@ -753,7 +767,6 @@
       isHost = false;
       document.getElementById('peer-id-display').innerText = "Connecting to host...";
 
-      // Create a random client peer first, then connect to host ID
       initPeer(null, () => {
         const targetHostId = getFormattedPeerId(currentRoomCode);
         
@@ -761,7 +774,7 @@
 
         hostConn.on('open', () => {
           document.getElementById('lobby-panel').style.display = 'none';
-          document.getElementById('status-msg').innerText = `Joined Room: "${currentRoomCode.toUpperCase()}"`;
+          document.getElementById('status-msg').innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" (Hold TAB for Peers)`;
           updateTabOverlay();
           canvas.requestPointerLock();
         });
@@ -776,12 +789,12 @@
               if (id === myId) return;
               if (!players[id]) {
                 players[id] = { mesh: createPlayerMesh(data.players[id].name, 0x4caf50), name: data.players[id].name, hp: data.players[id].hp };
-                updateTabOverlay();
               }
               players[id].mesh.position.set(...data.players[id].pos);
               players[id].mesh.rotation.y = data.players[id].rotY;
               players[id].hp = data.players[id].hp;
             });
+            updateTabOverlay();
           } else if (data.type === 'ACTION') {
             if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
             if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
@@ -869,7 +882,6 @@
         }
 
         resolvePlayerCollisions(newPos);
-        camera.position.get(newPos); // Safe fallback
         camera.position.copy(newPos);
       }
 
@@ -897,7 +909,6 @@
       renderer.render(scene, camera);
     }
 
-    // Startup idle peer check
     peer = new Peer();
     peer.on('open', (id) => { myId = id; });
 
