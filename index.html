@@ -18,6 +18,8 @@
     #lobby-panel input, #lobby-panel select { background: #222; color: #fff; border: 1px solid #444; text-align: center; }
     #lobby-panel button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
     #lobby-panel button:hover { background: #45a049; }
+    #btn-practice { background: #ff9800; color: #fff; }
+    #btn-practice:hover { background: #fb8c00; }
     #peer-id-display { font-size: 12px; color: #ffca28; margin-top: 8px; font-weight: bold; word-break: break-all; }
 
     /* Modal */
@@ -105,6 +107,7 @@
       <input type="text" id="room-input" placeholder="Custom Room Code (e.g. room123)" value="room1">
       <button id="btn-host">Host Room</button>
       <button id="btn-join">Join Room</button>
+      <button id="btn-practice">🤖 Practice vs Bots</button>
       <div id="peer-id-display">Cloud Ready</div>
     </div>
 
@@ -147,6 +150,7 @@
     const PLAYER_RADIUS = 16;
     
     let isHost = false;
+    let isPracticeMode = false;
     let peer = null;
     let myId = '';
     let myName = 'Player';
@@ -354,7 +358,10 @@
         gameMode
       };
 
-      appendChatMessage(myName, gameMode === 'ffa' ? 'GLOBAL' : myTeam, text);
+      // Only display locally if host; client will receive it back or display through dispatch
+      if (isHost) {
+        appendChatMessage(myName, gameMode === 'ffa' ? 'GLOBAL' : myTeam, text);
+      }
       dispatchNetworkAction(chatPacket);
     }
 
@@ -375,10 +382,27 @@
     function checkMeleeHit(nx, ny, range, damage) {
       const hitX = myX + nx * range;
       const hitY = myY + ny * range;
+      
+      // Check bots in practice mode
+      if (isPracticeMode) {
+        Object.keys(players).forEach(pid => {
+          const pl = players[pid];
+          if (gameMode !== 'ffa' && pl.team === myTeam) return;
+          if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 20) {
+            pl.hp = Math.max(0, pl.hp - damage);
+            if (pl.hp <= 0) {
+              pl.hp = 100;
+              pl.x = Math.random() * (WORLD_SIZE - 400) + 200;
+              pl.y = Math.random() * (WORLD_SIZE - 400) + 200;
+            }
+          }
+        });
+      }
+
       Object.keys(players).forEach(pid => {
         const pl = players[pid];
         if (gameMode !== 'ffa' && pl.team === myTeam) return;
-        if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 15) {
+        if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 20) {
           dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage });
         }
       });
@@ -431,22 +455,25 @@
     function tryPickupItem() {
       Object.keys(groundItems).forEach(id => {
         const item = groundItems[id];
-        if (Math.hypot(item.x - myX, item.y - myY) < 40) {
+        if (Math.hypot(item.x - myX, item.y - myY) < 50) {
           if (item.type === 'gun') {
             const emptyIdx = gunSlots.findIndex(g => g === null);
             if (emptyIdx !== -1) {
               gunSlots[emptyIdx] = item.subtype;
               updateHotbarLabels();
               dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
+              delete groundItems[id];
             }
           } else if (item.type === 'bandage') {
             bandageCount++;
             updateHotbarLabels();
             dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
+            delete groundItems[id];
           } else if (item.type === 'grenade') {
             grenadeCount++;
             updateHotbarLabels();
             dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
+            delete groundItems[id];
           }
         }
       });
@@ -481,7 +508,7 @@
 
     function processAction(action) {
       if (action.type === 'PLACE_BLOCK') {
-        placedBlocks[action.key] = { color: action.color };
+        placedBlocks[action.key] = { color: action.color, bx: action.bx, by: action.by };
       } else if (action.type === 'BREAK_BLOCK') {
         delete placedBlocks[action.key];
       } else if (action.type === 'SPAWN_ITEM') {
@@ -755,6 +782,7 @@
         peer = null;
       }
       isHost = false;
+      isPracticeMode = false;
       players = {};
       placedBlocks = {};
       groundItems = {};
@@ -769,6 +797,48 @@
       const el = document.getElementById('peer-id-display');
       if (el) el.innerText = 'Cloud Ready';
     }
+
+    // PRACTICE MODE BUTTON
+    document.getElementById('btn-practice').addEventListener('click', () => {
+      myName = document.getElementById('player-name-input').value.trim() || 'Player';
+      showGamemodePicker((selectedMode) => {
+        gameMode = selectedMode;
+        showTeamPicker(gameMode, (teamName, teamColor) => {
+          myTeam = teamName;
+          myTeamColor = teamColor;
+          isPracticeMode = true;
+          respawnPlayer();
+
+          // Spawn 6 bots
+          players = {};
+          const botTeams = gameMode === '2team' ? ['Red', 'Blue'] : (gameMode === '4team' ? ['Red', 'Blue', 'Green', 'Yellow'] : ['FFA']);
+          const botColors = { 'Red': '#e53935', 'Blue': '#1e88e5', 'Green': '#43a047', 'Yellow': '#fbc02d', 'FFA': '#9c27b0' };
+
+          for (let i = 1; i <= 6; i++) {
+            const bTeam = botTeams[(i - 1) % botTeams.length];
+            const bId = 'bot_' + i;
+            players[bId] = {
+              x: Math.random() * (WORLD_SIZE - 400) + 200,
+              y: Math.random() * (WORLD_SIZE - 400) + 200,
+              hp: 100,
+              name: `Bot ${i}`,
+              team: bTeam,
+              color: botColors[bTeam],
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              timer: 0
+            };
+          }
+
+          document.getElementById('lobby-panel').style.display = 'none';
+          document.getElementById('pause-btn').style.display = 'block';
+          const msg = document.getElementById('status-msg');
+          if (msg) msg.innerText = `Practice Mode [${gameMode.toUpperCase()}] vs Bots`;
+          startAirdropTimer(20);
+          updateTabOverlay();
+        });
+      });
+    });
 
     document.getElementById('btn-host').addEventListener('click', () => {
       myName = document.getElementById('player-name-input').value.trim() || 'Host';
@@ -848,25 +918,15 @@
       });
     });
 
-    let lastTime = performance.now();
-
     function gameLoop() {
       requestAnimationFrame(gameLoop);
 
       const now = performance.now();
-      const delta = (now - lastTime) / 1000;
-      lastTime = now;
+      const delta = 0.016;
 
-      if (isSpawnProtected) {
-        spawnProtectTimer -= delta;
-        if (spawnProtectTimer <= 0) isSpawnProtected = false;
-      }
-
-      const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
-      let speed = 3.5;
-      if (isSprinting && stamina > 0) {
-        speed = 6.0;
-        stamina = Math.max(0, stamina - delta * 35);
+      const speed = (keys['ShiftLeft'] || keys['ShiftRight']) && stamina > 0 ? 5.5 : 3.5;
+      if ((keys['ShiftLeft'] || keys['ShiftRight']) && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']) && stamina > 0) {
+        stamina = Math.max(0, stamina - delta * 30);
       } else {
         stamina = Math.min(maxStamina, stamina + delta * 20);
       }
@@ -889,10 +949,37 @@
 
       if (dx !== 0 || dy !== 0) {
         const len = Math.hypot(dx, dy);
-        myX += (dx / len) * speed;
-        myY += (dy / len) * speed;
-        myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myX));
-        myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myY));
+        let nextX = myX + (dx / len) * speed;
+        let nextY = myY + (dy / len) * speed;
+
+        nextX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
+        nextY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
+
+        // Wall Collision Check (placed blocks are 40x40 squares)
+        let canMoveX = true;
+        let canMoveY = true;
+
+        Object.keys(placedBlocks).forEach(key => {
+          const b = placedBlocks[key];
+          const blockLeft = b.bx * 40;
+          const blockTop = b.by * 40;
+          const blockRight = blockLeft + 40;
+          const blockBottom = blockTop + 40;
+
+          // Check X collision
+          if (nextX + PLAYER_RADIUS > blockLeft && nextX - PLAYER_RADIUS < blockRight &&
+              myY + PLAYER_RADIUS > blockTop && myY - PLAYER_RADIUS < blockBottom) {
+            canMoveX = false;
+          }
+          // Check Y collision
+          if (myX + PLAYER_RADIUS > blockLeft && myX - PLAYER_RADIUS < blockRight &&
+              nextY + PLAYER_RADIUS > blockTop && nextY - PLAYER_RADIUS < blockBottom) {
+            canMoveY = false;
+          }
+        });
+
+        if (canMoveX) myX = nextX;
+        if (canMoveY) myY = nextY;
       }
 
       for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -912,7 +999,7 @@
           const pl = players[pid];
           if (gameMode !== 'ffa' && pl.team === myTeam) return;
           if (Math.hypot(pl.x - p.x, pl.y - p.y) < PLAYER_RADIUS + 5) {
-            if (isHost || p.ownerId === myId) {
+            if (isHost || isPracticeMode || p.ownerId === myId) {
               let dmg = 25;
               if (p.gunType === 'shotgun') dmg = 45;
               if (p.gunType === 'sniper') dmg = 85;
@@ -925,6 +1012,65 @@
             }
             projectiles.splice(i, 1);
           }
+        });
+      }
+
+      // PRACTICE MODE BOT AI UPDATE
+      if (isPracticeMode) {
+        Object.keys(players).forEach(botId => {
+          const b = players[botId];
+          if (b.hp <= 0) {
+            b.hp = 100;
+            b.x = Math.random() * (WORLD_SIZE - 400) + 200;
+            b.y = Math.random() * (WORLD_SIZE - 400) + 200;
+            return;
+          }
+
+          b.timer++;
+          if (b.timer > 60) {
+            b.timer = 0;
+            b.vx = (Math.random() - 0.5) * 3;
+            b.vy = (Math.random() - 0.5) * 3;
+
+            // Bots occasionally shoot towards nearest target
+            let nearestDist = 99999;
+            let targetX = myX, targetY = myY;
+
+            if (gameMode === 'ffa' && Math.hypot(myX - b.x, myY - b.y) < nearestDist) {
+              nearestDist = Math.hypot(myX - b.x, myY - b.y);
+              targetX = myX; targetY = myY;
+            }
+
+            Object.keys(players).forEach(otherId => {
+              if (otherId === botId) return;
+              const op = players[otherId];
+              if (gameMode !== 'ffa' && op.team === b.team) return;
+              const d = Math.hypot(op.x - b.x, op.y - b.y);
+              if (d < nearestDist) {
+                nearestDist = d;
+                targetX = op.x; targetY = op.y;
+              }
+            });
+
+            if (nearestDist < 400 && Math.random() < 0.6) {
+              const dx = targetX - b.x;
+              const dy = targetY - b.y;
+              const dist = Math.hypot(dx, dy);
+              if (dist > 0) {
+                projectiles.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: (dx / dist) * 10,
+                  vy: (dy / dist) * 10,
+                  gunType: 'pistol',
+                  ownerId: botId
+                });
+              }
+            }
+          }
+
+          b.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, b.x + b.vx));
+          b.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, b.y + b.vy));
         });
       }
 
