@@ -9,11 +9,9 @@
     body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     #game-canvas { width: 100%; height: 100%; display: block; }
     
-    /* UI Overlay */
     #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     #crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; background: rgba(0,0,0,0.3); }
     
-    /* Connection Panel */
     #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.95); color: #fff; padding: 24px; border-radius: 12px; text-align: center; pointer-events: auto; width: 380px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
     #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; font-size: 22px; }
     #lobby-panel input, #lobby-panel button, #lobby-panel select { width: 100%; margin: 6px 0; padding: 10px 12px; border: none; border-radius: 6px; font-family: inherit; font-size: 14px; }
@@ -22,7 +20,16 @@
     #lobby-panel button:hover { background: #45a049; }
     #peer-id-display { font-size: 12px; color: #ffca28; margin-top: 8px; font-weight: bold; word-break: break-all; }
 
-    /* HUD Stats */
+    #modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 10; }
+    .modal-window { background: #1a1a24; color: #fff; border: 2px solid #444; border-radius: 12px; width: 360px; padding: 24px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+    .modal-window h3 { margin-bottom: 15px; color: #ffca28; font-size: 20px; }
+    .modal-window button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .team-btn-red { background: #e53935; color: #fff; }
+    .team-btn-blue { background: #1e88e5; color: #fff; }
+    .team-btn-green { background: #43a047; color: #fff; }
+    .team-btn-yellow { background: #fbc02d; color: #000; }
+    .team-btn-ffa { background: #7b1fa2; color: #fff; }
+
     #hud-container { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; width: 220px; }
     .bar-wrapper { background: rgba(0,0,0,0.6); padding: 4px; border-radius: 6px; border: 1px solid #444; }
     .bar-label { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 2px; display: flex; justify-content: space-between; }
@@ -34,18 +41,15 @@
     #airdrop-pill { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
     #airdrop-timer { color: #ffca28; }
 
-    /* Player List / Available Peers Panel (Hold TAB) */
     #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
     #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
     .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
-    /* Hotbar */
     #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 8px; border: 1px solid #555; }
     .slot { width: 56px; height: 56px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 11px; position: relative; overflow: hidden; }
     .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
     .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 100%; background: rgba(229,57,53,0.5); width: 0%; transition: width 0.05s linear; }
 
-    /* Inventory Screen */
     #inventory-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; pointer-events: auto; }
     .inv-window { background: #1a1a24; color: #fff; border: 2px solid #444; border-radius: 12px; width: 420px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
     .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 15px; }
@@ -69,13 +73,13 @@
         <div class="bar-bg"><div id="hp-fill" class="bar-fill"></div></div>
       </div>
       <div class="bar-wrapper">
-        <div class="bar-label"><span>STAMINA (CTRL)</span><span id="stamina-val">100</span></div>
+        <div class="bar-label"><span>STAMINA (SHIFT)</span><span id="stamina-val">100</span></div>
         <div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div>
       </div>
     </div>
 
     <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">--s</span></div>
-    <div id="status-msg">Click Host or Join to Start (Hold TAB for Peers)</div>
+    <div id="status-msg">Click Host or Join to Start</div>
 
     <div id="lobby-panel">
       <h2>3D P2P FPS Arena</h2>
@@ -89,11 +93,18 @@
       </select>
       <button id="btn-host">Host Room</button>
       <button id="btn-join">Join Room</button>
-      <div id="peer-id-display">Connecting to Peer Cloud...</div>
+      <div id="peer-id-display">Cloud Ready</div>
+    </div>
+
+    <div id="modal-overlay">
+      <div class="modal-window" id="modal-content">
+        <h3 id="modal-title">Select Mode</h3>
+        <div id="modal-buttons"></div>
+      </div>
     </div>
 
     <div id="tab-overlay">
-      <h3>ONLINE PLAYERS & AVAILABLE PEERS (TAB)</h3>
+      <h3>ONLINE PLAYERS & TEAMS (TAB)</h3>
       <div id="peer-list-container"></div>
     </div>
 
@@ -112,7 +123,7 @@
           <div class="inv-slot">⚔️ Sword<br><small style="color:#888;">Melee</small></div>
           <div class="inv-slot">⛏️ Pickaxe<br><small style="color:#888;">Mine/Crate</small></div>
           <div class="inv-slot">📦 Block<br><small style="color:#888;">Infinite</small></div>
-          <div class="inv-slot" id="inv-gun-slot">🔫 Gun<br><b id="gun-status" style="color:#e53935; font-size: 12px;">NONE</b></div>
+          <div class="inv-slot" id="inv-gun-slot">🔫 Gun<br><b id="gun-status" style="color:#e53935; font-size: 11px;">NONE</b></div>
         </div>
       </div>
     </div>
@@ -129,6 +140,10 @@
     let myId = '';
     let myName = 'Player';
     let currentRoomCode = '';
+    let gameMode = 'ffa'; 
+    let myTeam = 'FFA';
+    let myTeamColor = 0x2196f3;
+
     let connections = {}; 
     let hostConn = null;
 
@@ -139,6 +154,7 @@
 
     let currentGun = null; 
     let gunCooldown = false;
+    let bulletTracers = []; 
 
     let players = {}; 
     let collidables = []; 
@@ -154,13 +170,12 @@
     let airdropCountdown = 0;
     let airdropTimerInterval = null;
 
-    const APP_PREFIX = "brian-fps-v4-";
+    const APP_PREFIX = "brian-fps-v7-";
 
     function getFormattedPeerId(code) {
       return APP_PREFIX + code.trim().toLowerCase();
     }
 
-    // --- THREE.JS SETUP ---
     const canvas = document.getElementById('game-canvas');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
@@ -187,7 +202,6 @@
 
     const blockGeo = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     const blockMat = new THREE.MeshStandardMaterial({ color: 0x8d5b4c });
-    const crateMat = new THREE.MeshStandardMaterial({ color: 0xd4a373 });
 
     const itemRig = new THREE.Group();
     camera.add(itemRig);
@@ -260,7 +274,7 @@
       const ctx = canvasName.getContext('2d');
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(0, 0, 256, 64);
-      ctx.font = 'bold 28px sans-serif';
+      ctx.font = 'bold 26px sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.fillText(name, 128, 42);
@@ -268,7 +282,7 @@
       const texture = new THREE.CanvasTexture(canvasName);
       const spriteMat = new THREE.SpriteMaterial({ map: texture });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.position.y = 2.0;
+      sprite.position.y = 2.1;
       sprite.scale.set(2, 0.5, 1);
       group.add(sprite);
 
@@ -276,14 +290,15 @@
       return group;
     }
 
-    // --- CONTROLS & PHYSICS ---
     const keys = {};
     let velocityY = 0;
     const gravity = -0.015;
     let isGrounded = false;
 
     canvas.addEventListener('click', () => {
-      if (!isInvOpen) canvas.requestPointerLock();
+      if (!isInvOpen && document.getElementById('modal-overlay').style.display !== 'flex') {
+        canvas.requestPointerLock();
+      }
     });
 
     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -453,12 +468,20 @@
           itemRig.position.z += 0.15;
           setTimeout(() => itemRig.position.z -= 0.15, 100);
 
+          const startPos = camera.position.clone();
+          const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          const maxDist = currentGun === 'sniper' ? 150 : 60;
+          const endPos = startPos.clone().add(dir.clone().multiplyScalar(maxDist));
+
+          createBulletTracer(startPos, endPos);
+
           const hitables = Object.values(players).map(p => p.mesh);
           const intersects = raycaster.intersectObjects(hitables, true);
-          if (intersects.length > 0 && intersects[0].distance < (currentGun === 'sniper' ? 150 : 50)) {
+          if (intersects.length > 0 && intersects[0].distance < maxDist) {
             const hitMesh = intersects[0].object;
             for (let pid in players) {
               if (players[pid].mesh === hitMesh || players[pid].mesh.children.includes(hitMesh)) {
+                if (gameMode !== 'ffa' && players[pid].team === myTeam) break; 
                 dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, damage });
                 break;
               }
@@ -467,6 +490,14 @@
         }
       }
     });
+
+    function createBulletTracer(start, end) {
+      const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const mat = new THREE.LineBasicMaterial({ color: 0xffff00 });
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      bulletTracers.push({ mesh: line, life: 10 });
+    }
 
     function triggerBlockCooldown() {
       blockCooldownActive = true;
@@ -514,7 +545,6 @@
       }
     }
 
-    // --- AIRDROP SYSTEM ---
     let activeSupplyPlane = null;
 
     function spawnSupplyDrop(targetX, targetZ, crateId, gunType) {
@@ -595,23 +625,71 @@
       }, seconds * 1000);
     }
 
-    // --- NETWORKING (INSTANT FIX FOR STUCK "NOT CONNECTED") ---
+    function showGamemodePicker(onChosen) {
+      const overlay = document.getElementById('modal-overlay');
+      const title = document.getElementById('modal-title');
+      const buttons = document.getElementById('modal-buttons');
+      
+      title.innerText = "Select Game Mode";
+      buttons.innerHTML = `
+        <button class="team-btn-blue" id="mode-2t">2 Teams (Red vs Blue)</button>
+        <button class="team-btn-green" id="mode-4t">4 Teams (Red, Blue, Green, Yellow)</button>
+        <button class="team-btn-ffa" id="mode-ffa">Free For All (FFA)</button>
+      `;
+      overlay.style.display = 'flex';
+
+      document.getElementById('mode-2t').onclick = () => { overlay.style.display = 'none'; onChosen('2team'); };
+      document.getElementById('mode-4t').onclick = () => { overlay.style.display = 'none'; onChosen('4team'); };
+      document.getElementById('mode-ffa').onclick = () => { overlay.style.display = 'none'; onChosen('ffa'); };
+    }
+
+    function showTeamPicker(mode, onTeamChosen) {
+      const overlay = document.getElementById('modal-overlay');
+      const title = document.getElementById('modal-title');
+      const buttons = document.getElementById('modal-buttons');
+
+      title.innerText = "Choose Your Team";
+      let html = '';
+      if (mode === '2team') {
+        html = `
+          <button class="team-btn-red" id="t-red">Red Team</button>
+          <button class="team-btn-blue" id="t-blue">Blue Team</button>
+        `;
+      } else if (mode === '4team') {
+        html = `
+          <button class="team-btn-red" id="t-red">Red Team</button>
+          <button class="team-btn-blue" id="t-blue">Blue Team</button>
+          <button class="team-btn-green" id="t-green">Green Team</button>
+          <button class="team-btn-yellow" id="t-yellow">Yellow Team</button>
+        `;
+      } else {
+        html = `<button class="team-btn-ffa" id="t-ffa">Enter Free For All</button>`;
+      }
+
+      buttons.innerHTML = html;
+      overlay.style.display = 'flex';
+
+      if (document.getElementById('t-red')) document.getElementById('t-red').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Red', 0xe53935); };
+      if (document.getElementById('t-blue')) document.getElementById('t-blue').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Blue', 0x1e88e5); };
+      if (document.getElementById('t-green')) document.getElementById('t-green').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Green', 0x43a047); };
+      if (document.getElementById('t-yellow')) document.getElementById('t-yellow').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Yellow', 0xfbc02d); };
+      if (document.getElementById('t-ffa')) document.getElementById('t-ffa').onclick = () => { overlay.style.display = 'none'; onTeamChosen('FFA', 0x7b1fa2); };
+    }
+
     function initPeer(customId, callback) {
       if (peer) peer.destroy();
-      
-      document.getElementById('peer-id-display').innerText = "Connecting to Peer Cloud...";
       peer = new Peer(customId);
 
       peer.on('open', (id) => {
         myId = id;
-        document.getElementById('peer-id-display').innerText = `Online ✅ (Room: ${currentRoomCode.toUpperCase()})`;
+        document.getElementById('peer-id-display').innerText = `Online ✅ (${currentRoomCode.toUpperCase()})`;
         if (callback) callback();
       });
 
       peer.on('error', (err) => {
         document.getElementById('peer-id-display').innerText = `Error: ${err.type}`;
         if (err.type === 'unavailable-id') {
-          alert("Room '" + currentRoomCode.toUpperCase() + "' is already hosted by someone else! Choose 'Join Room' instead.");
+          alert("Room '" + currentRoomCode.toUpperCase() + "' is already hosted! Choose 'Join Room' instead.");
         } else {
           alert("Connection error: " + err.type);
         }
@@ -621,7 +699,8 @@
         if (!isHost) return;
 
         conn.on('open', () => {
-          connections[conn.peer] = { conn, lastPing: Date.now(), name: 'Peer' };
+          connections[conn.peer] = { conn, lastPing: Date.now(), name: 'Peer', team: 'FFA', color: 0x2196f3 };
+          conn.send({ type: 'SETUP_INFO', gameMode });
           updateTabOverlay();
         });
 
@@ -656,10 +735,14 @@
       if (connections[senderId]) connections[senderId].lastPing = Date.now();
 
       if (data.type === 'PLAYER_SYNC') {
-        if (connections[senderId]) connections[senderId].name = data.name;
+        if (connections[senderId]) {
+          connections[senderId].name = data.name;
+          connections[senderId].team = data.team;
+          connections[senderId].color = data.color;
+        }
 
         if (!players[senderId]) {
-          players[senderId] = { mesh: createPlayerMesh(data.name, 0xe91e63), hp: 100, name: data.name };
+          players[senderId] = { mesh: createPlayerMesh(data.name, data.color || 0x2196f3), hp: 100, name: data.name, team: data.team };
           updateTabOverlay();
         }
         players[senderId].mesh.position.set(...data.pos);
@@ -712,10 +795,11 @@
           name: players[id].name || 'Peer',
           pos: [players[id].mesh.position.x, players[id].mesh.position.y, players[id].mesh.position.z],
           rotY: players[id].mesh.rotation.y,
-          hp: players[id].hp || 100
+          hp: players[id].hp || 100,
+          team: players[id].team || 'FFA'
         };
       });
-      state[myId] = { name: myName, pos: [camera.position.x, camera.position.y - 1.2, camera.position.z], rotY: camera.rotation.y, hp: hp };
+      state[myId] = { name: myName, pos: [camera.position.x, camera.position.y - 1.2, camera.position.z], rotY: camera.rotation.y, hp: hp, team: myTeam };
       return state;
     }
 
@@ -725,14 +809,14 @@
 
       const localRow = document.createElement('div');
       localRow.className = 'player-row';
-      localRow.innerHTML = `<span><b>${myName} (You)</b></span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
+      localRow.innerHTML = `<span><b>${myName} (You)</b> [${myTeam}]</span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
       container.appendChild(localRow);
 
       if (isHost) {
         Object.keys(connections).forEach(id => {
           const row = document.createElement('div');
           row.className = 'player-row';
-          row.innerHTML = `<span>${connections[id].name || 'Peer'}</span><span style="color:#29b6f6;">CONNECTED</span>`;
+          row.innerHTML = `<span>${connections[id].name || 'Peer'} [${connections[id].team}]</span><span style="color:#29b6f6;">CONNECTED</span>`;
           container.appendChild(row);
         });
       } else {
@@ -740,28 +824,36 @@
           if (id === myId) return;
           const row = document.createElement('div');
           row.className = 'player-row';
-          row.innerHTML = `<span>${players[id].name || 'Peer'}</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
+          row.innerHTML = `<span>${players[id].name || 'Peer'} [${players[id].team || 'FFA'}]</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
           container.appendChild(row);
         });
       }
     }
 
-    // HOST BUTTON
+    // HOST BUTTON -> PICK GAMEMODE -> PICK TEAM
     document.getElementById('btn-host').addEventListener('click', () => {
       myName = document.getElementById('player-name-input').value.trim() || 'Host';
       currentRoomCode = document.getElementById('room-select').value;
       
-      isHost = true;
-      initPeer(getFormattedPeerId(currentRoomCode), () => {
-        document.getElementById('lobby-panel').style.display = 'none';
-        document.getElementById('status-msg').innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" (Hold TAB for Peers)`;
-        scheduleNextAirdropHost();
-        updateTabOverlay();
-        canvas.requestPointerLock();
+      showGamemodePicker((selectedMode) => {
+        gameMode = selectedMode;
+        showTeamPicker(gameMode, (teamName, teamColor) => {
+          myTeam = teamName;
+          myTeamColor = teamColor;
+          isHost = true;
+
+          initPeer(getFormattedPeerId(currentRoomCode), () => {
+            document.getElementById('lobby-panel').style.display = 'none';
+            document.getElementById('status-msg').innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
+            scheduleNextAirdropHost();
+            updateTabOverlay();
+            canvas.requestPointerLock();
+          });
+        });
       });
     });
 
-    // JOIN BUTTON
+    // JOIN BUTTON -> CONNECT -> GET MODE -> PICK TEAM
     document.getElementById('btn-join').addEventListener('click', () => {
       myName = document.getElementById('player-name-input').value.trim() || 'Client';
       currentRoomCode = document.getElementById('room-select').value;
@@ -771,30 +863,38 @@
 
       initPeer(null, () => {
         const targetHostId = getFormattedPeerId(currentRoomCode);
-        
         hostConn = peer.connect(targetHostId, { reliable: true });
 
         hostConn.on('open', () => {
-          document.getElementById('lobby-panel').style.display = 'none';
-          document.getElementById('status-msg').innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" (Hold TAB for Peers)`;
-          updateTabOverlay();
-          canvas.requestPointerLock();
+          document.getElementById('peer-id-display').innerText = "Connected! Awaiting Mode...";
         });
 
-        hostConn.on('error', (err) => {
+        hostConn.on('error', () => {
           alert('Failed to connect to host. Make sure someone is hosting "' + currentRoomCode.toUpperCase() + '" first!');
         });
 
         hostConn.on('data', (data) => {
-          if (data.type === 'WORLD_STATE') {
+          if (data.type === 'SETUP_INFO') {
+            gameMode = data.gameMode;
+            showTeamPicker(gameMode, (teamName, teamColor) => {
+              myTeam = teamName;
+              myTeamColor = teamColor;
+
+              document.getElementById('lobby-panel').style.display = 'none';
+              document.getElementById('status-msg').innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
+              updateTabOverlay();
+              canvas.requestPointerLock();
+            });
+          } else if (data.type === 'WORLD_STATE') {
             Object.keys(data.players).forEach(id => {
               if (id === myId) return;
               if (!players[id]) {
-                players[id] = { mesh: createPlayerMesh(data.players[id].name, 0x4caf50), name: data.players[id].name, hp: data.players[id].hp };
+                players[id] = { mesh: createPlayerMesh(data.players[id].name, 0x4caf50), name: data.players[id].name, hp: data.players[id].hp, team: data.players[id].team };
               }
               players[id].mesh.position.set(...data.players[id].pos);
               players[id].mesh.rotation.y = data.players[id].rotY;
               players[id].hp = data.players[id].hp;
+              players[id].team = data.players[id].team;
             });
             updateTabOverlay();
           } else if (data.type === 'ACTION') {
@@ -814,7 +914,6 @@
       });
     });
 
-    // --- GAME LOOP ---
     camera.position.set(0, PLAYER_HEIGHT, 5);
     let lastTime = performance.now();
 
@@ -825,7 +924,8 @@
       const delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      isSprinting = keys['ControlLeft'] || keys['ControlRight'];
+      // Changed from Control (Ctrl) to Shift to prevent Ctrl+W window closure!
+      isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
       let currentSpeed = 0.15;
 
       if (isSprinting && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']) && stamina > 0) {
@@ -894,12 +994,23 @@
         if (crate.position.y > 0.5) crate.position.y -= 0.15;
       });
 
+      // Update bullet tracers animation lifespan
+      for (let i = bulletTracers.length - 1; i >= 0; i--) {
+        bulletTracers[i].life--;
+        if (bulletTracers[i].life <= 0) {
+          scene.remove(bulletTracers[i].mesh);
+          bulletTracers.splice(i, 1);
+        }
+      }
+
       if (now % 50 < 16) {
         const payload = {
           type: 'PLAYER_SYNC',
           name: myName,
           pos: [camera.position.x, camera.position.y - 1.2, camera.position.z],
-          rotY: camera.rotation.y
+          rotY: camera.rotation.y,
+          team: myTeam,
+          color: myTeamColor
         };
         if (isHost) {
           broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
@@ -911,14 +1022,10 @@
       renderer.render(scene, camera);
     }
 
-    // Pre-initialize background peer session so it immediately connects to PeerJS cloud on load
     peer = new Peer();
     peer.on('open', (id) => {
       myId = id;
       document.getElementById('peer-id-display').innerText = "Cloud Ready! Choose Room & Host/Join.";
-    });
-    peer.on('error', () => {
-      document.getElementById('peer-id-display').innerText = "Cloud connection delayed, click Host/Join to retry.";
     });
 
     animate();
