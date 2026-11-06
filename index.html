@@ -80,10 +80,16 @@
     <div id="lobby-panel">
       <h2>3D P2P FPS Arena</h2>
       <input type="text" id="player-name-input" placeholder="Your Display Name" value="Player">
-      <input type="text" id="custom-room-input" placeholder="Simple Room Code (e.g. room1)">
+      <select id="room-select">
+        <option value="room1">Room 1</option>
+        <option value="room2">Room 2</option>
+        <option value="room3">Room 3</option>
+        <option value="room4">Room 4</option>
+        <option value="room5">Room 5</option>
+      </select>
       <button id="btn-host">Host Room</button>
       <button id="btn-join">Join Room</button>
-      <div id="peer-id-display">Room Code: Not connected</div>
+      <div id="peer-id-display">Connecting to Peer Cloud...</div>
     </div>
 
     <div id="tab-overlay">
@@ -148,11 +154,10 @@
     let airdropCountdown = 0;
     let airdropTimerInterval = null;
 
-    const APP_PREFIX = "brian-fps-v3-";
+    const APP_PREFIX = "brian-fps-v4-";
 
     function getFormattedPeerId(code) {
-      const clean = code.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      return APP_PREFIX + (clean || 'room1');
+      return APP_PREFIX + code.trim().toLowerCase();
     }
 
     // --- THREE.JS SETUP ---
@@ -590,20 +595,26 @@
       }, seconds * 1000);
     }
 
-    // --- NETWORKING ---
+    // --- NETWORKING (INSTANT FIX FOR STUCK "NOT CONNECTED") ---
     function initPeer(customId, callback) {
       if (peer) peer.destroy();
+      
+      document.getElementById('peer-id-display').innerText = "Connecting to Peer Cloud...";
       peer = new Peer(customId);
 
       peer.on('open', (id) => {
         myId = id;
-        document.getElementById('peer-id-display').innerText = `Connected to Room: ${currentRoomCode}`;
+        document.getElementById('peer-id-display').innerText = `Online ✅ (Room: ${currentRoomCode.toUpperCase()})`;
         if (callback) callback();
       });
 
       peer.on('error', (err) => {
         document.getElementById('peer-id-display').innerText = `Error: ${err.type}`;
-        alert("Peer connection error: " + err.type + "\nIf hosting, another player might already be hosting this room code. Try a different room!");
+        if (err.type === 'unavailable-id') {
+          alert("Room '" + currentRoomCode.toUpperCase() + "' is already hosted by someone else! Choose 'Join Room' instead.");
+        } else {
+          alert("Connection error: " + err.type);
+        }
       });
 
       peer.on('connection', (conn) => {
@@ -628,7 +639,6 @@
       updateTabOverlay();
     }
 
-    // Heartbeat timeout check for active peers list
     setInterval(() => {
       const now = Date.now();
       if (isHost) {
@@ -638,11 +648,6 @@
             removePeer(id);
           }
         });
-      } else {
-        // Client side check if host stopped responding
-        if (hostConn && hostConn.open && (now - (hostConn.lastPing || now) > 5000)) {
-          // If needed
-        }
       }
       updateTabOverlay();
     }, 2000);
@@ -718,13 +723,11 @@
       const container = document.getElementById('peer-list-container');
       container.innerHTML = '';
 
-      // Local player
       const localRow = document.createElement('div');
       localRow.className = 'player-row';
       localRow.innerHTML = `<span><b>${myName} (You)</b></span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp}]</span>`;
       container.appendChild(localRow);
 
-      // Connected Peers list
       if (isHost) {
         Object.keys(connections).forEach(id => {
           const row = document.createElement('div');
@@ -733,7 +736,6 @@
           container.appendChild(row);
         });
       } else {
-        // Client sees other peers received from host state
         Object.keys(players).forEach(id => {
           if (id === myId) return;
           const row = document.createElement('div');
@@ -909,8 +911,15 @@
       renderer.render(scene, camera);
     }
 
+    // Pre-initialize background peer session so it immediately connects to PeerJS cloud on load
     peer = new Peer();
-    peer.on('open', (id) => { myId = id; });
+    peer.on('open', (id) => {
+      myId = id;
+      document.getElementById('peer-id-display').innerText = "Cloud Ready! Choose Room & Host/Join.";
+    });
+    peer.on('error', () => {
+      document.getElementById('peer-id-display').innerText = "Cloud connection delayed, click Host/Join to retry.";
+    });
 
     animate();
 
