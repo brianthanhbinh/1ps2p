@@ -6,36 +6,39 @@
   <title>3D P2P FPS Arena</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     #game-canvas { width: 100%; height: 100%; display: block; }
     
     /* UI Overlay */
     #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; }
+    #crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; background: rgba(0,0,0,0.3); }
     
     /* Connection Panel */
-    #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px; border-radius: 8px; text-align: center; pointer-events: auto; width: 320px; border: 1px solid #444; }
-    #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; }
-    #lobby-panel input, #lobby-panel button { width: 100%; margin: 8px 0; padding: 10px; border: none; border-radius: 4px; font-family: inherit; font-size: 14px; }
-    #lobby-panel input { background: #222; color: #fff; border: 1px solid #555; text-align: center; }
-    #lobby-panel button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; }
+    #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); color: #fff; padding: 24px; border-radius: 12px; text-align: center; pointer-events: auto; width: 340px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; font-size: 22px; }
+    #lobby-panel input, #lobby-panel button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 6px; font-family: inherit; font-size: 14px; }
+    #lobby-panel input { background: #222; color: #fff; border: 1px solid #444; text-align: center; }
+    #lobby-panel button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
     #lobby-panel button:hover { background: #45a049; }
-    #peer-id-display { font-size: 12px; color: #aaa; margin-top: 10px; word-break: break-all; }
+    #peer-id-display { font-size: 11px; color: #aaa; margin-top: 10px; word-break: break-all; }
+
+    /* Top Status Bar */
+    #status-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; background: rgba(0,0,0,0.65); padding: 8px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 14px; font-weight: bold; }
+    #airdrop-timer { color: #ffca28; }
 
     /* Hotbar */
-    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 6px; border: 1px solid #555; }
-    .slot { width: 50px; height: 50px; background: #222; border: 2px solid #444; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; }
-    .slot.active { border-color: #ffca28; background: #333; }
-    .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 4px; background: #e53935; width: 0%; transition: width 0.1s linear; }
+    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 8px; border: 1px solid #555; }
+    .slot { width: 56px; height: 56px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 11px; position: relative; overflow: hidden; }
+    .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
+    .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 100%; background: rgba(229,57,53,0.5); width: 0%; transition: width 0.05s linear; }
 
     /* Inventory Screen */
-    #inventory-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; pointer-events: auto; }
-    .inv-window { background: #1e1e1e; color: #fff; border: 2px solid #555; border-radius: 8px; width: 400px; padding: 20px; }
-    .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
-    .inv-slot { height: 70px; background: #2a2a2a; border: 1px solid #444; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
+    #inventory-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; pointer-events: auto; }
+    .inv-window { background: #1a1a24; color: #fff; border: 2px solid #444; border-radius: 12px; width: 420px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+    .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 15px; }
+    .inv-slot { height: 75px; background: #252533; border: 1px solid #3d3d52; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; }
 
-    /* Status Notifications */
-    #status-msg { position: absolute; top: 20px; width: 100%; text-align: center; color: #ffca28; font-size: 18px; text-shadow: 1px 1px 2px #000; }
+    #status-msg { position: absolute; top: 60px; width: 100%; text-align: center; color: #aaa; font-size: 14px; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -46,12 +49,15 @@
 
   <div id="ui">
     <div id="crosshair"></div>
+    <div id="status-bar">
+      <div>✈️ Next Airdrop: <span id="airdrop-timer">--s</span></div>
+    </div>
     <div id="status-msg">Click Host or Join to Start</div>
 
     <div id="lobby-panel">
       <h2>3D P2P Arena</h2>
       <button id="btn-host">Host Game</button>
-      <hr style="border: 0.5px solid #333; margin: 10px 0;">
+      <hr style="border: 0.5px solid #333; margin: 12px 0;">
       <input type="text" id="join-id-input" placeholder="Enter Host Peer ID">
       <button id="btn-join">Join Game</button>
       <div id="peer-id-display">Connecting to signaling server...</div>
@@ -69,35 +75,43 @@
     <div id="inventory-overlay">
       <div class="inv-window">
         <h3>Player Inventory</h3>
-        <p style="font-size: 11px; color: #aaa;">Press E to Close</p>
+        <p style="font-size: 12px; color: #aaa;">Press E to Close</p>
         <div class="inv-grid">
-          <div class="inv-slot">⚔️ Sword<br><small>Melee</small></div>
-          <div class="inv-slot">⛏️ Pickaxe<br><small>Break</small></div>
-          <div class="inv-slot">📦 Block<br><small>Inf (Cooldn)</small></div>
-          <div class="inv-slot" id="inv-crates">📦 Crates<br><b id="crate-count">0</b></div>
+          <div class="inv-slot">⚔️ Sword<br><small style="color:#888;">Melee</small></div>
+          <div class="inv-slot">⛏️ Pickaxe<br><small style="color:#888;">Mine/Crate</small></div>
+          <div class="inv-slot">📦 Block<br><small style="color:#888;">Inf (1s CD)</small></div>
+          <div class="inv-slot" id="inv-crates">📦 Crates<br><b id="crate-count" style="color:#ffca28; font-size: 16px;">0</b></div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // --- GLOBAL CONSTANTS & CONFIG ---
+    // --- CONSTANTS & SYSTEM CONFIG ---
     const BLOCK_SIZE = 1;
     const BLOCK_COOLDOWN_MS = 1000;
     let isHost = false;
     let localPeerId = '';
     let peer = null;
-    let connections = {}; // Host stores client connections
-    let hostConn = null;  // Client stores connection to host
+    let connections = {};
+    let hostConn = null;
 
-    // --- GAME STATE ---
     let myId = Math.random().toString(36).substring(7);
-    let players = {}; // id -> { mesh, targetPos, targetRot }
-    let placedBlocks = {}; // key "x,y,z" -> mesh
+    let players = {}; 
+    let placedBlocks = {}; 
+    let activeCrates = {}; // id -> mesh
     let cratesCollected = 0;
-    let activeSlot = 0; // 0: Sword, 1: Pickaxe, 2: Block
+    let activeSlot = 0; 
     let blockCooldownActive = false;
     let isInvOpen = false;
+
+    // Animation Swing State
+    let isSwinging = false;
+    let swingProgress = 0;
+
+    // Airdrop Timer State
+    let airdropCountdown = 0;
+    let airdropTimerInterval = null;
 
     // --- THREE.JS SETUP ---
     const canvas = document.getElementById('game-canvas');
@@ -110,15 +124,15 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
 
-    // Lights
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(20, 40, 20);
+    dirLight.position.set(30, 50, 20);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    // Map Ground
+    // Ground Plane
     const groundGeo = new THREE.PlaneGeometry(100, 100);
     const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a5a40 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -126,32 +140,40 @@
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Block & Crate Geometries/Materials
+    // Shared Materials & Geometries
     const blockGeo = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     const blockMat = new THREE.MeshStandardMaterial({ color: 0x8d5b4c });
     const crateMat = new THREE.MeshStandardMaterial({ color: 0xd4a373 });
 
-    // Held Item Models attached to Camera
-    const itemGroup = new THREE.Group();
-    camera.add(itemGroup);
+    // Held Item Rig attached to Camera
+    const itemRig = new THREE.Group();
+    camera.add(itemRig);
     scene.add(camera);
 
-    // Build Simple Tool Meshes
-    const swordMesh = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.1), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
-    swordMesh.position.set(0.3, -0.2, -0.5);
-    swordMesh.rotation.x = Math.PI / 4;
+    // Build Sword
+    const swordMesh = new THREE.Group();
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.08), new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.8 }));
+    blade.position.y = 0.35;
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.04, 0.1), new THREE.MeshStandardMaterial({ color: 0xaa8833 }));
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.05), new THREE.MeshStandardMaterial({ color: 0x442211 }));
+    handle.position.y = -0.1;
+    swordMesh.add(blade, guard, handle);
+    swordMesh.position.set(0.35, -0.25, -0.5);
 
+    // Build Pickaxe
     const pickaxeMesh = new THREE.Group();
-    const pickHandle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), new THREE.MeshStandardMaterial({ color: 0x5c4033 }));
-    const pickHead = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: 0x777777 }));
-    pickHead.position.y = 0.2;
+    const pickHandle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.65, 0.05), new THREE.MeshStandardMaterial({ color: 0x5c4033 }));
+    const pickHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.5 }));
+    pickHead.position.y = 0.28;
     pickaxeMesh.add(pickHandle, pickHead);
-    pickaxeMesh.position.set(0.3, -0.2, -0.5);
+    pickaxeMesh.position.set(0.35, -0.25, -0.5);
 
-    const heldBlockMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), blockMat);
-    heldBlockMesh.position.set(0.3, -0.2, -0.5);
+    // Build Held Block
+    const heldBlockMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), blockMat);
+    heldBlockMesh.position.set(0.35, -0.25, -0.5);
 
-    itemGroup.add(swordMesh, pickaxeMesh, heldBlockMesh);
+    itemRig.add(swordMesh, pickaxeMesh, heldBlockMesh);
+
     function updateToolVisibility() {
       swordMesh.visible = activeSlot === 0;
       pickaxeMesh.visible = activeSlot === 1;
@@ -159,7 +181,6 @@
     }
     updateToolVisibility();
 
-    // Player Object Builder
     function createPlayerMesh(color = 0x2196f3) {
       const group = new THREE.Group();
       const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.4), new THREE.MeshStandardMaterial({ color }));
@@ -178,7 +199,6 @@
     const gravity = -0.015;
     let isGrounded = false;
 
-    // Pointer Lock
     canvas.addEventListener('click', () => {
       if (!isInvOpen) canvas.requestPointerLock();
     });
@@ -197,21 +217,13 @@
     document.addEventListener('keydown', (e) => {
       keys[e.code] = true;
 
-      // Slot Switching
-      if (e.code === 'Digit1') { activeSlot = 0; updateToolVisibility(); }
-      if (e.code === 'Digit2') { activeSlot = 1; updateToolVisibility(); }
-      if (e.code === 'Digit3') { activeSlot = 2; updateToolVisibility(); }
+      if (e.code === 'Digit1') switchSlot(0);
+      if (e.code === 'Digit2') switchSlot(1);
+      if (e.code === 'Digit3') switchSlot(2);
 
-      // UI Slot Class toggling
-      for(let i=0; i<3; i++) {
-        document.getElementById(`slot-${i}`).classList.toggle('active', i === activeSlot);
-      }
-
-      // Inventory Toggle
       if (e.code === 'KeyE') {
         isInvOpen = !isInvOpen;
-        const invEl = document.getElementById('inventory-overlay');
-        invEl.style.display = isInvOpen ? 'flex' : 'none';
+        document.getElementById('inventory-overlay').style.display = isInvOpen ? 'flex' : 'none';
         if (isInvOpen) document.exitPointerLock();
         else canvas.requestPointerLock();
       }
@@ -219,38 +231,64 @@
 
     document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-    // Raycasting for Place / Break
+    function switchSlot(slotIndex) {
+      activeSlot = slotIndex;
+      updateToolVisibility();
+      for(let i = 0; i < 3; i++) {
+        document.getElementById(`slot-${i}`).classList.toggle('active', i === activeSlot);
+      }
+    }
+
+    // Raycast Interaction (Action / Placement / Mining)
     const raycaster = new THREE.Raycaster();
     document.addEventListener('mousedown', (e) => {
       if (document.pointerLockElement !== canvas) return;
+      if (e.button === 0) { // Left click
+        isSwinging = true;
+        swingProgress = 0;
 
-      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-      
-      // Swing animation trigger
-      itemGroup.rotation.x = -0.3;
-      setTimeout(() => itemGroup.rotation.x = 0, 100);
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
 
-      if (e.button === 0) { // Left Click: Action
         if (activeSlot === 2 && !blockCooldownActive) {
-          // Place Block
-          const intersects = raycaster.intersectObjects(Object.values(placedBlocks).concat(ground));
+          // PLACE BLOCK FIX: Explicit Snap and Height Grid Calculation
+          const targetables = Object.values(placedBlocks).concat(Object.values(activeCrates)).concat(ground);
+          const intersects = raycaster.intersectObjects(targetables);
+
           if (intersects.length > 0 && intersects[0].distance < 6) {
             const hit = intersects[0];
-            const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.5)).floor().addScalar(0.5);
-            const key = `${pos.x},${pos.y},${pos.z}`;
+            let pos = new THREE.Vector3();
 
+            if (hit.object === ground) {
+              pos.x = Math.floor(hit.point.x) + 0.5;
+              pos.y = 0.5; // Always sit strictly on top of ground (y=0)
+              pos.z = Math.floor(hit.point.z) + 0.5;
+            } else {
+              const normal = hit.face.normal.clone();
+              const hitCenter = hit.object.position.clone().add(normal.multiplyScalar(BLOCK_SIZE));
+              pos.x = Math.floor(hitCenter.x + 0.5) - 0.5 + 0.5; // Precise Grid Alignment
+              pos.y = Math.floor(hitCenter.y + 0.5);
+              pos.z = Math.floor(hitCenter.z + 0.5) - 0.5 + 0.5;
+            }
+
+            const key = `${pos.x},${pos.y},${pos.z}`;
             dispatchNetworkAction({ type: 'PLACE_BLOCK', key, pos: [pos.x, pos.y, pos.z] });
             triggerBlockCooldown();
           }
         } else if (activeSlot === 1) {
-          // Mine Block
-          const intersects = raycaster.intersectObjects(Object.values(placedBlocks));
-          if (intersects.length > 0 && intersects[0].distance < 6) {
-            const obj = intersects[0].object;
+          // MINE BLOCK OR CRATE
+          const blockIntersects = raycaster.intersectObjects(Object.values(placedBlocks));
+          if (blockIntersects.length > 0 && blockIntersects[0].distance < 6) {
+            const obj = blockIntersects[0].object;
             const key = Object.keys(placedBlocks).find(k => placedBlocks[k] === obj);
-            if (key) {
-              dispatchNetworkAction({ type: 'BREAK_BLOCK', key });
-            }
+            if (key) dispatchNetworkAction({ type: 'BREAK_BLOCK', key });
+          }
+
+          // MINE CRATE FIX: Directly Mine Crate to Pick Up
+          const crateIntersects = raycaster.intersectObjects(Object.values(activeCrates));
+          if (crateIntersects.length > 0 && crateIntersects[0].distance < 6) {
+            const crateObj = crateIntersects[0].object;
+            const crateId = Object.keys(activeCrates).find(id => activeCrates[id] === crateObj);
+            if (crateId) dispatchNetworkAction({ type: 'COLLECT_CRATE', crateId });
           }
         }
       }
@@ -271,7 +309,6 @@
       }, 50);
     }
 
-    // Block State Management
     function placeBlockLocally(key, pos) {
       if (placedBlocks[key]) return;
       const b = new THREE.Mesh(blockGeo, blockMat);
@@ -289,19 +326,26 @@
       }
     }
 
-    // --- PLANE & AIRDROP SYSTEM ---
-    let activeSupplyPlane = null;
-    let activeSupplyCrate = null;
+    function collectCrateLocally(crateId) {
+      if (activeCrates[crateId]) {
+        scene.remove(activeCrates[crateId]);
+        delete activeCrates[crateId];
+        cratesCollected++;
+        document.getElementById('crate-count').innerText = cratesCollected;
+      }
+    }
 
-    function spawnSupplyDrop(targetX, targetZ) {
-      // Create Plane Mesh
+    // --- AIRDROP SYSTEM ---
+    let activeSupplyPlane = null;
+
+    function spawnSupplyDrop(targetX, targetZ, crateId) {
       const planeGroup = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
-      const wings = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 2), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 5), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+      const wings = new THREE.Mesh(new THREE.BoxGeometry(8, 0.08, 1.2), new THREE.MeshStandardMaterial({ color: 0x222222 }));
       planeGroup.add(body, wings);
-      
-      const startPos = new THREE.Vector3(targetX - 100, 30, targetZ);
-      const endPos = new THREE.Vector3(targetX + 100, 30, targetZ);
+
+      const startPos = new THREE.Vector3(targetX - 80, 25, targetZ);
+      const endPos = new THREE.Vector3(targetX + 80, 25, targetZ);
       planeGroup.position.copy(startPos);
       planeGroup.lookAt(endPos);
       scene.add(planeGroup);
@@ -313,13 +357,12 @@
         end: endPos,
         progress: 0,
         update: function(delta) {
-          this.progress += delta * 0.15;
+          this.progress += delta * 0.12;
           this.mesh.position.lerpVectors(this.start, this.end, this.progress);
-          
-          // Drop crate at mid-point
+
           if (this.progress >= 0.5 && !dropped) {
             dropped = true;
-            if (isHost) createFallingCrate(targetX, 30, targetZ);
+            spawnCrateMesh(crateId, targetX, 25, targetZ);
           }
           if (this.progress >= 1) {
             scene.remove(this.mesh);
@@ -329,46 +372,43 @@
       };
     }
 
-    function createFallingCrate(x, y, z) {
+    function spawnCrateMesh(crateId, x, y, z) {
       const crate = new THREE.Mesh(blockGeo, crateMat);
       crate.position.set(x, y, z);
       crate.castShadow = true;
       scene.add(crate);
-
-      activeSupplyCrate = {
-        mesh: crate,
-        update: function() {
-          if (this.mesh.position.y > 0.5) {
-            this.mesh.position.y -= 0.1;
-          } else {
-            // Check Player Collision to Pick Up
-            const pPos = camera.position;
-            if (pPos.distanceTo(this.mesh.position) < 2) {
-              cratesCollected++;
-              document.getElementById('crate-count').innerText = cratesCollected;
-              scene.remove(this.mesh);
-              activeSupplyCrate = null;
-              if (isHost) broadcastState({ type: 'CRATE_COLLECTED' });
-            }
-          }
-        }
-      };
+      activeCrates[crateId] = crate;
     }
 
-    // Host Airdrop Timer Loop
-    function scheduleNextAirdrop() {
+    // COUNTDOWN INDICATOR & TIMER FIX
+    function startAirdropTimer(seconds) {
+      airdropCountdown = seconds;
+      clearInterval(airdropTimerInterval);
+      airdropTimerInterval = setInterval(() => {
+        airdropCountdown--;
+        document.getElementById('airdrop-timer').innerText = `${Math.max(0, airdropCountdown)}s`;
+        if (airdropCountdown <= 0) clearInterval(airdropTimerInterval);
+      }, 1000);
+    }
+
+    function scheduleNextAirdropHost() {
       if (!isHost) return;
-      const time = Math.random() * 15000 + 15000; // 15s to 30s
+      const seconds = Math.floor(Math.random() * 15) + 15; // 15s to 30s
+      broadcastState({ type: 'AIRDROP_TIMER', seconds });
+      startAirdropTimer(seconds);
+
       setTimeout(() => {
         const dropX = (Math.random() - 0.5) * 40;
         const dropZ = (Math.random() - 0.5) * 40;
-        broadcastState({ type: 'SPAWN_DROP', x: dropX, z: dropZ });
-        spawnSupplyDrop(dropX, dropZ);
-        scheduleNextAirdrop();
-      }, time);
+        const crateId = 'crate_' + Math.random().toString(36).substr(2, 9);
+
+        broadcastState({ type: 'SPAWN_DROP', x: dropX, z: dropZ, crateId });
+        spawnSupplyDrop(dropX, dropZ, crateId);
+        scheduleNextAirdropHost();
+      }, seconds * 1000);
     }
 
-    // --- PEERJS NETWORK ARCHITECTURE ---
+    // --- PEERJS NETWORKING ---
     function initPeer() {
       peer = new Peer();
       peer.on('open', (id) => {
@@ -379,11 +419,12 @@
       peer.on('connection', (conn) => {
         if (!isHost) return;
         connections[conn.peer] = conn;
-
         conn.on('data', (data) => handleHostReceiveData(conn.peer, data));
         conn.on('close', () => {
-          scene.remove(players[conn.peer].mesh);
-          delete players[conn.peer];
+          if (players[conn.peer]) {
+            scene.remove(players[conn.peer].mesh);
+            delete players[conn.peer];
+          }
           delete connections[conn.peer];
         });
       });
@@ -394,13 +435,11 @@
         if (!players[senderId]) players[senderId] = { mesh: createPlayerMesh(0xe91e63) };
         players[senderId].mesh.position.set(...data.pos);
         players[senderId].mesh.rotation.y = data.rotY;
-        
-        // Broadcast all player positions to everyone
         broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
       } else if (data.type === 'ACTION') {
-        // Authoritative validation & broadcast action
         if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
         if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
+        if (data.action.type === 'COLLECT_CRATE') collectCrateLocally(data.action.crateId);
         broadcastState({ type: 'ACTION', action: data.action });
       }
     }
@@ -413,6 +452,7 @@
       if (isHost) {
         if (action.type === 'PLACE_BLOCK') placeBlockLocally(action.key, action.pos);
         if (action.type === 'BREAK_BLOCK') breakBlockLocally(action.key);
+        if (action.type === 'COLLECT_CRATE') collectCrateLocally(action.crateId);
         broadcastState({ type: 'ACTION', action });
       } else if (hostConn) {
         hostConn.send({ type: 'ACTION', action });
@@ -431,19 +471,18 @@
       return state;
     }
 
-    // Host/Join UI Bindings
+    // UI Buttons
     document.getElementById('btn-host').addEventListener('click', () => {
       isHost = true;
       document.getElementById('lobby-panel').style.display = 'none';
-      document.getElementById('status-msg').innerText = "Hosting Room! Waiting for players...";
-      scheduleNextAirdrop();
+      document.getElementById('status-msg').innerText = "Hosting Room!";
+      scheduleNextAirdropHost();
       canvas.requestPointerLock();
     });
 
     document.getElementById('btn-join').addEventListener('click', () => {
       const hostId = document.getElementById('join-id-input').value.trim();
-      if (!hostId) return alert('Please enter a Host Peer ID');
-      
+      if (!hostId) return alert('Please enter Host Peer ID');
       hostConn = peer.connect(hostId);
       hostConn.on('open', () => {
         document.getElementById('lobby-panel').style.display = 'none';
@@ -462,18 +501,16 @@
         } else if (data.type === 'ACTION') {
           if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
           if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
+          if (data.action.type === 'COLLECT_CRATE') collectCrateLocally(data.action.crateId);
         } else if (data.type === 'SPAWN_DROP') {
-          spawnSupplyDrop(data.x, data.z);
-        } else if (data.type === 'CRATE_COLLECTED') {
-          if (activeSupplyCrate) {
-            scene.remove(activeSupplyCrate.mesh);
-            activeSupplyCrate = null;
-          }
+          spawnSupplyDrop(data.x, data.z, data.crateId);
+        } else if (data.type === 'AIRDROP_TIMER') {
+          startAirdropTimer(data.seconds);
         }
       });
     });
 
-    // --- GAME LOOP ---
+    // --- RENDER & ANIMATION LOOP ---
     camera.position.set(0, 1.6, 5);
     let lastTime = performance.now();
 
@@ -484,7 +521,22 @@
       const delta = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Local Player Physics & Movement
+      // SMOOTH SWING ANIMATION FIX
+      if (isSwinging) {
+        swingProgress += delta * 15;
+        itemRig.rotation.x = -Math.sin(swingProgress) * 0.6;
+        itemRig.rotation.y = -Math.sin(swingProgress) * 0.3;
+        if (swingProgress >= Math.PI) {
+          isSwinging = false;
+          swingProgress = 0;
+          itemRig.rotation.set(0, 0, 0);
+        }
+      } else {
+        // Subtle Idle Bobbing Animation
+        itemRig.position.y = Math.sin(now * 0.003) * 0.015;
+      }
+
+      // Local Movement
       if (document.pointerLockElement === canvas) {
         const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
         forward.y = 0; forward.normalize();
@@ -496,7 +548,6 @@
         if (keys['KeyA']) camera.position.addScaledVector(side, -moveSpeed);
         if (keys['KeyD']) camera.position.addScaledVector(side, moveSpeed);
 
-        // Jump & Gravity
         if (keys['Space'] && isGrounded) {
           velocityY = 0.25;
           isGrounded = false;
@@ -512,11 +563,17 @@
         }
       }
 
-      // Update Plane & Crate Loop
+      // Update Airdrop Plane & Gravity for Crates
       if (activeSupplyPlane) activeSupplyPlane.update(delta);
-      if (activeSupplyCrate) activeSupplyCrate.update();
 
-      // Network Synchronization tick (20 FPS rate)
+      Object.keys(activeCrates).forEach(crateId => {
+        const crate = activeCrates[crateId];
+        if (crate.position.y > 0.5) {
+          crate.position.y -= 0.15; // Gravity drop to ground
+        }
+      });
+
+      // Network Synchronization tick
       if (now % 50 < 16) {
         const payload = {
           type: 'PLAYER_SYNC',
@@ -536,7 +593,6 @@
     initPeer();
     animate();
 
-    // Window Resize Handling
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
