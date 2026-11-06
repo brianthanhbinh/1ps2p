@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D P2P FPS Arena</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; }
+    #game-canvas { width: 100%; height: 100%; display: block; }
+    
+    /* UI Overlay */
+    #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; }
+    
+    /* Connection Panel */
+    #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px; border-radius: 8px; text-align: center; pointer-events: auto; width: 320px; border: 1px solid #444; }
+    #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; }
+    #lobby-panel input, #lobby-panel button { width: 100%; margin: 8px 0; padding: 10px; border: none; border-radius: 4px; font-family: inherit; font-size: 14px; }
+    #lobby-panel input { background: #222; color: #fff; border: 1px solid #555; text-align: center; }
+    #lobby-panel button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; }
+    #lobby-panel button:hover { background: #45a049; }
+    #peer-id-display { font-size: 12px; color: #aaa; margin-top: 10px; word-break: break-all; }
+
+    /* Hotbar */
+    #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 6px; border: 1px solid #555; }
+    .slot { width: 50px; height: 50px; background: #222; border: 2px solid #444; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; }
+    .slot.active { border-color: #ffca28; background: #333; }
+    .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 4px; background: #e53935; width: 0%; transition: width 0.1s linear; }
+
+    /* Inventory Screen */
+    #inventory-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; pointer-events: auto; }
+    .inv-window { background: #1e1e1e; color: #fff; border: 2px solid #555; border-radius: 8px; width: 400px; padding: 20px; }
+    .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+    .inv-slot { height: 70px; background: #2a2a2a; border: 1px solid #444; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
+
+    /* Status Notifications */
+    #status-msg { position: absolute; top: 20px; width: 100%; text-align: center; color: #ffca28; font-size: 18px; text-shadow: 1px 1px 2px #000; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <canvas id="game-canvas"></canvas>
+
+  <div id="ui">
+    <div id="crosshair"></div>
+    <div id="status-msg">Click Host or Join to Start</div>
+
+    <div id="lobby-panel">
+      <h2>3D P2P Arena</h2>
+      <button id="btn-host">Host Game</button>
+      <hr style="border: 0.5px solid #333; margin: 10px 0;">
+      <input type="text" id="join-id-input" placeholder="Enter Host Peer ID">
+      <button id="btn-join">Join Game</button>
+      <div id="peer-id-display">Connecting to signaling server...</div>
+    </div>
+
+    <div id="hotbar">
+      <div class="slot active" id="slot-0"><span>1</span><b>Sword</b></div>
+      <div class="slot" id="slot-1"><span>2</span><b>Pickaxe</b></div>
+      <div class="slot" id="slot-2">
+        <span>3</span><b>Block</b>
+        <div class="slot-cooldown" id="block-cd"></div>
+      </div>
+    </div>
+
+    <div id="inventory-overlay">
+      <div class="inv-window">
+        <h3>Player Inventory</h3>
+        <p style="font-size: 11px; color: #aaa;">Press E to Close</p>
+        <div class="inv-grid">
+          <div class="inv-slot">⚔️ Sword<br><small>Melee</small></div>
+          <div class="inv-slot">⛏️ Pickaxe<br><small>Break</small></div>
+          <div class="inv-slot">📦 Block<br><small>Inf (Cooldn)</small></div>
+          <div class="inv-slot" id="inv-crates">📦 Crates<br><b id="crate-count">0</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- GLOBAL CONSTANTS & CONFIG ---
+    const BLOCK_SIZE = 1;
+    const BLOCK_COOLDOWN_MS = 1000;
+    let isHost = false;
+    let localPeerId = '';
+    let peer = null;
+    let connections = {}; // Host stores client connections
+    let hostConn = null;  // Client stores connection to host
+
+    // --- GAME STATE ---
+    let myId = Math.random().toString(36).substring(7);
+    let players = {}; // id -> { mesh, targetPos, targetRot }
+    let placedBlocks = {}; // key "x,y,z" -> mesh
+    let cratesCollected = 0;
+    let activeSlot = 0; // 0: Sword, 1: Pickaxe, 2: Block
+    let blockCooldownActive = false;
+    let isInvOpen = false;
+
+    // --- THREE.JS SETUP ---
+    const canvas = document.getElementById('game-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(20, 40, 20);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // Map Ground
+    const groundGeo = new THREE.PlaneGeometry(100, 100);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a5a40 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Block & Crate Geometries/Materials
+    const blockGeo = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    const blockMat = new THREE.MeshStandardMaterial({ color: 0x8d5b4c });
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0xd4a373 });
+
+    // Held Item Models attached to Camera
+    const itemGroup = new THREE.Group();
+    camera.add(itemGroup);
+    scene.add(camera);
+
+    // Build Simple Tool Meshes
+    const swordMesh = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.1), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+    swordMesh.position.set(0.3, -0.2, -0.5);
+    swordMesh.rotation.x = Math.PI / 4;
+
+    const pickaxeMesh = new THREE.Group();
+    const pickHandle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), new THREE.MeshStandardMaterial({ color: 0x5c4033 }));
+    const pickHead = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: 0x777777 }));
+    pickHead.position.y = 0.2;
+    pickaxeMesh.add(pickHandle, pickHead);
+    pickaxeMesh.position.set(0.3, -0.2, -0.5);
+
+    const heldBlockMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), blockMat);
+    heldBlockMesh.position.set(0.3, -0.2, -0.5);
+
+    itemGroup.add(swordMesh, pickaxeMesh, heldBlockMesh);
+    function updateToolVisibility() {
+      swordMesh.visible = activeSlot === 0;
+      pickaxeMesh.visible = activeSlot === 1;
+      heldBlockMesh.visible = activeSlot === 2;
+    }
+    updateToolVisibility();
+
+    // Player Object Builder
+    function createPlayerMesh(color = 0x2196f3) {
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.4), new THREE.MeshStandardMaterial({ color }));
+      body.position.y = 0.6;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: 0xffe0bd }));
+      head.position.y = 1.4;
+      group.add(body, head);
+      scene.add(group);
+      return group;
+    }
+
+    // --- CONTROLS & PHYSICS ---
+    const keys = {};
+    let moveSpeed = 0.15;
+    let velocityY = 0;
+    const gravity = -0.015;
+    let isGrounded = false;
+
+    // Pointer Lock
+    canvas.addEventListener('click', () => {
+      if (!isInvOpen) canvas.requestPointerLock();
+    });
+
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+    document.addEventListener('mousemove', (e) => {
+      if (document.pointerLockElement === canvas) {
+        euler.setFromQuaternion(camera.quaternion);
+        euler.y -= e.movementX * 0.002;
+        euler.x -= e.movementY * 0.002;
+        euler.x = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, euler.x));
+        camera.quaternion.setFromEuler(euler);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+
+      // Slot Switching
+      if (e.code === 'Digit1') { activeSlot = 0; updateToolVisibility(); }
+      if (e.code === 'Digit2') { activeSlot = 1; updateToolVisibility(); }
+      if (e.code === 'Digit3') { activeSlot = 2; updateToolVisibility(); }
+
+      // UI Slot Class toggling
+      for(let i=0; i<3; i++) {
+        document.getElementById(`slot-${i}`).classList.toggle('active', i === activeSlot);
+      }
+
+      // Inventory Toggle
+      if (e.code === 'KeyE') {
+        isInvOpen = !isInvOpen;
+        const invEl = document.getElementById('inventory-overlay');
+        invEl.style.display = isInvOpen ? 'flex' : 'none';
+        if (isInvOpen) document.exitPointerLock();
+        else canvas.requestPointerLock();
+      }
+    });
+
+    document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+    // Raycasting for Place / Break
+    const raycaster = new THREE.Raycaster();
+    document.addEventListener('mousedown', (e) => {
+      if (document.pointerLockElement !== canvas) return;
+
+      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+      
+      // Swing animation trigger
+      itemGroup.rotation.x = -0.3;
+      setTimeout(() => itemGroup.rotation.x = 0, 100);
+
+      if (e.button === 0) { // Left Click: Action
+        if (activeSlot === 2 && !blockCooldownActive) {
+          // Place Block
+          const intersects = raycaster.intersectObjects(Object.values(placedBlocks).concat(ground));
+          if (intersects.length > 0 && intersects[0].distance < 6) {
+            const hit = intersects[0];
+            const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.5)).floor().addScalar(0.5);
+            const key = `${pos.x},${pos.y},${pos.z}`;
+
+            dispatchNetworkAction({ type: 'PLACE_BLOCK', key, pos: [pos.x, pos.y, pos.z] });
+            triggerBlockCooldown();
+          }
+        } else if (activeSlot === 1) {
+          // Mine Block
+          const intersects = raycaster.intersectObjects(Object.values(placedBlocks));
+          if (intersects.length > 0 && intersects[0].distance < 6) {
+            const obj = intersects[0].object;
+            const key = Object.keys(placedBlocks).find(k => placedBlocks[k] === obj);
+            if (key) {
+              dispatchNetworkAction({ type: 'BREAK_BLOCK', key });
+            }
+          }
+        }
+      }
+    });
+
+    function triggerBlockCooldown() {
+      blockCooldownActive = true;
+      const cdBar = document.getElementById('block-cd');
+      cdBar.style.width = '100%';
+      let elapsed = 0;
+      const interval = setInterval(() => {
+        elapsed += 50;
+        cdBar.style.width = `${Math.max(0, 100 - (elapsed / BLOCK_COOLDOWN_MS) * 100)}%`;
+        if (elapsed >= BLOCK_COOLDOWN_MS) {
+          clearInterval(interval);
+          blockCooldownActive = false;
+        }
+      }, 50);
+    }
+
+    // Block State Management
+    function placeBlockLocally(key, pos) {
+      if (placedBlocks[key]) return;
+      const b = new THREE.Mesh(blockGeo, blockMat);
+      b.position.set(...pos);
+      b.castShadow = true;
+      b.receiveShadow = true;
+      scene.add(b);
+      placedBlocks[key] = b;
+    }
+
+    function breakBlockLocally(key) {
+      if (placedBlocks[key]) {
+        scene.remove(placedBlocks[key]);
+        delete placedBlocks[key];
+      }
+    }
+
+    // --- PLANE & AIRDROP SYSTEM ---
+    let activeSupplyPlane = null;
+    let activeSupplyCrate = null;
+
+    function spawnSupplyDrop(targetX, targetZ) {
+      // Create Plane Mesh
+      const planeGroup = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 6), new THREE.MeshStandardMaterial({ color: 0x555555 }));
+      const wings = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 2), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+      planeGroup.add(body, wings);
+      
+      const startPos = new THREE.Vector3(targetX - 100, 30, targetZ);
+      const endPos = new THREE.Vector3(targetX + 100, 30, targetZ);
+      planeGroup.position.copy(startPos);
+      planeGroup.lookAt(endPos);
+      scene.add(planeGroup);
+
+      let dropped = false;
+      activeSupplyPlane = {
+        mesh: planeGroup,
+        start: startPos,
+        end: endPos,
+        progress: 0,
+        update: function(delta) {
+          this.progress += delta * 0.15;
+          this.mesh.position.lerpVectors(this.start, this.end, this.progress);
+          
+          // Drop crate at mid-point
+          if (this.progress >= 0.5 && !dropped) {
+            dropped = true;
+            if (isHost) createFallingCrate(targetX, 30, targetZ);
+          }
+          if (this.progress >= 1) {
+            scene.remove(this.mesh);
+            activeSupplyPlane = null;
+          }
+        }
+      };
+    }
+
+    function createFallingCrate(x, y, z) {
+      const crate = new THREE.Mesh(blockGeo, crateMat);
+      crate.position.set(x, y, z);
+      crate.castShadow = true;
+      scene.add(crate);
+
+      activeSupplyCrate = {
+        mesh: crate,
+        update: function() {
+          if (this.mesh.position.y > 0.5) {
+            this.mesh.position.y -= 0.1;
+          } else {
+            // Check Player Collision to Pick Up
+            const pPos = camera.position;
+            if (pPos.distanceTo(this.mesh.position) < 2) {
+              cratesCollected++;
+              document.getElementById('crate-count').innerText = cratesCollected;
+              scene.remove(this.mesh);
+              activeSupplyCrate = null;
+              if (isHost) broadcastState({ type: 'CRATE_COLLECTED' });
+            }
+          }
+        }
+      };
+    }
+
+    // Host Airdrop Timer Loop
+    function scheduleNextAirdrop() {
+      if (!isHost) return;
+      const time = Math.random() * 15000 + 15000; // 15s to 30s
+      setTimeout(() => {
+        const dropX = (Math.random() - 0.5) * 40;
+        const dropZ = (Math.random() - 0.5) * 40;
+        broadcastState({ type: 'SPAWN_DROP', x: dropX, z: dropZ });
+        spawnSupplyDrop(dropX, dropZ);
+        scheduleNextAirdrop();
+      }, time);
+    }
+
+    // --- PEERJS NETWORK ARCHITECTURE ---
+    function initPeer() {
+      peer = new Peer();
+      peer.on('open', (id) => {
+        localPeerId = id;
+        document.getElementById('peer-id-display').innerText = `Your Peer ID: ${id}`;
+      });
+
+      peer.on('connection', (conn) => {
+        if (!isHost) return;
+        connections[conn.peer] = conn;
+
+        conn.on('data', (data) => handleHostReceiveData(conn.peer, data));
+        conn.on('close', () => {
+          scene.remove(players[conn.peer].mesh);
+          delete players[conn.peer];
+          delete connections[conn.peer];
+        });
+      });
+    }
+
+    function handleHostReceiveData(senderId, data) {
+      if (data.type === 'PLAYER_SYNC') {
+        if (!players[senderId]) players[senderId] = { mesh: createPlayerMesh(0xe91e63) };
+        players[senderId].mesh.position.set(...data.pos);
+        players[senderId].mesh.rotation.y = data.rotY;
+        
+        // Broadcast all player positions to everyone
+        broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
+      } else if (data.type === 'ACTION') {
+        // Authoritative validation & broadcast action
+        if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
+        if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
+        broadcastState({ type: 'ACTION', action: data.action });
+      }
+    }
+
+    function broadcastState(msg) {
+      Object.values(connections).forEach(conn => conn.send(msg));
+    }
+
+    function dispatchNetworkAction(action) {
+      if (isHost) {
+        if (action.type === 'PLACE_BLOCK') placeBlockLocally(action.key, action.pos);
+        if (action.type === 'BREAK_BLOCK') breakBlockLocally(action.key);
+        broadcastState({ type: 'ACTION', action });
+      } else if (hostConn) {
+        hostConn.send({ type: 'ACTION', action });
+      }
+    }
+
+    function serializePlayers() {
+      const state = {};
+      Object.keys(players).forEach(id => {
+        state[id] = {
+          pos: [players[id].mesh.position.x, players[id].mesh.position.y, players[id].mesh.position.z],
+          rotY: players[id].mesh.rotation.y
+        };
+      });
+      state[myId] = { pos: [camera.position.x, camera.position.y - 1.2, camera.position.z], rotY: camera.rotation.y };
+      return state;
+    }
+
+    // Host/Join UI Bindings
+    document.getElementById('btn-host').addEventListener('click', () => {
+      isHost = true;
+      document.getElementById('lobby-panel').style.display = 'none';
+      document.getElementById('status-msg').innerText = "Hosting Room! Waiting for players...";
+      scheduleNextAirdrop();
+      canvas.requestPointerLock();
+    });
+
+    document.getElementById('btn-join').addEventListener('click', () => {
+      const hostId = document.getElementById('join-id-input').value.trim();
+      if (!hostId) return alert('Please enter a Host Peer ID');
+      
+      hostConn = peer.connect(hostId);
+      hostConn.on('open', () => {
+        document.getElementById('lobby-panel').style.display = 'none';
+        document.getElementById('status-msg').innerText = "Connected to Host!";
+        canvas.requestPointerLock();
+      });
+
+      hostConn.on('data', (data) => {
+        if (data.type === 'WORLD_STATE') {
+          Object.keys(data.players).forEach(id => {
+            if (id === myId) return;
+            if (!players[id]) players[id] = { mesh: createPlayerMesh(0x4caf50) };
+            players[id].mesh.position.set(...data.players[id].pos);
+            players[id].mesh.rotation.y = data.players[id].rotY;
+          });
+        } else if (data.type === 'ACTION') {
+          if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
+          if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
+        } else if (data.type === 'SPAWN_DROP') {
+          spawnSupplyDrop(data.x, data.z);
+        } else if (data.type === 'CRATE_COLLECTED') {
+          if (activeSupplyCrate) {
+            scene.remove(activeSupplyCrate.mesh);
+            activeSupplyCrate = null;
+          }
+        }
+      });
+    });
+
+    // --- GAME LOOP ---
+    camera.position.set(0, 1.6, 5);
+    let lastTime = performance.now();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+
+      // Local Player Physics & Movement
+      if (document.pointerLockElement === canvas) {
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        forward.y = 0; forward.normalize();
+        const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        side.y = 0; side.normalize();
+
+        if (keys['KeyW']) camera.position.addScaledVector(forward, moveSpeed);
+        if (keys['KeyS']) camera.position.addScaledVector(forward, -moveSpeed);
+        if (keys['KeyA']) camera.position.addScaledVector(side, -moveSpeed);
+        if (keys['KeyD']) camera.position.addScaledVector(side, moveSpeed);
+
+        // Jump & Gravity
+        if (keys['Space'] && isGrounded) {
+          velocityY = 0.25;
+          isGrounded = false;
+        }
+
+        velocityY += gravity;
+        camera.position.y += velocityY;
+
+        if (camera.position.y <= 1.6) {
+          camera.position.y = 1.6;
+          velocityY = 0;
+          isGrounded = true;
+        }
+      }
+
+      // Update Plane & Crate Loop
+      if (activeSupplyPlane) activeSupplyPlane.update(delta);
+      if (activeSupplyCrate) activeSupplyCrate.update();
+
+      // Network Synchronization tick (20 FPS rate)
+      if (now % 50 < 16) {
+        const payload = {
+          type: 'PLAYER_SYNC',
+          pos: [camera.position.x, camera.position.y - 1.2, camera.position.z],
+          rotY: camera.rotation.y
+        };
+        if (isHost) {
+          broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
+        } else if (hostConn && hostConn.open) {
+          hostConn.send(payload);
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    initPeer();
+    animate();
+
+    // Window Resize Handling
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
