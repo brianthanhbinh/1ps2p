@@ -170,7 +170,7 @@
     let airdropCountdown = 0;
     let airdropTimerInterval = null;
 
-    const APP_PREFIX = "brian-fps-v8-";
+    const APP_PREFIX = "brian-fps-v9-";
 
     function getFormattedPeerId(code) {
       return APP_PREFIX + code.trim().toLowerCase();
@@ -742,7 +742,7 @@
         }
 
         if (!players[senderId]) {
-          players[senderId] = { mesh: createPlayerMesh(data.name, data.color || 0x2196f3), hp: 100, name: data.name, team: data.team };
+          players[senderId] = { mesh: createPlayerMesh(data.name, data.color || 0x2196f3), hp: 100, name: data.name, team: data.team, color: data.color };
           updateTabOverlay();
         }
         players[senderId].mesh.position.set(...data.pos);
@@ -903,22 +903,34 @@
           } else if (data.type === 'WORLD_STATE') {
             Object.keys(data.players).forEach(id => {
               if (id === myId) return;
+              const pData = data.players[id];
               if (!players[id]) {
                 players[id] = { 
-                  mesh: createPlayerMesh(data.players[id].name, data.players[id].color || 0x4caf50), 
-                  name: data.players[id].name, 
-                  hp: data.players[id].hp, 
-                  team: data.players[id].team,
-                  color: data.players[id].color 
+                  mesh: createPlayerMesh(pData.name, pData.color || 0x4caf50), 
+                  name: pData.name, 
+                  hp: pData.hp, 
+                  team: pData.team,
+                  color: pData.color 
                 };
+              } else {
+                // Update mesh color if team/color changed
+                players[id].mesh.position.set(...pData.pos);
+                players[id].mesh.rotation.y = pData.rotY;
+                players[id].hp = pData.hp;
+                players[id].team = pData.team;
               }
-              players[id].mesh.position.set(...data.players[id].pos);
-              players[id].mesh.rotation.y = data.players[id].rotY;
-              players[id].hp = data.players[id].hp;
-              players[id].team = data.players[id].team;
             });
+            
+            // Clean up old players not present in world state
+            Object.keys(players).forEach(id => {
+              if (!data.players[id] && id !== myId) {
+                scene.remove(players[id].mesh);
+                delete players[id];
+              }
+            });
+
             updateTabOverlay();
-          } else if (data.type === 'ACTION') {
+          } else if (data.action) {
             if (data.action.type === 'PLACE_BLOCK') placeBlockLocally(data.action.key, data.action.pos);
             if (data.action.type === 'BREAK_BLOCK') breakBlockLocally(data.action.key);
             if (data.action.type === 'COLLECT_CRATE') collectCrateLocally(data.action.crateId, data.action.gunType);
