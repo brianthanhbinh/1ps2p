@@ -232,7 +232,7 @@
 
       const WORLD_SIZE = 2500;
       const PLAYER_RADIUS = 16;
-      const BASE_SIZE = 600;
+      const BASE_SIZE = 500;
       
       let isHost = false;
       let isPracticeMode = false;
@@ -258,10 +258,6 @@
       let isScoping = false;
 
       let isSpawnProtected = true;
-      let isLeftBase = false;
-      let baseReentryTimer = 10;
-      let baseTimerInterval = null;
-      let canReturnToBase = false;
       let spawnTimestamp = 0;
 
       let activeSlot = 0;
@@ -515,12 +511,7 @@
       function respawnPlayer() {
         hp = 100;
         isSpawnProtected = true;
-        isLeftBase = false;
-        canReturnToBase = false;
         spawnTimestamp = Date.now();
-        if (baseTimerInterval) clearInterval(baseTimerInterval);
-        document.getElementById('base-timer-pill').style.display = 'none';
-
         setTimeout(() => isSpawnProtected = false, 2000);
         
         if (gameMode !== 'ffa') {
@@ -554,7 +545,7 @@
 
       function handleMouseAction() {
         if (attackCooldown) return;
-        if (gameMode !== 'ffa' && isInsideBase(myX, myY, myTeam)) return;
+        if (gameMode !== 'ffa' && isInsideBase(myX, myY, myTeam)) return; // Base immunity zone
 
         const worldTargetX = myX + (mouseX - canvas.width / 2);
         const worldTargetY = myY + (mouseY - canvas.height / 2);
@@ -595,16 +586,9 @@
 
           setTimeout(() => attackCooldown = false, cooldown);
 
-          if (gunType === 'shotgun') {
-            for (let angleOff of [-0.2, -0.1, 0, 0.1, 0.2]) {
-              const cos = Math.cos(angleOff); const sin = Math.sin(angleOff);
-              const vx = (normX * cos - normY * sin) * speed;
-              const vy = (normX * sin + normY * cos) * speed;
-              projectiles.push({ x: myX + normX * 22, y: myY + normY * 22, vx, vy, gunType, ownerId: myId, ownerTeam: myTeam, damage });
-            }
-          } else {
-            projectiles.push({ x: myX + normX * 22, y: myY + normY * 22, vx: normX * speed, vy: normY * speed, gunType, ownerId: myId, ownerTeam: myTeam, damage });
-          }
+          const newProj = { x: myX + normX * 22, y: myY + normY * 22, vx: normX * speed, vy: normY * speed, gunType, ownerId: myId, ownerTeam: myTeam, damage };
+          projectiles.push(newProj);
+          broadcastProjectile(newProj);
         }
       }
 
@@ -637,7 +621,7 @@
         const hitY = myY + ny * range;
         for (let pid in players) {
           const pl = players[pid];
-          if (gameMode !== 'ffa' && pl.team === myTeam) continue;
+          if (gameMode !== 'ffa' && (pl.team === myTeam || isInsideBase(pl.x, pl.y, pl.team))) continue;
           if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 25) {
             applyDamageToPlayer(pid, damage);
           }
@@ -661,6 +645,8 @@
       function applyDamageToPlayer(pid, dmg) {
         if (isHost && connections[pid]) {
           connections[pid].send({ type: 'damage', dmg });
+        } else if (!isHost && hostConn && hostConn.open) {
+          hostConn.send({ type: 'damage_player', targetId: pid, dmg });
         }
       }
 
@@ -843,8 +829,6 @@
 
       function initPeer() {
         const pid = getFormattedPeerId(currentRoomCode);
-        
-        // Clean up previous peer instance if any
         if (peer) {
           try { peer.destroy(); } catch(e) {}
         }
@@ -862,7 +846,6 @@
           myId = id;
           document.getElementById('peer-id-display').innerText = `Room: ${currentRoomCode} (${isHost ? 'Host' : 'Joined'})`;
           if (!isHost) {
-            console.log("Attempting to connect to host:", pid);
             hostConn = peer.connect(pid, { reliable: true });
             setupHostConnection(hostConn);
           }
@@ -870,9 +853,6 @@
 
         peer.on('error', (err) => {
           console.error("PeerJS error:", err);
-          if (!isHost) {
-            console.log("Retrying connection or running in standalone peer mode.");
-          }
         });
 
         peer.on('connection', (c) => {
@@ -883,7 +863,6 @@
 
       function setupHostConnection(c) {
         c.on('open', () => {
-          console.log("Connected to host successfully!");
           c.send({ type: 'join', name: myName, team: myTeam, color: myTeamColor });
         });
         c.on('data', (data) => {
@@ -895,25 +874,24 @@
               gameMode = data.gameMode;
             }
           } else if (data.type === 'damage') {
-            hp -= data.dmg;
-            if (hp <= 0) selfDestruct();
+            if (!isInsideBase(myX, myY, myTeam)) {
+              hp -= data.dmg;
+              if (hp <= 0) selfDestruct();
+            }
           } else if (data.type === 'sync_mode') {
             if (gameMode !== data.gameMode) {
               gameMode = data.gameMode;
-              // Re-render team selection to match host's game mode
               showTeamSelection();
             }
+          } else if (data.type === 'shoot') {
+            projectiles.push(data.projectile);
           }
         });
-        c.on('close', () => {
-          console.log("Disconnected from host.");
-        });
+        c.on('close', () => {});
       }
 
       function setupClientConnection(c) {
         c.on('open', () => {
-          console.log("New client connected:", c.peer);
-          // Send host's game mode immediately upon client connection
           c.send({ type: 'sync_mode', gameMode: gameMode });
         });
         c.on('data', (data) => {
@@ -927,8 +905,16 @@
               players[c.peer].hp = data.hp;
               players[c.peer].name = data.name;
               players[c.peer].team = data.team;
+              players[c.peer].color = data.color;
             }
             broadcastState();
+          } else if (data.type === 'damage_player') {
+            if (connections[data.targetId]) {
+              connections[data.targetId].send({ type: 'damage', dmg: data.dmg });
+            }
+          } else if (data.type === 'shoot') {
+            projectiles.push(data.projectile);
+            broadcastProjectile(data.projectile, c.peer);
           }
         });
         c.on('close', () => {
@@ -951,6 +937,18 @@
           if (connections[pid].open) {
             connections[pid].send(statePayload);
           }
+        }
+      }
+
+      function broadcastProjectile(proj, excludePeerId = null) {
+        if (isHost) {
+          for (let pid in connections) {
+            if (pid !== excludePeerId && connections[pid].open) {
+              connections[pid].send({ type: 'shoot', projectile: proj });
+            }
+          }
+        } else if (hostConn && hostConn.open) {
+          hostConn.send({ type: 'shoot', projectile: proj });
         }
       }
 
@@ -1027,8 +1025,21 @@
         if (keys['KeyD']) dx += 1;
         if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
 
-        const nextX = myX + dx * speed;
-        const nextY = myY + dy * speed;
+        let nextX = myX + dx * speed;
+        let nextY = myY + dy * speed;
+
+        // Base entry restriction: enemies cannot enter other teams' bases
+        if (gameMode !== 'ffa') {
+          ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
+            if (team !== myTeam && isInsideBase(nextX, nextY, team)) {
+              // Push out of base
+              if (team === 'Red') nextY = Math.max(nextY, BASE_SIZE + PLAYER_RADIUS);
+              if (team === 'Blue') nextY = Math.min(nextY, WORLD_SIZE - BASE_SIZE - PLAYER_RADIUS);
+              if (team === 'Green') nextY = Math.min(nextY, WORLD_SIZE - BASE_SIZE - PLAYER_RADIUS);
+              if (team === 'Yellow') nextY = Math.max(nextY, BASE_SIZE + PLAYER_RADIUS);
+            }
+          });
+        }
 
         const bx = Math.floor(nextX / 40);
         const by = Math.floor(nextY / 40);
@@ -1041,9 +1052,8 @@
 
         myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
 
-        // Send position update if client
         if (!isHost && hostConn && hostConn.open) {
-          hostConn.send({ type: 'update', x: myX, y: myY, hp, name: myName, team: myTeam });
+          hostConn.send({ type: 'update', x: myX, y: myY, hp, name: myName, team: myTeam, color: myTeamColor });
         }
 
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -1060,9 +1070,11 @@
 
           if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS && p.ownerId !== myId) {
             if (gameMode === 'ffa' || p.ownerTeam !== myTeam) {
-              hp -= p.damage;
+              if (!isInsideBase(myX, myY, myTeam)) {
+                hp -= p.damage;
+                if (hp <= 0) selfDestruct();
+              }
               projectiles.splice(i, 1);
-              if (hp <= 0) selfDestruct();
               continue;
             }
           }
@@ -1108,11 +1120,14 @@
           ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
             const b = getBaseForTeam(team);
             if (!b) return;
-            ctx.fillStyle = team === 'Red' ? 'rgba(229,57,53,0.15)' : team === 'Blue' ? 'rgba(30,136,229,0.15)' : team === 'Green' ? 'rgba(67,160,71,0.15)' : 'rgba(251,192,45,0.15)';
+            ctx.fillStyle = team === 'Red' ? 'rgba(229,57,53,0.18)' : team === 'Blue' ? 'rgba(30,136,229,0.18)' : team === 'Green' ? 'rgba(67,160,71,0.18)' : 'rgba(251,192,45,0.18)';
             ctx.fillRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
             ctx.strokeStyle = team === 'Red' ? '#e53935' : team === 'Blue' ? '#1e88e5' : team === 'Green' ? '#43a047' : '#fbc02d';
             ctx.lineWidth = 4;
             ctx.strokeRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(`${team} Base`, b.x1 + 20, b.y1 + 30);
           });
         }
 
@@ -1156,8 +1171,15 @@
           ctx.fillStyle = p.color || '#fff';
           ctx.beginPath(); ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+
+          // Render Player Name Tag
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.name || 'Player', p.x, p.y - 22);
         }
 
+        // Render Local Player
         ctx.save();
         ctx.translate(myX, myY);
         ctx.rotate(myAngle);
@@ -1171,6 +1193,11 @@
         ctx.fillStyle = '#333';
         ctx.fillRect(0, -4, 20, 8);
         ctx.restore();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(myName + ' (You)', myX, myY - 22);
 
         ctx.fillStyle = '#ffca28';
         projectiles.forEach(p => {
@@ -1194,12 +1221,10 @@
 
         for (let pid in players) {
           const p = players[pid];
-          if (gameMode === 'ffa' || p.team === myTeam) {
-            minimapCtx.fillStyle = p.color || '#29b6f6';
-            minimapCtx.beginPath();
-            minimapCtx.arc(p.x * scale, p.y * scale, 3, 0, Math.PI * 2);
-            minimapCtx.fill();
-          }
+          minimapCtx.fillStyle = p.color || '#29b6f6';
+          minimapCtx.beginPath();
+          minimapCtx.arc(p.x * scale, p.y * scale, 3, 0, Math.PI * 2);
+          minimapCtx.fill();
         }
 
         minimapCtx.fillStyle = '#ffeb3b';
