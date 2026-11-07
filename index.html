@@ -151,9 +151,9 @@
         </div>
 
         <div id="shop-tab-transport" class="shop-tab-content">
-          <div class="shop-item"><span>🚲 2-Person Bike (+15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyVehicle('bike', 250)">Buy</button></div></div>
-          <div class="shop-item"><span>🏎️ Combat Car (+40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyVehicle('car', 600)">Buy</button></div></div>
-          <div class="shop-item"><span>🛡️ Assault Tank (+Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyVehicle('tank', 1200)">Buy</button></div></div>
+          <div class="shop-item"><span>🚲 2-Person Bike (+15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button type="button" onclick="buyVehicle('bike', 250)">Buy</button></div></div>
+          <div class="shop-item"><span>🏎️ Combat Car (+40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button type="button" onclick="buyVehicle('car', 600)">Buy</button></div></div>
+          <div class="shop-item"><span>🛡️ Assault Tank (+Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button type="button" onclick="buyVehicle('tank', 1200)">Buy</button></div></div>
         </div>
 
         <button style="width:100%; margin-top:12px; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleShop()">Close</button>
@@ -261,6 +261,7 @@
       const maxStamina = 100;
       let coins = 100;
       let currentVehicle = null; // null, 'bike', 'car', 'tank'
+      let isScoping = false; // Zoom forward toward mouse when holding `
 
       let isSpawnProtected = true;
       let isLeftBase = false;
@@ -273,7 +274,9 @@
       let grenadeCount = 3;
       let bandageCount = 2;
       let inventory = new Array(32).fill(null);
+      let selectedInvIndex = null; // For inventory slot swapping
 
+      let cameraZoom = 1.0; // Zoom level controlled by backtick `
       let blockCooldown = false;
       let attackCooldown = false;
 
@@ -300,7 +303,8 @@
         document.querySelectorAll('.shop-tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.shop-tab-content').forEach(c => c.classList.remove('active'));
         btnEl.classList.add('active');
-        document.getElementById(`shop-tab-${tabName}`).classList.add('active');
+        const tabEl = document.getElementById(`shop-tab-${tabName}`);
+        if (tabEl) tabEl.classList.add('active');
       }
 
       function switchSlot(slotIdx) {
@@ -367,7 +371,6 @@
         coins -= cost;
         document.getElementById('coin-val').innerText = coins;
         currentVehicle = type;
-        alert(`Successfully purchased ${type.toUpperCase()}! You are now driving.`);
         toggleShop();
       }
 
@@ -397,6 +400,10 @@
         if (e.code === 'Digit7') switchSlot(6);
         if (e.code === 'Digit8') switchSlot(7);
         if (e.code === 'KeyB') toggleShop();
+        if (e.code === 'Backquote') {
+          e.preventDefault();
+          isScoping = true;
+        }
 
         if (e.code === 'KeyE') {
           e.preventDefault();
@@ -420,6 +427,10 @@
 
       window.addEventListener('keyup', (e) => {
         keys[e.code] = false;
+        if (e.code === 'Backquote') {
+          e.preventDefault();
+          isScoping = false;
+        }
         if (e.code === 'Tab') {
           toggleScoreboard(false);
         }
@@ -679,9 +690,38 @@
         for (let i = 0; i < 32; i++) {
           const item = inventory[i];
           const div = document.createElement('div');
-          div.className = 'inv-slot';
+          div.className = 'inv-slot' + (selectedInvIndex === i ? ' active' : '');
           div.innerHTML = `<span>${i+1}</span><b>${item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : ''}</b>`;
+          div.onclick = () => handleInventoryClick(i);
           grid.appendChild(div);
+        }
+      }
+
+      function handleInventoryClick(invIdx) {
+        if (selectedInvIndex === null) {
+          if (inventory[invIdx] !== null) {
+            selectedInvIndex = invIdx;
+            renderInventoryGrid();
+          }
+        } else {
+          // Swap inventory slots
+          const temp = inventory[selectedInvIndex];
+          inventory[selectedInvIndex] = inventory[invIdx];
+          inventory[invIdx] = temp;
+          selectedInvIndex = null;
+          renderInventoryGrid();
+        }
+      }
+
+      function transferToHotbar(invIdx, hotbarIdx) {
+        const item = inventory[invIdx];
+        if (!item) return;
+        if (item.type === 'gun') {
+          const oldGun = gunSlots[hotbarIdx];
+          gunSlots[hotbarIdx] = item.subtype;
+          inventory[invIdx] = oldGun ? { type: 'gun', subtype: oldGun } : null;
+          updateHotbarLabels();
+          renderInventoryGrid();
         }
       }
 
@@ -955,7 +995,18 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
-        ctx.translate(canvas.width / 2 - myX, canvas.height / 2 - myY);
+        
+        // Calculate camera offset with smooth scoping toward mouse cursor
+        let camX = myX;
+        let camY = myY;
+        if (isScoping) {
+          const mDistX = mouseX - canvas.width / 2;
+          const mDistY = mouseY - canvas.height / 2;
+          camX += mDistX * 0.45;
+          camY += mDistY * 0.45;
+        }
+
+        ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
 
         // Draw World Background Grid
         ctx.fillStyle = '#2b4c3f';
