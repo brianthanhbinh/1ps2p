@@ -60,7 +60,7 @@
       .shop-item button { background: #4caf50; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
       .shop-item button:hover { background: #43a047; }
 
-      /* Minimap Canvas */
+      /* Minimap Container */
       #minimap-container { position: absolute; top: 15px; right: 15px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 8px; overflow: hidden; pointer-events: auto; display: none; z-index: 12; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
       #minimap-canvas { width: 100%; height: 100%; display: block; }
 
@@ -255,13 +255,14 @@
       const maxStamina = 100;
       let coins = 100;
       let currentVehicle = null;
-      let isScoping = false; // Scope toward mouse when holding `
+      let isScoping = false;
 
       let isSpawnProtected = true;
       let isLeftBase = false;
       let baseReentryTimer = 10;
       let baseTimerInterval = null;
       let canReturnToBase = false;
+      let spawnTimestamp = 0;
 
       let activeSlot = 0;
       let gunSlots = [null, null, null];
@@ -280,6 +281,7 @@
       let bots = [];
       let placedBlocks = {};
       let groundItems = {};
+      let airdropCrates = [];
       let projectiles = [];
 
       let airdropCountdown = 30;
@@ -484,6 +486,25 @@
             break;
           }
         }
+
+        for (let i = airdropCrates.length - 1; i >= 0; i--) {
+          const crate = airdropCrates[i];
+          if (Math.hypot(crate.x - myX, crate.y - myY) < 50) {
+            if (crate.rewardType === 'gun') {
+              addItemToInventory({ type: 'gun', subtype: crate.subtype });
+            } else if (crate.rewardType === 'grenade') {
+              grenadeCount += crate.amount || 2;
+            } else if (crate.rewardType === 'bandage') {
+              bandageCount += crate.amount || 2;
+            } else if (crate.rewardType === 'coins') {
+              coins += crate.amount || 100;
+              document.getElementById('coin-val').innerText = coins;
+            }
+            updateHotbarLabels();
+            airdropCrates.splice(i, 1);
+            break;
+          }
+        }
       }
 
       function spawnGroundItem(type, subtype, x, y, amount = 1) {
@@ -491,22 +512,12 @@
         groundItems[itemId] = { id: itemId, type, subtype, x, y, amount };
       }
 
-      function selfDestruct() {
-        for (let g of gunSlots) {
-          if (g) spawnGroundItem('gun', g, myX + (Math.random()*40-20), myY + (Math.random()*40-20));
-        }
-        gunSlots = [null, null, null];
-        currentVehicle = null;
-        updateHotbarLabels();
-        hp = 0;
-        respawnPlayer();
-      }
-
       function respawnPlayer() {
         hp = 100;
         isSpawnProtected = true;
         isLeftBase = false;
         canReturnToBase = false;
+        spawnTimestamp = Date.now();
         if (baseTimerInterval) clearInterval(baseTimerInterval);
         document.getElementById('base-timer-pill').style.display = 'none';
 
@@ -521,6 +532,18 @@
           myX = 500 + Math.random() * (WORLD_SIZE - 1000);
           myY = 500 + Math.random() * (WORLD_SIZE - 1000);
         }
+      }
+
+      function selfDestruct() {
+        if (Date.now() - spawnTimestamp < 3000) return;
+        for (let g of gunSlots) {
+          if (g) spawnGroundItem('gun', g, myX + (Math.random()*40-20), myY + (Math.random()*40-20));
+        }
+        gunSlots = [null, null, null];
+        currentVehicle = null;
+        updateHotbarLabels();
+        hp = 0;
+        respawnPlayer();
       }
 
       canvas.addEventListener('mousedown', (e) => {
@@ -544,7 +567,7 @@
         if (activeSlot === 0) {
           attackCooldown = true;
           setTimeout(() => attackCooldown = false, 300);
-          checkMeleeHit(normX, normY, 45, 25);
+          checkMeleeHit(normX, normY, 45, 35);
         } else if (activeSlot === 1) {
           attackCooldown = true;
           setTimeout(() => attackCooldown = false, 600);
@@ -701,7 +724,6 @@
 
       function handleHotbarClick(hotbarIdx) {
         switchSlot(hotbarIdx);
-        // If clicking a gun slot (4,5,6 corresponding to indices 3,4,5), send back to inventory if not empty
         if (hotbarIdx >= 3 && hotbarIdx <= 5) {
           const gunType = gunSlots[hotbarIdx - 3];
           if (gunType) {
@@ -882,7 +904,28 @@
           document.getElementById('airdrop-timer').innerText = `${airdropCountdown}s`;
           if (airdropCountdown <= 0) {
             airdropCountdown = 30;
-            spawnGroundItem('gun', 'rocket', WORLD_SIZE / 2 + (Math.random() * 400 - 200), WORLD_SIZE / 2 + (Math.random() * 400 - 200));
+            const rewardTypes = ['gun', 'gun', 'grenade', 'bandage', 'coins'];
+            const chosenType = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
+            let subtype = 'pistol';
+            let amount = 1;
+            if (chosenType === 'gun') {
+              const guns = ['pistol', 'smg', 'shotgun', 'sniper', 'rocket'];
+              subtype = guns[Math.floor(Math.random() * guns.length)];
+            } else if (chosenType === 'grenade') {
+              amount = 2;
+            } else if (chosenType === 'bandage') {
+              amount = 2;
+            } else if (chosenType === 'coins') {
+              amount = 150;
+            }
+
+            airdropCrates.push({
+              x: WORLD_SIZE / 2 + (Math.random() * 800 - 400),
+              y: WORLD_SIZE / 2 + (Math.random() * 800 - 400),
+              rewardType: chosenType,
+              subtype: subtype,
+              amount: amount
+            });
           }
         }, 1000);
 
@@ -920,10 +963,22 @@
         if (keys['KeyD']) dx += 1;
         if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
 
-        myX += dx * speed;
-        myY += dy * speed;
-        myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myX));
-        myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myY));
+        const nextX = myX + dx * speed;
+        const nextY = myY + dy * speed;
+
+        const bx = Math.floor(nextX / 40);
+        const by = Math.floor(nextY / 40);
+        if (placedBlocks[`${bx},${Math.floor(myY / 40)}`]) {
+          // Block horizontal
+        } else {
+          myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
+        }
+
+        if (placedBlocks[`${Math.floor(myX / 40)},${by}`]) {
+          // Block vertical
+        } else {
+          myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
+        }
 
         const inside = isInsideBase(myX, myY, myTeam);
         if (gameMode !== 'ffa') {
@@ -955,15 +1010,18 @@
 
         myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
 
-        // Update Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
           const p = projectiles[i];
           p.x += p.vx;
           p.y += p.vy;
-          if (p.x < 0 || p.x > WORLD_SIZE || p.y < 0 || p.y > WORLD_SIZE) {
+
+          const pBx = Math.floor(p.x / 40);
+          const pBy = Math.floor(p.y / 40);
+          if (p.x < 0 || p.x > WORLD_SIZE || p.y < 0 || p.y > WORLD_SIZE || placedBlocks[`${pBx},${pBy}`]) {
             projectiles.splice(i, 1);
             continue;
           }
+
           if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS && p.ownerId !== myId) {
             if (gameMode === 'ffa' || p.ownerTeam !== myTeam) {
               hp -= p.damage;
@@ -974,7 +1032,6 @@
           }
         }
 
-        // Update Bots in Practice Mode
         if (isPracticeMode) {
           bots.forEach(bot => {
             const angle = Math.atan2(myY - bot.y, myX - bot.x);
@@ -989,7 +1046,6 @@
 
         ctx.save();
         
-        // Calculate camera offset with smooth scoping toward mouse cursor
         let camX = myX;
         let camY = myY;
         if (isScoping) {
@@ -1001,7 +1057,6 @@
 
         ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
 
-        // Draw World Background Grid
         ctx.fillStyle = '#2b4c3f';
         ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -1013,7 +1068,6 @@
           ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
         }
 
-        // Draw Bases
         if (gameMode !== 'ffa') {
           ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
             const b = getBaseForTeam(team);
@@ -1026,7 +1080,6 @@
           });
         }
 
-        // Draw Placed Blocks
         for (let key in placedBlocks) {
           const blk = placedBlocks[key];
           ctx.fillStyle = blk.color;
@@ -1036,14 +1089,24 @@
           ctx.strokeRect(blk.bx * 40, blk.by * 40, 40, 40);
         }
 
-        // Draw Ground Items
         for (let id in groundItems) {
           const item = groundItems[id];
           ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#fff';
           ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
         }
 
-        // Draw Bots
+        airdropCrates.forEach(crate => {
+          ctx.fillStyle = '#8d6e63';
+          ctx.fillRect(crate.x - 20, crate.y - 20, 40, 40);
+          ctx.strokeStyle = '#ffca28';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(crate.x - 20, crate.y - 20, 40, 40);
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('📦 CRATE', crate.x, crate.y - 25);
+        });
+
         if (isPracticeMode) {
           bots.forEach(bot => {
             ctx.fillStyle = bot.color;
@@ -1052,7 +1115,6 @@
           });
         }
 
-        // Draw Teammates / Other Players
         for (let pid in players) {
           const p = players[pid];
           ctx.fillStyle = p.color || '#fff';
@@ -1060,7 +1122,6 @@
           ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
         }
 
-        // Draw Self & Vehicle
         ctx.save();
         ctx.translate(myX, myY);
         ctx.rotate(myAngle);
@@ -1075,7 +1136,6 @@
         ctx.fillRect(0, -4, 20, 8);
         ctx.restore();
 
-        // Draw Projectiles
         ctx.fillStyle = '#ffca28';
         projectiles.forEach(p => {
           ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
@@ -1088,11 +1148,14 @@
         minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
         const scale = minimapCanvas.width / WORLD_SIZE;
 
-        // Draw World Background on minimap
         minimapCtx.fillStyle = '#1b382d';
         minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
 
-        // Draw Teammates on minimap
+        minimapCtx.fillStyle = '#ffca28';
+        airdropCrates.forEach(c => {
+          minimapCtx.fillRect(c.x * scale - 2, c.y * scale - 2, 4, 4);
+        });
+
         for (let pid in players) {
           const p = players[pid];
           if (gameMode === 'ffa' || p.team === myTeam) {
@@ -1103,13 +1166,11 @@
           }
         }
 
-        // Draw Self on minimap
         minimapCtx.fillStyle = '#ffeb3b';
         minimapCtx.beginPath();
         minimapCtx.arc(myX * scale, myY * scale, 4, 0, Math.PI * 2);
         minimapCtx.fill();
 
-        // Draw Viewport Frustum Rectangle on minimap
         const viewW = canvas.width * scale;
         const viewH = canvas.height * scale;
         const viewX = (myX * scale) - (viewW / 2);
