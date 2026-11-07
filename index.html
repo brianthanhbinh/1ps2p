@@ -101,6 +101,11 @@
         #coin-modal h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
         #coin-modal input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; outline: none; }
 
+        /* Debug Password Modal */
+        #debug-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20,10,25,0.97); border: 2px solid #e91e63; border-radius: 12px; padding: 22px; width: 320px; color: #fff; display: none; pointer-events: auto; z-index: 70; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
+        #debug-modal h3 { color: #e91e63; margin-bottom: 10px; font-size: 18px; }
+        #debug-modal input { width: 100%; padding: 9px; background: #222; border: 1px solid #555; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 14px; outline: none; }
+
         /* Team Chat Box */
         #chat-box { position: absolute; bottom: 95px; left: 16px; width: 310px; pointer-events: auto; z-index: 20; display: flex; flex-direction: column; gap: 4px; }
         #chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
@@ -153,9 +158,12 @@
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
-                <div class="shop-item-card"><span>🚲 Fast Bike (+15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🏎️ Combat Car (+40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🛡️ Heavy Tank (Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚲 Bike (2 seats, +15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏍️ Motorcycle (3 seats, +25% Spd)</span><div><b style="color:#ffca28;">350 🪙</b> <button onclick="buyStoreItem('vehicle', 'motorcycle', 350)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚗 Car (5 seats, +50% Spd)</span><div><b style="color:#ffca28;">500 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 500)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚚 Truck (7 seats, +20% Spd)</span><div><b style="color:#ffca28;">650 🪙</b> <button onclick="buyStoreItem('vehicle', 'truck', 650)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛡️ Tank (6 seats, +35% Spd, +20% Dmg)</span><div><b style="color:#ffca28;">800 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 800)">Buy</button></div></div>
+                <div class="shop-item-card"><span>✈️ Bomber Plane (10 seats, +100% Spd, +40% Dmg)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'bomber', 1500)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -170,11 +178,20 @@
             <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinModal()">Cancel</button>
         </div>
 
+        <!-- Debug Password Modal -->
+        <div id="debug-modal">
+            <h3>⚙️ Debug Password</h3>
+            <p style="font-size:12px; color:#aaa;">Enter developer password:</p>
+            <input type="password" id="debug-pw-input" placeholder="Password">
+            <button style="background:#e91e63; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="verifyDebugPassword()">Submit</button>
+            <button style="background:#555; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeDebugModal()">Cancel</button>
+        </div>
+
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
         <div id="self-destruct-banner">⏳ Base Lockout / Respawn: <span id="sd-countdown">30s</span></div>
         <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
-        <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect</div>
+        <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect | J: Enter Vehicle | H: Leave Vehicle</div>
 
         <!-- Inventory Modal -->
         <div id="inventory-panel">
@@ -231,1165 +248,845 @@
     <script>
         const canvas = document.getElementById('canvas-main');
         const ctx = canvas.getContext('2d');
-        const mCanvas = document.getElementById('canvas-minimap');
-        const mCtx = mCanvas.getContext('2d');
+        const miniCanvas = document.getElementById('canvas-minimap');
+        const miniCtx = miniCanvas.getContext('2d');
 
-        const MAP_SIZE = 2600;
-        const RADIUS_PLAYER = 16;
-        const ZONE_SIZE = 500;
+        const WORLD_W = 3200;
+        const WORLD_H = 3200;
 
-        let inGameActive = false;
-        let isHosting = false;
-        let isPractice = false;
-        let peerInstance = null;
+        let gameActive = false;
+        let isHost = false;
+        let peer = null;
+        let connections = [];
+        let clientConn = null;
+
         let myPeerId = '';
-        let myUsername = 'Combatant';
-        let roomCode = 'alpha';
-        let currentMode = 'ffa';
-        let hostGameMode = 'ffa';
-        let playerTeam = 'FFA';
-        let playerColor = '#8e24aa';
+        let myName = 'Combatant';
+        let roomId = 'alpha';
+        let myTeam = 'Red';
+        let gameMode = '2-Team'; // 2-Team, 4-Team, FFA
+        let coins = 100;
 
-        let peerConnections = {};
-        let hostConnection = null;
+        const player = {
+            x: 1600, y: 1600, radius: 16, speed: 4, angle: 0,
+            hp: 100, maxHp: 100, stamina: 100, maxStamina: 100,
+            kills: 0, deaths: 0, inBase: true, baseLockoutTimer: 0,
+            currentVehicleId: null
+        };
 
-        let posX = MAP_SIZE / 2;
-        let posY = MAP_SIZE / 2;
-        let aimAngle = 0;
-        let currentHp = 100;
-        let currentStamina = 100;
-        let playerCoins = 100;
-        let activeRide = null;
-        let cameraScoped = false;
+        const keys = {};
+        const mouse = { x: 0, y: 0, worldX: 0, worldY: 0, isDown: false, scoping: false };
 
-        let baseLockedOut = false;
-        let lastBaseExitTime = 0;
-        let selfDestructCountdown = 0;
-        let selfDestructTimerHandle = null;
+        let hotbar = [
+            { id: 'sword', name: 'Sword', icon: '⚔️', type: 'weapon', damage: 25 },
+            { id: 'pickaxe', name: 'Pickaxe', icon: '⛏️', type: 'tool', damage: 15 },
+            { id: 'block', name: 'Block', icon: '🧱', type: 'block', count: 50 },
+            { id: 'empty1', name: 'Empty', icon: '⭕', type: 'empty' },
+            { id: 'empty2', name: 'Empty', icon: '⭕', type: 'empty' },
+            { id: 'empty3', name: 'Empty', icon: '⭕', type: 'empty' },
+            { id: 'grenade', name: 'Grenade', icon: '💣', type: 'grenade', count: 3 },
+            { id: 'bandage', name: 'Bandage', icon: '🩹', type: 'heal', count: 5 }
+        ];
 
-        let activeHotbar = 0;
-        let weaponBarSlots = [null, null, null];
-        let grenadesCount = 3;
-        let bandagesCount = 2;
-        let backpackInventory = new Array(32).fill(null);
+        let inventory = new Array(32).fill(null);
+        let selectedSlot = 0;
+        let chatChannel = 'Team'; // Team or Global
 
-        let actionCdBuild = false;
-        let actionCdAttack = false;
-
-        let keyboardInput = {};
-        let mouseXCoord = 0;
-        let mouseYCoord = 0;
-
+        let blocks = [];
+        let bullets = [];
+        let grenades = [];
+        let lootItems = [];
+        let vehicles = [];
         let remotePlayers = {};
-        let aiBots = [];
-        let worldBlocks = {};
-        let droppedLoot = {};
-        let supplyCrates = [];
-        let bulletsList = [];
+        let bots = [];
+        let chatMessages = [];
 
-        let airdropTimerSec = 30;
-        let airdropIntervalHandle = null;
+        let airdropTimer = 45;
+        let airdropCrates = [];
 
-        const PEER_PREFIX = 'arena-v5-net-';
+        // Bases setup
+        const bases = {
+            Red: { x: 400, y: 400, w: 600, h: 600, color: '#e53935' },
+            Blue: { x: 2800, y: 2800, w: 600, h: 600, color: '#1e88e5' },
+            Green: { x: 2800, y: 400, w: 600, h: 600, color: '#43a047' },
+            Yellow: { x: 400, y: 2800, w: 600, h: 600, color: '#fbc02d' }
+        };
 
-        function formatPeerId(code) {
-            return PEER_PREFIX + code.trim().toLowerCase();
-        }
-
-        function showUIInGame(active) {
-            document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
-            document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
-            document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
-            document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
-            document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
-            document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
-            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
-            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
-            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
-            document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
-            if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
-        }
-
-        function switchShopTab(tabKey, btnElement) {
-            document.querySelectorAll('.shop-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
-            btnElement.classList.add('active');
-            const targetContent = document.getElementById(`shop-tab-${tabKey}`);
-            if (targetContent) targetContent.classList.add('active');
-        }
-
-        function selectHotbarSlot(idx) {
-            activeHotbar = idx;
-            for (let i = 0; i <= 7; i++) {
-                const el = document.getElementById(`hslot-${i}`);
-                if (el) el.classList.toggle('selected', i === activeHotbar);
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === 'Shift') player.isSprinting = true;
+            if (e.key === '`') mouse.scoping = !mouse.scoping;
+            if (e.key.toLowerCase() === 'e') toggleInventoryPanel();
+            if (e.key.toLowerCase() === 'b') toggleShopPanel();
+            if (e.key.toLowerCase() === 'q') openCoinModal();
+            if (e.key.toLowerCase() === 'j') enterNearestVehicle();
+            if (e.key.toLowerCase() === 'h') leaveVehicle();
+            if (e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                toggleChatInput();
             }
-        }
-
-        function refreshHotbarUI() {
-            document.getElementById('gun0-label').innerText = weaponBarSlots[0] ? weaponBarSlots[0].toUpperCase() : 'Empty';
-            document.getElementById('gun1-label').innerText = weaponBarSlots[1] ? weaponBarSlots[1].toUpperCase() : 'Empty';
-            document.getElementById('gun2-label').innerText = weaponBarSlots[2] ? weaponBarSlots[2].toUpperCase() : 'Empty';
-            document.getElementById('grenade-label').innerText = `Gren x${grenadesCount}`;
-            document.getElementById('bandage-label').innerText = `Band x${bandagesCount}`;
-        }
-
-        function toggleShopPanel() {
-            const panel = document.getElementById('shop-panel');
-            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function toggleInventoryPanel() {
-            const panel = document.getElementById('inventory-panel');
-            if (!panel) return;
-            const isOpen = panel.style.display === 'block';
-            panel.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen) renderBackpackGrid();
-        }
-
-        function renderBackpackGrid() {
-            const gridContainer = document.getElementById('inv-grid');
-            if (!gridContainer) return;
-            let htmlStr = '';
-            for (let i = 0; i < 32; i++) {
-                const item = backpackInventory[i];
-                let label = item ? (item.subtype ? item.subtype.substring(0,4) : item.type) : '';
-                htmlStr += `<div class="inventory-slot" onclick="clickInventorySlot(${i})"><span>${i+1}</span><b style="font-size:9px;">${label}</b></div>`;
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                document.getElementById('scoreboard-panel').style.display = 'block';
+                updateScoreboard();
             }
-            gridContainer.innerHTML = htmlStr;
-        }
-
-        function clickInventorySlot(idx) {
-            const item = backpackInventory[idx];
-            if (!item) return;
-            const emptyHotbarIdx = weaponBarSlots.findIndex(w => w === null);
-            if (emptyHotbarIdx !== -1 && item.type === 'gun') {
-                weaponBarSlots[emptyHotbarIdx] = item.subtype;
-                backpackInventory[idx] = null;
-                refreshHotbarUI();
-                renderBackpackGrid();
+            if (e.key >= '1' && e.key <= '8') {
+                selectHotbarSlot(parseInt(e.key) - 1);
             }
-        }
-
-        function pushToBackpack(itemObj) {
-            const emptyIdx = backpackInventory.findIndex(i => i === null);
-            if (emptyIdx !== -1) {
-                backpackInventory[emptyIdx] = itemObj;
-                return true;
+            // Debug shortcut Ctrl+Alt+C
+            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                document.getElementById('debug-modal').style.display = 'block';
             }
-            return false;
-        }
+        });
 
-        function dropActiveItem() {
-            if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunIdx = activeHotbar - 3;
-                if (weaponBarSlots[gunIdx]) {
-                    spawnWorldLoot('gun', weaponBarSlots[gunIdx], posX + 30, posY + 30, 0);
-                    weaponBarSlots[gunIdx] = null;
-                    refreshHotbarUI();
-                }
-            } else if (activeHotbar === 6 && grenadesCount > 0) {
-                grenadesCount--;
-                spawnWorldLoot('grenade', null, posX + 30, posY + 30, 1);
-                refreshHotbarUI();
-            } else if (activeHotbar === 7 && bandagesCount > 0) {
-                bandagesCount--;
-                spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
-                refreshHotbarUI();
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+            if (e.key === 'Shift') player.isSprinting = false;
+            if (e.key === 'Tab') {
+                document.getElementById('scoreboard-panel').style.display = 'none';
             }
-        }
+        });
 
-        function buyStoreItem(itemType, subtypeName, price) {
-            if (playerCoins < price) {
-                showNotificationBox('Insufficient coins!');
-                return;
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            let camX = mouse.scoping ? player.x + (mouse.x - window.innerWidth/2)*0.6 : player.x;
+            let camY = mouse.scoping ? player.y + (mouse.y - window.innerHeight/2)*0.6 : player.y;
+            mouse.worldX = mouse.x - window.innerWidth / 2 + camX;
+            mouse.worldY = mouse.y - window.innerHeight / 2 + camY;
+            player.angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+        });
+
+        window.addEventListener('mousedown', e => {
+            if (e.button === 0 && gameActive) {
+                mouse.isDown = true;
+                useSelectedHotbarItem();
             }
-            if (itemType === 'gun') {
-                const emptyIdx = weaponBarSlots.findIndex(g => g === null);
-                if (emptyIdx === -1) {
-                    if (!pushToBackpack({ type: 'gun', subtype: subtypeName })) {
-                        showNotificationBox('Hotbar and inventory are completely full!');
-                        return;
-                    }
-                } else {
-                    weaponBarSlots[emptyIdx] = subtypeName;
-                }
-            } else if (itemType === 'vehicle') {
-                activeRide = subtypeName;
-            }
-            playerCoins -= price;
-            document.getElementById('coin-num').innerText = playerCoins;
-            refreshHotbarUI();
+        });
+
+        window.addEventListener('mouseup', e => {
+            if (e.button === 0) mouse.isDown = false;
+        });
+
+        function showNotification(text) {
+            const notif = document.getElementById('room-notification');
+            notif.textContent = text;
+            setTimeout(() => { if(notif.textContent === text) notif.textContent = ''; }, 3000);
         }
 
-        function showNotificationBox(msg) {
-            const statusEl = document.getElementById('room-notification');
-            if (statusEl) {
-                statusEl.innerText = msg;
-                setTimeout(() => { statusEl.innerText = ''; }, 3000);
-            }
-        }
-
-        function getTeamBaseRegion(teamName) {
-            if (teamName === 'Red') return { x1: 0, y1: 0, x2: ZONE_SIZE, y2: ZONE_SIZE };
-            if (teamName === 'Blue') return { x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, x2: MAP_SIZE, y2: MAP_SIZE };
-            if (teamName === 'Green') return { x1: 0, y1: MAP_SIZE - ZONE_SIZE, x2: ZONE_SIZE, y2: MAP_SIZE };
-            if (teamName === 'Yellow') return { x1: MAP_SIZE - ZONE_SIZE, y1: 0, x2: MAP_SIZE, y2: ZONE_SIZE };
-            return null;
-        }
-
-        function checkInsideBase(x, y, teamName) {
-            const b = getTeamBaseRegion(teamName);
-            if (!b) return false;
-            return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
-        }
-
-        // Check if an enemy is trying to enter another team's base
-        function isEnemyTryingToEnterBase(x, y, myTeam) {
-            if (myTeam === 'FFA') return false; // In FFA, bases are neutral
-            const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
-            for (let t of teamNames) {
-                if (t !== myTeam) {
-                    if (checkInsideBase(x, y, t)) return true;
-                }
-            }
-            return false;
-        }
-
-        // Host / Join Initialization
+        // --- Lobby & Networking ---
         function initHostRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Host';
-            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-            isHosting = true;
-            isPractice = false;
-
-            document.getElementById('net-status').innerText = 'Initializing Host Peer...';
-            if (peerInstance) peerInstance.destroy();
-
-            peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
-            peerInstance.on('open', (id) => {
+            myName = document.getElementById('input-username').value.trim() || 'Host';
+            roomId = document.getElementById('input-room').value.trim() || 'alpha';
+            isHost = true;
+            document.getElementById('net-status').textContent = 'Creating Peer Room...';
+            peer = new Peer(roomId);
+            peer.on('open', id => {
                 myPeerId = id;
-                document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
-                promptGameModeSelection();
+                document.getElementById('net-status').textContent = `Room Hosted (${id}). Opening Mode Selection...`;
+                openTeamSelectionModal('host');
             });
-            peerInstance.on('error', (err) => {
-                document.getElementById('net-status').innerText = `Host Error: ${err.type}`;
-                if (err.type === 'unavailable-id') {
-                    showNotificationBox('Room ID already taken! Choose another code.');
-                }
+            peer.on('error', err => {
+                document.getElementById('net-status').textContent = 'Error: Room ID taken or network failed.';
             });
-            peerInstance.on('connection', (conn) => {
-                setupServerConnection(conn);
+            peer.on('connection', conn => {
+                connections.push(conn);
+                setupPeerConnection(conn);
             });
         }
 
         function initJoinRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
-            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-            isHosting = false;
-            isPractice = false;
-
-            document.getElementById('net-status').innerText = 'Connecting to Host...';
-            if (peerInstance) peerInstance.destroy();
-
-            peerInstance = new Peer({ debug: 1 });
-            peerInstance.on('open', (id) => {
+            myName = document.getElementById('input-username').value.trim() || 'Combatant';
+            roomId = document.getElementById('input-room').value.trim() || 'alpha';
+            isHost = false;
+            document.getElementById('net-status').textContent = 'Connecting to Room...';
+            peer = new Peer();
+            peer.on('open', id => {
                 myPeerId = id;
-                const targetHostId = formatPeerId(roomCode);
-                const conn = peerInstance.connect(targetHostId);
-                setupClientConnection(conn);
+                clientConn = peer.connect(roomId);
+                setupPeerConnection(clientConn);
             });
-            peerInstance.on('error', (err) => {
-                document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
-                showNotificationBox('Could not connect to host room. Please check room code.');
+            peer.on('error', err => {
+                document.getElementById('net-status').textContent = 'Failed to connect to room.';
             });
         }
 
         function initPracticeMode() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
-            isHosting = false;
-            isPractice = true;
-            currentMode = '4team'; // Practice has full team options
-            promptTeamSelection();
+            myName = document.getElementById('input-username').value.trim() || 'Combatant';
+            isHost = true;
+            openTeamSelectionModal('solo');
         }
 
-        function promptGameModeSelection() {
+        function openTeamSelectionModal(mode) {
+            document.getElementById('lobby-box').style.display = 'none';
             const modal = document.getElementById('modal-screen');
             const title = document.getElementById('modal-title');
             const opts = document.getElementById('modal-options');
-            title.innerText = 'Select Game Mode';
-            opts.innerHTML = `
-                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
-                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
-                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
-            `;
             modal.style.display = 'flex';
+            title.textContent = mode === 'solo' ? 'Select Solo Team & Mode' : 'Configure Match & Team';
+
+            if (mode === 'solo') {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="startMatch('Red', 'FFA')">Red Team</button>
+                    <button class="btn-team-blue" onclick="startMatch('Blue', 'FFA')">Blue Team</button>
+                    <button class="btn-team-ffa" onclick="startMatch('FFA', 'FFA')">FFA Neutral</button>
+                `;
+            } else {
+                opts.innerHTML = `
+                    <p style="font-size:12px; color:#aaa; margin-bottom:8px;">Choose Game Mode:</p>
+                    <button class="btn-team-green" onclick="setGameModeAndTeam('2-Team', 'Red')">2-Team Match</button>
+                    <button class="btn-team-yellow" onclick="setGameModeAndTeam('4-Team', 'Red')">4-Team Match</button>
+                    <button class="btn-team-ffa" onclick="setGameModeAndTeam('FFA', 'FFA')">Free For All (FFA)</button>
+                `;
+            }
         }
 
-        function selectGameModeAndTeam(mode) {
-            currentMode = mode;
-            hostGameMode = mode;
-            document.getElementById('modal-screen').style.display = 'none';
-            promptTeamSelection();
-        }
-
-        function promptTeamSelection() {
-            const modal = document.getElementById('modal-screen');
-            const title = document.getElementById('modal-title');
+        function setGameModeAndTeam(gMode, defaultTeam) {
+            gameMode = gMode;
             const opts = document.getElementById('modal-options');
-            title.innerText = 'Choose Your Team';
-            
-            const activeMode = isHosting ? currentMode : hostGameMode;
-
-            if (activeMode === 'ffa') {
-                opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA Neutral</button>`;
-            } else if (activeMode === '2team') {
-                opts.innerHTML = `
-                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
-                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
-                `;
+            if (gMode === 'FFA') {
+                startMatch('FFA', 'FFA');
             } else {
-                opts.innerHTML = `
-                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
-                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
-                    <button class="btn-team-green" onclick="assignTeamAndSpawn('Green', '#43a047')">Green Team</button>
-                    <button class="btn-team-yellow" onclick="assignTeamAndSpawn('Yellow', '#fbc02d')">Yellow Team</button>
-                `;
+                let teamHtml = `<p style="font-size:12px; color:#aaa; margin-bottom:8px;">Select Your Team:</p>`;
+                teamHtml += `<button class="btn-team-red" onclick="startMatch('Red', '${gMode}')">Red Team</button>`;
+                teamHtml += `<button class="btn-team-blue" onclick="startMatch('Blue', '${gMode}')">Blue Team</button>`;
+                if (gMode === '4-Team') {
+                    teamHtml += `<button class="btn-team-green" onclick="startMatch('Green', '${gMode}')">Green Team</button>`;
+                    teamHtml += `<button class="btn-team-yellow" onclick="startMatch('Yellow', '${gMode}')">Yellow Team</button>`;
+                }
+                opts.innerHTML = teamHtml;
             }
-            modal.style.display = 'flex';
         }
 
-        function assignTeamAndSpawn(teamName, hexColor) {
-            playerTeam = teamName;
-            playerColor = hexColor;
+        function startMatch(team, gMode) {
+            myTeam = team;
+            gameMode = gMode;
             document.getElementById('modal-screen').style.display = 'none';
+            document.getElementById('stats-hud').style.display = 'flex';
+            document.getElementById('wallet-badge').style.display = 'flex';
+            document.getElementById('shop-toggle-btn').style.display = 'block';
+            document.getElementById('minimap-box').style.display = 'block';
+            document.getElementById('airdrop-banner').style.display = 'block';
+            document.getElementById('leave-btn').style.display = 'block';
+            document.getElementById('hotbar-dock').style.display = 'flex';
+            document.getElementById('tip-banner').style.display = 'block';
+            document.getElementById('chat-text-input').style.display = 'block';
 
-            const b = getTeamBaseRegion(playerTeam);
-            if (b) {
-                posX = (b.x1 + b.x2) / 2;
-                posY = (b.y1 + b.y2) / 2;
-            } else {
-                posX = MAP_SIZE / 2;
-                posY = MAP_SIZE / 2;
+            // Spawn player in their base
+            if (bases[team]) {
+                player.x = bases[team].x + bases[team].w / 2;
+                player.y = bases[team].y + bases[team].h / 2;
             }
 
-            currentHp = 100;
-            currentStamina = 100;
-            baseLockedOut = false;
-            inGameActive = true;
-            showUIInGame(true);
+            gameActive = true;
+            showNotification(`Match Started! Team: ${team}`);
 
-            if (isPractice) {
+            // Spawn initial bots if solo or host
+            if (isHost && connections.length === 0) {
                 spawnPracticeBots();
             }
 
-            if (!isHosting && hostConnection && hostConnection.open) {
-                hostConnection.send({
-                    type: 'client_join',
-                    username: myUsername,
-                    team: playerTeam,
-                    color: playerColor,
-                    x: posX,
-                    y: posY
-                });
-            }
-
-            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
-            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+            requestAnimationFrame(gameLoop);
         }
 
-        function executeSelfDestruct() {
-            if (selfDestructCountdown > 0) return;
-            selfDestructCountdown = 30;
-            baseLockedOut = true;
-            showNotificationBox('Exited Base! Base re-entry locked for 30s or until enemy kill.');
-            const banner = document.getElementById('self-destruct-banner');
-            const cdSpan = document.getElementById('sd-countdown');
-            if (banner) banner.style.display = 'block';
-            if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
-
-            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
-            selfDestructTimerHandle = setInterval(() => {
-                selfDestructCountdown--;
-                if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
-                if (selfDestructCountdown <= 0) {
-                    clearInterval(selfDestructTimerHandle);
-                    if (banner) banner.style.display = 'none';
-                    baseLockedOut = false;
-                    showNotificationBox('Base Re-entry unlocked!');
-                }
-            }, 1000);
-        }
-
-        function onEnemyEliminated() {
-            baseLockedOut = false;
-            selfDestructCountdown = 0;
-            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
-            const banner = document.getElementById('self-destruct-banner');
-            if (banner) banner.style.display = 'none';
-            currentHp = Math.min(100, currentHp + 50);
-            showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
-        }
-
-        function exitToLobby() {
-            inGameActive = false;
-            showUIInGame(false);
-            if (peerInstance) {
-                peerInstance.destroy();
-                peerInstance = null;
-            }
-            remotePlayers = {};
-            aiBots = [];
-            document.getElementById('net-status').innerText = 'Left room. Ready.';
-        }
-
-        function setupServerConnection(conn) {
-            peerConnections[conn.peer] = conn;
+        function setupPeerConnection(conn) {
             conn.on('open', () => {
-                // Send current game mode, world blocks, and loot state immediately to joining client
-                conn.send({ 
-                    type: 'room_config', 
-                    mode: currentMode,
-                    blocks: worldBlocks,
-                    loot: droppedLoot,
-                    crates: supplyCrates
-                });
-            });
-            conn.on('data', (data) => {
-                if (data.type === 'client_join') {
-                    remotePlayers[conn.peer] = {
-                        username: data.username,
-                        team: data.team,
-                        color: data.color,
-                        x: data.x,
-                        y: data.y,
-                        hp: 100,
-                        coins: 100
-                    };
-                    broadcastStateToClients();
-                } else if (data.type === 'player_update') {
-                    if (remotePlayers[conn.peer]) {
-                        remotePlayers[conn.peer].x = data.x;
-                        remotePlayers[conn.peer].y = data.y;
-                        remotePlayers[conn.peer].hp = data.hp;
-                        remotePlayers[conn.peer].coins = data.coins;
-                        remotePlayers[conn.peer].username = data.username;
-                        remotePlayers[conn.peer].team = data.team;
-                        remotePlayers[conn.peer].color = data.color;
-                    }
-                    broadcastStateToClients();
-                } else if (data.type === 'place_block') {
-                    worldBlocks[data.key] = data.block;
-                    broadcastStateToClients();
-                } else if (data.type === 'spawn_loot') {
-                    droppedLoot[data.id] = data.item;
-                    broadcastStateToClients();
-                } else if (data.type === 'remove_loot') {
-                    delete droppedLoot[data.id];
-                    broadcastStateToClients();
-                } else if (data.type === 'remove_crate') {
-                    supplyCrates.splice(data.index, 1);
-                    broadcastStateToClients();
+                document.getElementById('net-status').textContent = 'Connected to Peer!';
+                if (!isHost) {
+                    // Client joins
+                    document.getElementById('lobby-box').style.display = 'none';
+                    openTeamSelectionModal('client');
                 }
             });
+            conn.on('data', data => handleNetworkData(data));
             conn.on('close', () => {
-                delete peerConnections[conn.peer];
-                delete remotePlayers[conn.peer];
+                showNotification('Peer disconnected.');
             });
         }
 
-        function setupClientConnection(conn) {
-            hostConnection = conn;
-            conn.on('open', () => {
-                document.getElementById('net-status').innerText = 'Connected to Host!';
-            });
-            conn.on('data', (data) => {
-                if (data.type === 'room_config') {
-                    hostGameMode = data.mode || '4team';
-                    if (data.blocks) worldBlocks = data.blocks;
-                    if (data.loot) droppedLoot = data.loot;
-                    if (data.crates) supplyCrates = data.crates;
-                    promptTeamSelection();
-                } else if (data.type === 'server_state') {
-                    if (data.players) {
-                        for (let pid in data.players) {
-                            if (pid !== peerInstance.id) {
-                                remotePlayers[pid] = data.players[pid];
-                            }
-                        }
-                    }
-                    if (data.blocks) worldBlocks = data.blocks;
-                    if (data.loot) droppedLoot = data.loot;
-                    if (data.crates) supplyCrates = data.crates;
-                }
-            });
-            conn.on('close', () => {
-                showNotificationBox('Lost connection to host.');
-            });
-        }
-
-        function broadcastStateToClients() {
-            if (!isHosting) return;
-            let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
-            };
-            for (let pid in remotePlayers) {
-                allPlayersState[pid] = remotePlayers[pid];
+        function broadcastData(data) {
+            if (isHost) {
+                connections.forEach(c => { if(c && c.open) c.send(data); });
+            } else if (clientConn && clientConn.open) {
+                clientConn.send(data);
             }
-            const packet = { 
-                type: 'server_state', 
-                players: allPlayersState,
-                blocks: worldBlocks,
-                loot: droppedLoot,
-                crates: supplyCrates
-            };
-            for (let pid in peerConnections) {
-                if (peerConnections[pid].open) {
-                    peerConnections[pid].send(packet);
-                }
+        }
+
+        function handleNetworkData(data) {
+            if (data.type === 'player_sync') {
+                remotePlayers[data.id] = data;
+            } else if (data.type === 'chat') {
+                appendChatFeed(data.sender, data.text, data.team);
+            } else if (data.type === 'spawn_block') {
+                blocks.push(data.block);
+            } else if (data.type === 'destroy_block') {
+                blocks = blocks.filter(b => !(b.x === data.x && b.y === data.y));
+            } else if (data.type === 'spawn_bullet') {
+                bullets.push(data.bullet);
             }
         }
 
         function spawnPracticeBots() {
-            aiBots = [];
-            for (let i = 0; i < 4; i++) {
-                aiBots.push({
-                    id: 'bot-' + i,
-                    username: 'Bot ' + (i + 1),
-                    team: i % 2 === 0 ? 'Blue' : 'Red',
-                    color: i % 2 === 0 ? '#1e88e5' : '#e53935',
-                    x: Math.random() * (MAP_SIZE - 400) + 200,
-                    y: Math.random() * (MAP_SIZE - 400) + 200,
-                    hp: 100,
-                    radius: RADIUS_PLAYER,
-                    vx: 0,
-                    vy: 0
-                });
-            }
-        }
-
-        function triggerAirdropSpawn() {
-            const newCrate = {
-                x: Math.random() * (MAP_SIZE - 600) + 300,
-                y: Math.random() * (MAP_SIZE - 600) + 300,
-                loot: 'gold'
-            };
-            supplyCrates.push(newCrate);
-            showNotificationBox('✈️ Supply Airdrop has landed on the map!');
-        }
-
-        function spawnWorldLoot(type, subtype, x, y, value) {
-            const id = 'loot-' + Math.random().toString(36).substr(2, 9);
-            const item = { type, subtype, x, y, value };
-            droppedLoot[id] = item;
-            if (isHosting) {
-                broadcastStateToClients();
-            } else if (hostConnection && hostConnection.open) {
-                hostConnection.send({ type: 'spawn_loot', id, item });
-            }
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-text-input');
-            const txt = input.value.trim();
-            if (txt) {
-                const feed = document.getElementById('chat-feed');
-                feed.innerHTML += `<div class="chat-line"><b>${myUsername}:</b> ${escapeHtml(txt)}</div>`;
-                feed.scrollTop = feed.scrollHeight;
-                input.value = '';
-            }
-            input.blur();
-            input.style.display = 'none';
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-        // Game Loop & Input handling
-        window.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseXCoord = e.clientX - rect.left;
-            mouseYCoord = e.clientY - rect.top;
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (!inGameActive) return;
-            if (document.getElementById('chat-text-input') === document.activeElement) {
-                if (e.code === 'Enter') sendChatMessage();
-                else if (e.code === 'Escape') {
-                    document.getElementById('chat-text-input').blur();
-                    document.getElementById('chat-text-input').style.display = 'none';
+            for (let i = 1; i <= 3; i++) {
+                let bTeam = i === 1 ? 'Blue' : i === 2 ? 'Green' : 'Yellow';
+                if (bases[bTeam]) {
+                    bots.push({
+                        id: 'bot_' + i,
+                        name: 'Bot ' + i,
+                        team: bTeam,
+                        x: bases[bTeam].x + 100,
+                        y: bases[bTeam].y + 100,
+                        radius: 16,
+                        hp: 100,
+                        maxHp: 100,
+                        speed: 2.2,
+                        angle: 0
+                    });
                 }
+            }
+        }
+
+        // --- Gameplay Mechanics & Inventory ---
+        function selectHotbarSlot(idx) {
+            selectedSlot = idx;
+            document.querySelectorAll('.hotbar-slot').forEach((el, i) => {
+                if (i === idx) el.classList.add('selected');
+                else el.classList.remove('selected');
+            });
+        }
+
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            const isVisible = panel.style.display === 'block';
+            panel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) renderInventoryGrid();
+        }
+
+        function renderInventoryGrid() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            inventory.forEach((item, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                slot.innerHTML = `<span>${idx+1}</span>${item ? item.icon : ''}`;
+                slot.onclick = () => transferInventoryToHotbar(idx);
+                grid.appendChild(slot);
+            });
+        }
+
+        function transferInventoryToHotbar(invIdx) {
+            let item = inventory[invIdx];
+            if (!item) return;
+            // Find first empty hotbar slot or replace current
+            let emptyIdx = hotbar.findIndex(h => h.type === 'empty');
+            if (emptyIdx !== -1) {
+                hotbar[emptyIdx] = item;
+                inventory[invIdx] = null;
+            } else {
+                let temp = hotbar[selectedSlot];
+                hotbar[selectedSlot] = item;
+                inventory[invIdx] = temp;
+            }
+            updateHotbarUI();
+            renderInventoryGrid();
+        }
+
+        function updateHotbarUI() {
+            hotbar.forEach((item, idx) => {
+                const el = document.getElementById(`hslot-${idx}`);
+                if (el) {
+                    el.innerHTML = `<span>${idx+1}</span><div style="font-size:16px;">${item.icon || '⭕'}</div><b style="font-size:9px;">${item.name}</b>${item.count !== undefined ? `<span style="position:absolute; bottom:2px; right:4px; font-size:8px; color:#ffca28;">x${item.count}</span>` : ''}`;
+                }
+            });
+        }
+
+        function toggleShopPanel() {
+            const shop = document.getElementById('shop-panel');
+            shop.style.display = shop.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function switchShopTab(tabName, btn) {
+            document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`shop-tab-${tabName}`).classList.add('active');
+        }
+
+        function buyStoreItem(type, id, cost) {
+            if (coins < cost) {
+                showNotification('Not enough coins!');
                 return;
             }
+            coins -= cost;
+            document.getElementById('coin-num').textContent = coins;
 
-            keyboardInput[e.code] = true;
-            if (e.code === 'Digit1') selectHotbarSlot(0);
-            if (e.code === 'Digit2') selectHotbarSlot(1);
-            if (e.code === 'Digit3') selectHotbarSlot(2);
-            if (e.code === 'Digit4') selectHotbarSlot(3);
-            if (e.code === 'Digit5') selectHotbarSlot(4);
-            if (e.code === 'Digit6') selectHotbarSlot(5);
-            if (e.code === 'Digit7') selectHotbarSlot(6);
-            if (e.code === 'Digit8') selectHotbarSlot(7);
-            if (e.code === 'KeyB') toggleShopPanel();
-            if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
-            if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
-            if (e.code === 'KeyQ') dropActiveItem();
-            if (e.code === 'KeyZ') openCoinModal();
-            if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
-            if (e.code === 'KeyR') executeSelfDestruct();
-            if (e.code === 'KeyT') {
-                e.preventDefault();
-                const chatInput = document.getElementById('chat-text-input');
-                chatInput.style.display = 'block';
-                chatInput.focus();
+            if (type === 'gun') {
+                let gunObj = { id: id, name: id.toUpperCase(), icon: '🔫', type: 'gun', damage: id === 'pistol' ? 25 : id === 'smg' ? 18 : id === 'shotgun' ? 45 : id === 'sniper' ? 80 : 120, ammo: 30 };
+                addToBackpackOrHotbar(gunObj);
+                showNotification(`Purchased ${id.toUpperCase()}!`);
+            } else if (type === 'vehicle') {
+                spawnVehicle(id);
+                showNotification(`Purchased Vehicle (${id.toUpperCase()})!`);
             }
-            if (e.code === 'Tab') {
-                e.preventDefault();
-                toggleScoreboardDisplay(true);
-            }
-            if (e.code === 'Escape') {
-                exitToLobby();
-            }
-        });
+            toggleShopPanel();
+        }
 
-        window.addEventListener('keyup', (e) => {
-            keyboardInput[e.code] = false;
-            if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
-            if (e.code === 'Tab') toggleScoreboardDisplay(false);
-        });
-
-        function toggleScoreboardDisplay(show) {
-            const panel = document.getElementById('scoreboard-panel');
-            if (!panel) return;
-            panel.style.display = show ? 'block' : 'none';
-            if (show) {
-                let htmlStr = `<div class="sb-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
-                htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span><span>${playerTeam}</span><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
-                for (let pid in remotePlayers) {
-                    const rp = remotePlayers[pid];
-                    htmlStr += `<div class="sb-row"><span>${rp.username}</span><span>${rp.team}</span><span>${Math.max(0, Math.floor(rp.hp))}</span><span>${rp.coins || 0}</span></div>`;
+        function addToBackpackOrHotbar(item) {
+            let emptyH = hotbar.findIndex(h => h.type === 'empty');
+            if (emptyH !== -1) {
+                hotbar[emptyH] = item;
+            } else {
+                let emptyI = inventory.findIndex(i => i === null);
+                if (emptyI !== -1) {
+                    inventory[emptyI] = item;
+                } else {
+                    hotbar[selectedSlot] = item;
                 }
-                document.getElementById('scoreboard-list').innerHTML = htmlStr;
+            }
+            updateHotbarUI();
+        }
+
+        // --- Vehicle System ---
+        const vehicleSpecs = {
+            bike: { name: 'Bike', icon: '🚲', seats: 2, speedMult: 1.15, cost: 250 },
+            motorcycle: { name: 'Motorcycle', icon: '🏍️', seats: 3, speedMult: 1.25, cost: 350 },
+            car: { name: 'Car', icon: '🚗', seats: 5, speedMult: 1.50, cost: 500 },
+            truck: { name: 'Truck', icon: '🚚', seats: 7, speedMult: 1.20, cost: 650 },
+            tank: { name: 'Tank', icon: '🛡️', seats: 6, speedMult: 1.35, damageMult: 1.20, cost: 800 },
+            bomber: { name: 'Bomber Plane', icon: '✈️', seats: 10, speedMult: 2.00, damageMult: 1.40, cost: 1500 }
+        };
+
+        function spawnVehicle(type) {
+            let spec = vehicleSpecs[type];
+            if (!spec) return;
+            vehicles.push({
+                id: 'veh_' + Math.random().toString(36.substring(2)),
+                type: type,
+                name: spec.name,
+                icon: spec.icon,
+                team: myTeam,
+                x: player.x + Math.cos(player.angle) * 50,
+                y: player.y + Math.sin(player.angle) * 50,
+                passengers: [myTeam], // host/purchaser starts inside
+                maxSeats: spec.seats,
+                speedMult: spec.speedMult,
+                hp: 300, maxHp: 300
+            });
+            player.currentVehicleId = vehicles[vehicles.length - 1].id;
+        }
+
+        function enterNearestVehicle() {
+            if (player.currentVehicleId) return; // already in one
+            let nearest = vehicles.find(v => v.team === myTeam && Math.hypot(v.x - player.x, v.y - player.y) < 60 && v.passengers.length < v.maxSeats);
+            if (nearest) {
+                nearest.passengers.push(myTeam);
+                player.currentVehicleId = nearest.id;
+                showNotification(`Entered ${nearest.name}!`);
             }
         }
 
-        function openCoinModal() {
-            if (playerCoins <= 0) return;
-            document.getElementById('coin-modal').style.display = 'block';
-            document.getElementById('coin-drop-amt').max = playerCoins;
-            document.getElementById('coin-drop-amt').value = Math.min(10, playerCoins);
+        function leaveVehicle() {
+            if (!player.currentVehicleId) return;
+            let veh = vehicles.find(v => v.id === player.currentVehicleId);
+            if (veh) {
+                veh.passengers = veh.passengers.filter(p => p !== myTeam);
+                player.x = veh.x + 40;
+                player.y = veh.y + 40;
+                player.currentVehicleId = null;
+                showNotification('Exited vehicle.');
+            }
         }
 
+        // --- Coin Drop & Debug Password ---
+        function openCoinModal() {
+            document.getElementById('coin-modal').style.display = 'block';
+        }
         function closeCoinModal() {
             document.getElementById('coin-modal').style.display = 'none';
         }
-
         function executeCoinDrop() {
-            const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
-            if (amountVal > 0 && amountVal <= playerCoins) {
-                playerCoins -= amountVal;
-                document.getElementById('coin-num').innerText = playerCoins;
-                spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
-            }
-            closeCoinModal();
-        }
-
-        function pickupNearbyLoot() {
-            for (let lid in droppedLoot) {
-                const item = droppedLoot[lid];
-                const dist = Math.hypot(posX - item.x, posY - item.y);
-                if (dist < 45) {
-                    if (item.type === 'coin') {
-                        playerCoins += item.value;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                    } else if (item.type === 'gun') {
-                        const emptyIdx = weaponBarSlots.findIndex(w => w === null);
-                        if (emptyIdx !== -1) weaponBarSlots[emptyIdx] = item.subtype;
-                        else pushToBackpack(item);
-                        refreshHotbarUI();
-                    }
-                    delete droppedLoot[lid];
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_loot', id: lid });
-                    }
-                    showNotificationBox('Picked up item!');
-                    break;
-                }
-            }
-
-            supplyCrates.forEach((crate, idx) => {
-                const dist = Math.hypot(posX - crate.x, posY - crate.y);
-                if (dist < 50) {
-                    playerCoins += 100;
-                    document.getElementById('coin-num').innerText = playerCoins;
-                    supplyCrates.splice(idx, 1);
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_crate', index: idx });
-                    }
-                    showNotificationBox('Opened Airdrop Crate (+100 🪙)!');
-                }
-            });
-        }
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (!inGameActive) return;
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            // Base Safe Zone Rule: Shooting disabled inside bases
-            if (checkInsideBase(posX, posY, playerTeam)) {
-                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
+            let amt = parseInt(document.getElementById('coin-drop-amt').value) || 10;
+            if (amt > coins) {
+                showNotification("You don't have enough coins!");
+                closeCoinModal();
                 return;
             }
+            coins -= amt;
+            document.getElementById('coin-num').textContent = coins;
+            lootItems.push({ x: player.x, y: player.y, type: 'coins', amount: amt });
+            closeCoinModal();
+            showNotification(`Dropped ${amt} 🪙 on ground!`);
+        }
 
-            // Pickaxe Mining Logic (Slot 2)
-            if (activeHotbar === 1 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
-                for (let k in worldBlocks) {
-                    const blk = worldBlocks[k];
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-
-                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
-                        targetWorldY >= by && targetWorldY <= by + 40) {
-                        
-                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
-                        if (distToBlock <= 90) {
-                            blk.hp -= 35; // Damage block
-                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
-                            if (blk.hp <= 0) {
-                                delete worldBlocks[k];
-                                playerCoins += 15;
-                                document.getElementById('coin-num').innerText = playerCoins;
-                                showNotificationBox('Block destroyed (+15 🪙)!');
-                            }
-                            if (isHosting) broadcastStateToClients();
-                            else if (hostConnection && hostConnection.open) {
-                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
-                            }
-                        } else {
-                            showNotificationBox('Get closer to mine block!');
-                        }
-                        break;
-                    }
-                }
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 300);
+        function closeDebugModal() {
+            document.getElementById('debug-modal').style.display = 'none';
+        }
+        function verifyDebugPassword() {
+            let pw = document.getElementById('debug-pw-input').value;
+            if (pw === '2dp2pa') {
+                coins += 1000;
+                document.getElementById('coin-num').textContent = coins;
+                showNotification('🔓 Debug Unlocked: +1000 Coins added!');
+                closeDebugModal();
+            } else {
+                showNotification('❌ Incorrect password!');
             }
+            document.getElementById('debug-pw-input').value = '';
+        }
 
-            // Building Logic (Slot 3)
-            else if (activeHotbar === 2 && !actionCdBuild) {
-                const targetX = posX + (clickX - canvas.width/2);
-                const targetY = posY + (clickY - canvas.height/2);
-                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-                const newBlock = { type: 'wood', hp: 100 };
-                worldBlocks[bKey] = newBlock;
-
-                if (isHosting) {
-                    broadcastStateToClients();
-                } else if (hostConnection && hostConnection.open) {
-                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
-                }
-
-                actionCdBuild = true;
-                setTimeout(() => { actionCdBuild = false; }, 300);
+        // --- Chat System ---
+        function toggleChatInput() {
+            const input = document.getElementById('chat-text-input');
+            if (document.activeElement === input) {
+                input.blur();
+            } else {
+                input.focus();
             }
+        }
 
-            // Shooting Logic (Only equipped guns in slots 4, 5, 6)
-            else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunEquipped = weaponBarSlots[activeHotbar - 3];
-                if (!gunEquipped) {
-                    showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
-                    return;
+        document.getElementById('chat-text-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                let text = e.target.value.trim();
+                if (text) {
+                    appendChatFeed(myName, text, myTeam);
+                    broadcastData({ type: 'chat', sender: myName, text: text, team: myTeam });
                 }
-                if (!actionCdAttack) {
-                    bulletsList.push({
-                        x: posX,
-                        y: posY,
-                        vx: Math.cos(aimAngle) * 16,
-                        vy: Math.sin(aimAngle) * 16,
-                        type: gunEquipped,
-                        team: playerTeam
-                    });
-                    actionCdAttack = true;
-                    const cdTime = gunEquipped === 'sniper' ? 800 : gunEquipped === 'smg' ? 100 : 250;
-                    setTimeout(() => { actionCdAttack = false; }, cdTime);
-                }
+                e.target.value = '';
+                e.target.blur();
             }
         });
 
-        function updateGameLogic() {
-            if (!inGameActive) return;
+        function appendChatFeed(sender, text, team) {
+            chatMessages.push({ sender, text, team });
+            if (chatMessages.length > 30) chatMessages.shift();
+            const feed = document.getElementById('chat-feed');
+            feed.innerHTML = chatMessages.map(m => `<div class="chat-line"><b>[${m.team}] ${m.sender}:</b> ${m.text}</div>`).join('');
+            feed.scrollTop = feed.scrollHeight;
+        }
 
-            let moveSpeed = 3.8;
-            if (activeRide === 'bike') moveSpeed = 4.4;
-            if (activeRide === 'car') moveSpeed = 5.2;
+        // --- Core Action & Item Usage ---
+        function useSelectedHotbarItem() {
+            let item = hotbar[selectedSlot];
+            if (!item || item.type === 'empty') return;
 
-            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
-                if (currentStamina > 2) {
-                    moveSpeed *= 1.5;
-                    currentStamina -= 0.6;
+            if (item.type === 'weapon' || item.type === 'gun') {
+                let damage = item.damage || 25;
+                if (player.currentVehicleId) {
+                    let veh = vehicles.find(v => v.id === player.currentVehicleId);
+                    if (veh && vehicleSpecs[veh.type]?.damageMult) damage *= vehicleSpecs[veh.type].damageMult;
                 }
-            } else {
-                if (currentStamina < 100) currentStamina = Math.min(100, currentStamina + 0.3);
+                let bullet = {
+                    x: player.x + Math.cos(player.angle) * 20,
+                    y: player.y + Math.sin(player.angle) * 20,
+                    vx: Math.cos(player.angle) * 14,
+                    vy: Math.sin(player.angle) * 14,
+                    damage: damage,
+                    team: myTeam,
+                    isRocket: item.id === 'rocket'
+                };
+                bullets.push(bullet);
+                broadcastData({ type: 'spawn_bullet', bullet });
+            } else if (item.type === 'tool') {
+                // Pickaxe mine block
+                let targetX = player.x + Math.cos(player.angle) * 40;
+                let targetY = player.y + Math.sin(player.angle) * 40;
+                let hitB = blocks.find(b => targetX >= b.x && targetX <= b.x + b.w && targetY >= b.y && targetY <= b.y + b.h);
+                if (hitB) {
+                    hitB.hp -= 50;
+                    if (hitB.hp <= 0) {
+                        blocks = blocks.filter(b => b !== hitB);
+                        broadcastData({ type: 'destroy_block', x: hitB.x, y: hitB.y });
+                        showNotification('Block mined!');
+                    }
+                }
+            } else if (item.type === 'block' && item.count > 0) {
+                item.count--;
+                updateHotbarUI();
+                let bx = Math.round((player.x + Math.cos(player.angle) * 50) / 40) * 40 - 20;
+                let by = Math.round((player.y + Math.sin(player.angle) * 50) / 40) * 40 - 20;
+                let newB = { x: bx, y: by, w: 40, h: 40, hp: 100, maxHp: 100, team: myTeam };
+                blocks.push(newB);
+                broadcastData({ type: 'spawn_block', block: newB });
+            } else if (item.type === 'grenade' && item.count > 0) {
+                item.count--;
+                updateHotbarUI();
+                grenades.push({
+                    x: player.x, y: player.y,
+                    vx: Math.cos(player.angle) * 8,
+                    vy: Math.sin(player.angle) * 8,
+                    fuse: 90
+                });
+            } else if (item.type === 'heal' && item.count > 0 && player.hp < player.maxHp) {
+                item.count--;
+                player.hp = Math.min(player.maxHp, player.hp + 40);
+                updateHotbarUI();
+                showNotification('Used Bandage (+40 HP)');
             }
+        }
 
+        // --- Main Update Loop ---
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Movement Physics
             let dx = 0, dy = 0;
-            if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
-            if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
-            if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
-            if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
 
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
+            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+
+            let currentSpeed = player.speed;
+            if (player.isSprinting && player.stamina > 0) {
+                currentSpeed *= 1.6;
+                player.stamina = Math.max(0, player.stamina - 0.5);
+            } else {
+                player.stamina = Math.min(player.maxStamina, player.stamina + 0.2);
             }
 
-            let nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
-            let nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
+            if (player.currentVehicleId) {
+                let veh = vehicles.find(v => v.id === player.currentVehicleId);
+                if (veh) {
+                    currentSpeed *= (veh.speedMult || 1.2);
+                    veh.x += dx * currentSpeed;
+                    veh.y += dy * currentSpeed;
+                    player.x = veh.x;
+                    player.y = veh.y;
+                }
+            } else {
+                player.x += dx * currentSpeed;
+                player.y += dy * currentSpeed;
+            }
 
-            // Block Solid Hitbox Bounding Check
-            for (let k in worldBlocks) {
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
+            // Clamp World Bounds
+            player.x = Math.max(20, Math.min(WORLD_W - 20, player.x));
+            player.y = Math.max(20, Math.min(WORLD_H - 20, player.y));
 
-                const closestX = Math.max(bx, Math.min(nextX, bx + 40));
-                const closestY = Math.max(by, Math.min(nextY, by + 40));
-                const distX = nextX - closestX;
-                const distY = nextY - closestY;
-                const distanceSq = (distX * distX) + (distY * distY);
-
-                if (distanceSq < (RADIUS_PLAYER * RADIUS_PLAYER)) {
-                    nextX = posX;
-                    nextY = posY;
-                    break;
+            // Base Entry Check & Safe Zone
+            let inMyBase = false;
+            if (bases[myTeam]) {
+                let b = bases[myTeam];
+                if (player.x >= b.x && player.x <= b.x + b.w && player.y >= b.y && player.y <= b.y + b.h) {
+                    inMyBase = true;
                 }
             }
+            player.inBase = inMyBase;
 
-            // STRICT ENEMY BASE PROTECTION: Block movement if trying to enter an enemy base
-            if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
-                showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
-                nextX = posX;
-                nextY = posY;
-            }
+            // Block Collision checks
+            blocks.forEach(b => {
+                if (player.x + player.radius > b.x && player.x - player.radius < b.x + b.w &&
+                    player.y + player.radius > b.y && player.y - player.radius < b.y + b.h) {
+                    // Push out
+                    player.x -= dx * currentSpeed;
+                    player.y -= dy * currentSpeed;
+                }
+            });
 
-            // Base re-entry lockout rule for own team base
-            const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
-            const wasInBase = checkInsideBase(posX, posY, playerTeam);
-
-            if (wasInBase && !currentlyInBase && !baseLockedOut) {
-                executeSelfDestruct();
-            }
-
-            if (baseLockedOut && currentlyInBase) {
-                showNotificationBox('Base re-entry locked! Wait timer or kill an enemy.');
-            } else {
-                posX = nextX;
-                posY = nextY;
-            }
-
-            if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
-                currentHp = Math.min(100, currentHp + 0.2);
-            }
-
-            const screenCenterX = canvas.width / 2;
-            const screenCenterY = canvas.height / 2;
-            aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
-
-            // Bullet Movement & Damage Logic
-            for (let i = bulletsList.length - 1; i >= 0; i--) {
-                const b = bulletsList[i];
+            // Update Bullets
+            bullets.forEach((b, idx) => {
                 b.x += b.vx;
                 b.y += b.vy;
 
-                // Bullet Block Collisions
-                for (let k in worldBlocks) {
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-
-                    if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
-                        worldBlocks[k].hp -= 25;
-                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
-                        bulletsList.splice(i, 1);
-                        break;
-                    }
-                }
-
-                // Bullet Bot Hits
-                if (isPractice) {
-                    aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 4) {
-                            if (b.team !== bot.team) {
-                                bot.hp -= 35;
-                                if (bot.hp <= 0) onEnemyEliminated();
-                            }
-                        }
-                    });
-                }
-
-                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
-                    bulletsList.splice(i, 1);
-                }
-            }
-
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    if (bot.hp > 0) {
-                        bot.x += (Math.random() - 0.5) * 2;
-                        bot.y += (Math.random() - 0.5) * 2;
+                // Check block collision
+                blocks.forEach((block, blkIdx) => {
+                    if (b.x >= block.x && b.x <= block.x + block.w && b.y >= block.y && b.y <= block.y + block.h) {
+                        block.hp -= b.damage;
+                        if (block.hp <= 0) blocks.splice(blkIdx, 1);
+                        if (b.isRocket) triggerExplosion(b.x, b.y, 80, 100);
+                        bullets.splice(idx, 1);
                     }
                 });
-            }
-
-            if (isHosting) {
-                broadcastStateToClients();
-            } else if (hostConnection && hostConnection.open) {
-                hostConnection.send({
-                    type: 'player_update',
-                    username: myUsername,
-                    team: playerTeam,
-                    color: playerColor,
-                    x: posX,
-                    y: posY,
-                    hp: currentHp,
-                    coins: playerCoins
-                });
-            }
-
-            document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-            document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
-            document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
-            document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
-        }
-
-        function renderGameScene() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!inGameActive) return;
-
-            ctx.save();
-            let camX = posX - canvas.width / 2;
-            let camY = posY - canvas.height / 2;
-            if (cameraScoped) {
-                camX += (mouseXCoord - canvas.width / 2) * 0.35;
-                camY += (mouseYCoord - canvas.height / 2) * 0.35;
-            }
-            ctx.translate(-camX, -camY);
-
-            // Draw map grid and bases
-            ctx.fillStyle = '#1e362c';
-            ctx.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x <= MAP_SIZE; x += 80) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_SIZE); ctx.stroke();
-            }
-            for (let y = 0; y <= MAP_SIZE; y += 80) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, y); ctx.stroke();
-            }
-
-            // Draw Team Bases
-            const bases = [
-                { name: 'Red Stronghold', x: 0, y: 0, color: 'rgba(229,57,53,0.15)', border: '#e53935' },
-                { name: 'Blue Stronghold', x: MAP_SIZE - ZONE_SIZE, y: MAP_SIZE - ZONE_SIZE, color: 'rgba(30,136,229,0.15)', border: '#1e88e5' },
-                { name: 'Green Stronghold', x: 0, y: MAP_SIZE - ZONE_SIZE, color: 'rgba(67,160,71,0.15)', border: '#43a047' },
-                { name: 'Yellow Stronghold', x: MAP_SIZE - ZONE_SIZE, y: 0, color: 'rgba(251,192,45,0.15)', border: '#fbc02d' }
-            ];
-
-            bases.forEach(b => {
-                ctx.fillStyle = b.color;
-                ctx.fillRect(b.x, b.y, ZONE_SIZE, ZONE_SIZE);
-                ctx.strokeStyle = b.border;
-                ctx.lineWidth = 3;
-                ctx.strokeRect(b.x, b.y, ZONE_SIZE, ZONE_SIZE);
-
-                ctx.fillStyle = b.border;
-                ctx.font = 'bold 16px sans-serif';
-                ctx.fillText(b.name, b.x + 20, b.y + 35);
             });
 
-            // Draw world blocks with textures
-            for (let k in worldBlocks) {
-                const blk = worldBlocks[k];
-                if (!blk) continue;
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
-                ctx.fillStyle = '#795548';
-                ctx.fillRect(bx, by, 40, 40);
-                ctx.strokeStyle = '#3e2723';
-                ctx.lineWidth = 2.5;
-                ctx.strokeRect(bx, by, 40, 40);
-
-                // Wood texture crosslines
-                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx+40, by+40); ctx.stroke();
-
-                // Block Health Indicator
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(bx + 2, by - 10, 36, 5);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(bx + 2, by - 10, (Math.max(0, blk.hp) / 100) * 36, 5);
-            }
-
-            // Draw Dropped Loot
-            for (let lid in droppedLoot) {
-                const item = droppedLoot[lid];
-                if (!item) continue;
-                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#495057';
-                ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
-            }
-
-            // Draw Supply Crates
-            supplyCrates.forEach(crate => {
-                ctx.fillStyle = '#ff9800';
-                ctx.fillRect(crate.x - 15, crate.y - 15, 30, 30);
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(crate.x - 15, crate.y - 15, 30, 30);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillText('📦', crate.x - 6, crate.y + 4);
-            });
-
-            // Draw Remote Players safely without breaking the render loop when one dies
-            for (let pid in remotePlayers) {
-                const rp = remotePlayers[pid];
-                if (!rp || rp.hp <= 0) continue;
-                ctx.save();
-                ctx.translate(rp.x, rp.y);
-
-                ctx.fillStyle = rp.color || '#e53935';
-                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-
-                // Name & HP Bar
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(rp.username || 'Enemy', 0, -26);
-
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(-18, -20, 36, 4);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(-18, -20, (Math.max(0, rp.hp) / 100) * 36, 4);
-                ctx.restore();
-            }
-
-            // Draw Bots (Practice Mode) safely
-            aiBots.forEach(bot => {
-                if (!bot || bot.hp <= 0) return;
-                ctx.save();
-                ctx.translate(bot.x, bot.y);
-
-                ctx.fillStyle = bot.color || '#ff9800';
-                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(bot.username, 0, -26);
-
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(-18, -20, 36, 4);
-                ctx.fillStyle = '#e53935';
-                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / 100) * 36, 4);
-                ctx.restore();
-            });
-
-            // Draw Local Player with Gun / Tool Textures
-            if (currentHp > 0) {
-                ctx.save();
-                ctx.translate(posX, posY);
-                ctx.rotate(aimAngle);
-
-                // Draw Weapon Texture in Hand
-                if (activeHotbar === 0) {
-                    ctx.fillStyle = '#b0bec5';
-                    ctx.fillRect(10, 4, 18, 3);
-                } else if (activeHotbar === 1) {
-                    ctx.fillStyle = '#8d6e63';
-                    ctx.fillRect(10, 2, 14, 4);
-                    ctx.fillStyle = '#424242';
-                    ctx.fillRect(22, -4, 4, 16);
-                } else if (activeHotbar >= 3 && activeHotbar <= 5 && weaponBarSlots[activeHotbar - 3]) {
-                    ctx.fillStyle = '#37474f';
-                    ctx.fillRect(8, -3, 22, 6);
-                    ctx.fillStyle = '#111';
-                    ctx.fillRect(24, -2, 8, 4);
+            // Update Grenades
+            grenades.forEach((g, idx) => {
+                g.x += g.vx; g.y += g.vy;
+                g.vx *= 0.95; g.vy *= 0.95;
+                g.fuse--;
+                if (g.fuse <= 0) {
+                    triggerExplosion(g.x, g.y, 100, 120);
+                    grenades.splice(idx, 1);
                 }
-
-                ctx.fillStyle = playerColor;
-                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-                ctx.restore();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
-            }
-
-            // Draw Bullets with Tracer Effect
-            bulletsList.forEach(b => {
-                ctx.fillStyle = '#ffca28';
-                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = 'rgba(255,202,40,0.5)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(b.x, b.y);
-                ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
-                ctx.stroke();
             });
 
-            ctx.restore();
-        }
+            // Update HUD
+            document.getElementById('hp-num').textContent = Math.round(player.hp);
+            document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
+            document.getElementById('stamina-num').textContent = Math.round(player.stamina);
+            document.getElementById('stamina-bar-fill').style.width = `${(player.stamina / player.maxStamina) * 100}%`;
 
-        function renderMinimapScene() {
-            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
-            if (!inGameActive) return;
-            const scale = mCanvas.width / MAP_SIZE;
-            
-            mCtx.fillStyle = '#112218';
-            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-
-            mCtx.fillStyle = playerColor;
-            mCtx.beginPath();
-            mCtx.arc(posX * scale, posY * scale, 4, 0, Math.PI * 2);
-            mCtx.fill();
-
-            for (let pid in remotePlayers) {
-                const rp = remotePlayers[pid];
-                mCtx.fillStyle = rp.color || '#fff';
-                mCtx.beginPath();
-                mCtx.arc(rp.x * scale, rp.y * scale, 3, 0, Math.PI * 2);
-                mCtx.fill();
-            }
-        }
-
-        function gameLoop() {
-            updateGameLogic();
             renderGameScene();
-            renderMinimapScene();
             requestAnimationFrame(gameLoop);
         }
 
-        requestAnimationFrame(gameLoop);
+        function triggerExplosion(x, y, radius, damage) {
+            if (Math.hypot(player.x - x, player.y - y) < radius + player.radius) {
+                player.hp -= damage;
+                if (player.hp <= 0) handlePlayerDeath();
+            }
+            bots.forEach(bot => {
+                if (Math.hypot(bot.x - x, bot.y - y) < radius + bot.radius) {
+                    bot.hp -= damage;
+                }
+            });
+            bots = bots.filter(b => b.hp > 0);
+        }
+
+        function handlePlayerDeath() {
+            player.deaths++;
+            player.hp = player.maxHp;
+            if (bases[myTeam]) {
+                player.x = bases[myTeam].x + bases[myTeam].w / 2;
+                player.y = bases[myTeam].y + bases[myTeam].h / 2;
+            }
+            showNotification('You were eliminated! Respawned in base.');
+        }
+
+        // --- Rendering Engine ---
+        function renderGameScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            let camX = mouse.scoping ? player.x + (mouse.x - window.innerWidth/2)*0.6 : player.x;
+            let camY = mouse.scoping ? player.y + (mouse.y - window.innerHeight/2)*0.6 : player.y;
+            ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
+
+            // Draw World Grid & Bases
+            ctx.strokeStyle = '#274e3e';
+            ctx.lineWidth = 1;
+            const step = 80;
+            for (let x = 0; x <= WORLD_W; x += step) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke();
+            }
+            for (let y = 0; y <= WORLD_H; y += step) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke();
+            }
+
+            // Draw Bases
+            for (let k in bases) {
+                let b = bases[k];
+                ctx.fillStyle = b.color + '22';
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.strokeStyle = b.color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+                ctx.fillStyle = b.color;
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText(`${k} Stronghold`, b.x + 20, b.y + 30);
+            }
+
+            // Draw Vehicles
+            vehicles.forEach(v => {
+                ctx.fillStyle = bases[v.team]?.color || '#888';
+                ctx.fillRect(v.x - 20, v.y - 15, 40, 30);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px sans-serif';
+                ctx.fillText(`${v.icon} (${v.passengers.length}/${v.maxSeats})`, v.x - 20, v.y - 20);
+            });
+
+            // Draw Blocks
+            blocks.forEach(b => {
+                ctx.fillStyle = '#8d5524';
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.strokeStyle = '#d7ccc8';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+                // Health Indicator on block body/head
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(b.x, b.y - 6, b.w * (b.hp / b.maxHp), 4);
+            });
+
+            // Draw Bullets & Grenades
+            bullets.forEach(b => {
+                ctx.fillStyle = b.isRocket ? '#ff5722' : '#ffeb3b';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.isRocket ? 6 : 3, 0, Math.PI * 2); ctx.fill();
+            });
+
+            grenades.forEach(g => {
+                ctx.fillStyle = '#212121';
+                ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ff9800'; ctx.stroke();
+            });
+
+            // Draw Bots
+            bots.forEach(bot => {
+                ctx.fillStyle = bases[bot.team]?.color || '#9c27b0';
+                ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+                // Bot Health Indicator
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(bot.x - 16, bot.y - 26, 32, 4);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(bot.x - 16, bot.y - 26, 32 * (bot.hp / bot.maxHp), 4);
+            });
+
+            // Draw Local Player
+            let teamColor = bases[myTeam]?.color || '#ab47bc';
+            ctx.fillStyle = teamColor;
+            ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+
+            // Player Health Indicator
+            ctx.fillStyle = '#e53935';
+            ctx.fillRect(player.x - 18, player.y - 28, 36, 5);
+            ctx.fillStyle = '#4caf50';
+            ctx.fillRect(player.x - 18, player.y - 28, 36 * (player.hp / player.maxHp), 5);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${myName} (You)`, player.x, player.y - 36);
+
+            ctx.restore();
+            renderMinimap();
+        }
+
+        function renderMinimap() {
+            miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+            miniCtx.fillStyle = '#0a0a0e';
+            miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
+
+            let scale = miniCanvas.width / WORLD_W;
+
+            // Draw Minimap Bases
+            for (let k in bases) {
+                let b = bases[k];
+                miniCtx.fillStyle = b.color;
+                miniCtx.fillRect(b.x * scale, b.y * scale, b.w * scale, b.h * scale);
+            }
+
+            // Draw Local Player on Minimap
+            miniCtx.fillStyle = '#fff';
+            miniCtx.beginPath();
+            miniCtx.arc(player.x * scale, player.y * scale, 3, 0, Math.PI * 2);
+            miniCtx.fill();
+        }
+
+        function updateScoreboard() {
+            const list = document.getElementById('scoreboard-list');
+            list.innerHTML = `<div class="sb-row"><b>Name</b><b>Team</b><b>K / D</b></div>`;
+            list.innerHTML += `<div class="sb-row"><span>${myName} (You)</span><span>${myTeam}</span><span>${player.kills}/${player.deaths}</span></div>`;
+            bots.forEach(b => {
+                list.innerHTML += `<div class="sb-row"><span>${b.name}</span><span>${b.team}</span><span>0/0</span></div>`;
+            });
+        }
+
+        function exitToLobby() {
+            gameActive = false;
+            document.getElementById('stats-hud').style.display = 'none';
+            document.getElementById('wallet-badge').style.display = 'none';
+            document.getElementById('shop-toggle-btn').style.display = 'none';
+            document.getElementById('minimap-box').style.display = 'none';
+            document.getElementById('airdrop-banner').style.display = 'none';
+            document.getElementById('leave-btn').style.display = 'none';
+            document.getElementById('hotbar-dock').style.display = 'none';
+            document.getElementById('tip-banner').style.display = 'none';
+            document.getElementById('chat-text-input').style.display = 'none';
+            document.getElementById('lobby-box').style.display = 'block';
+            if (peer) peer.destroy();
+        }
     </script>
 </body>
 </html>
