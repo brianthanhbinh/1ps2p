@@ -852,6 +852,12 @@
             setupHostConnection(hostConn);
           }
         });
+        peer.on('error', (err) => {
+          console.error("PeerJS error:", err);
+          if (!isHost && err.type === 'peer-unavailable') {
+            alert('Host room not found! Make sure the host has created the room first.');
+          }
+        });
         peer.on('connection', (c) => {
           connections[c.peer] = c;
           setupClientConnection(c);
