@@ -38,7 +38,7 @@
         .btn-team-ffa { background: #8e24aa; color: #fff; }
 
         /* In-Game HUD Elements */
-        #stats-hud { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; width: 230px; display: none; }
+        #stats-hud { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; width: 230px; display: none; pointer-events: auto; }
         .meter-box { background: rgba(0,0,0,0.65); padding: 5px; border-radius: 6px; border: 1px solid #444; }
         .meter-header { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 3px; display: flex; justify-content: space-between; }
         .meter-track { width: 100%; height: 12px; background: #222; border-radius: 3px; overflow: hidden; }
@@ -104,7 +104,7 @@
         .chat-line { word-break: break-all; }
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
-        #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; }
+        #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
     </style>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
@@ -234,6 +234,7 @@
         const RADIUS_PLAYER = 16;
         const ZONE_SIZE = 500;
 
+        let inGameActive = false;
         let isHosting = false;
         let isPractice = false;
         let peerInstance = null;
@@ -242,7 +243,7 @@
         let roomCode = 'alpha';
         let currentMode = 'ffa';
         let playerTeam = 'FFA';
-        let playerColor = '#7b1fa2';
+        let playerColor = '#8e24aa';
 
         let peerConnections = {};
         let hostConnection = null;
@@ -282,10 +283,23 @@
         let airdropTimerSec = 30;
         let airdropIntervalHandle = null;
 
-        const PEER_PREFIX = 'arena-v4-net-';
+        const PEER_PREFIX = 'arena-v5-net-';
 
         function formatPeerId(code) {
             return PEER_PREFIX + code.trim().toLowerCase();
+        }
+
+        function showUIInGame(active) {
+            document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
+            document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
+            document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
+            document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
+            document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
+            document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
         }
 
         function switchShopTab(tabKey, btnElement) {
@@ -312,23 +326,69 @@
             document.getElementById('bandage-label').innerText = `Band x${bandagesCount}`;
         }
 
-        function getTeamBaseRegion(teamName) {
-            if (teamName === 'Red') return { x1: 0, y1: 0, x2: ZONE_SIZE, y2: ZONE_SIZE };
-            if (teamName === 'Blue') return { x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, x2: MAP_SIZE, y2: MAP_SIZE };
-            if (teamName === 'Green') return { x1: 0, y1: MAP_SIZE - ZONE_SIZE, x2: ZONE_SIZE, y2: MAP_SIZE };
-            if (teamName === 'Yellow') return { x1: MAP_SIZE - ZONE_SIZE, y1: 0, x2: MAP_SIZE, y2: ZONE_SIZE };
-            return null;
-        }
-
-        function checkInsideBase(x, y, teamName) {
-            const b = getTeamBaseRegion(teamName);
-            if (!b) return false;
-            return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
-        }
-
         function toggleShopPanel() {
             const panel = document.getElementById('shop-panel');
             if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            if (!panel) return;
+            const isOpen = panel.style.display === 'block';
+            panel.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) renderBackpackGrid();
+        }
+
+        function renderBackpackGrid() {
+            const gridContainer = document.getElementById('inv-grid');
+            if (!gridContainer) return;
+            let htmlStr = '';
+            for (let i = 0; i < 32; i++) {
+                const item = backpackInventory[i];
+                let label = item ? (item.subtype ? item.subtype.substring(0,4) : item.type) : '';
+                htmlStr += `<div class="inventory-slot" onclick="clickInventorySlot(${i})"><span>${i+1}</span><b style="font-size:9px;">${label}</b></div>`;
+            }
+            gridContainer.innerHTML = htmlStr;
+        }
+
+        function clickInventorySlot(idx) {
+            const item = backpackInventory[idx];
+            if (!item) return;
+            const emptyHotbarIdx = weaponBarSlots.findIndex(w => w === null);
+            if (emptyHotbarIdx !== -1 && item.type === 'gun') {
+                weaponBarSlots[emptyHotbarIdx] = item.subtype;
+                backpackInventory[idx] = null;
+                refreshHotbarUI();
+                renderBackpackGrid();
+            }
+        }
+
+        function pushToBackpack(itemObj) {
+            const emptyIdx = backpackInventory.findIndex(i => i === null);
+            if (emptyIdx !== -1) {
+                backpackInventory[emptyIdx] = itemObj;
+                return true;
+            }
+            return false;
+        }
+
+        function dropActiveItem() {
+            if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunIdx = activeHotbar - 3;
+                if (weaponBarSlots[gunIdx]) {
+                    spawnWorldLoot('gun', weaponBarSlots[gunIdx], posX + 30, posY + 30, 0);
+                    weaponBarSlots[gunIdx] = null;
+                    refreshHotbarUI();
+                }
+            } else if (activeHotbar === 6 && grenadesCount > 0) {
+                grenadesCount--;
+                spawnWorldLoot('grenade', null, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
+            } else if (activeHotbar === 7 && bandagesCount > 0) {
+                bandagesCount--;
+                spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
+            }
         }
 
         function buyStoreItem(itemType, subtypeName, price) {
@@ -362,6 +422,302 @@
             }
         }
 
+        function getTeamBaseRegion(teamName) {
+            if (teamName === 'Red') return { x1: 0, y1: 0, x2: ZONE_SIZE, y2: ZONE_SIZE };
+            if (teamName === 'Blue') return { x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, x2: MAP_SIZE, y2: MAP_SIZE };
+            if (teamName === 'Green') return { x1: 0, y1: MAP_SIZE - ZONE_SIZE, x2: ZONE_SIZE, y2: MAP_SIZE };
+            if (teamName === 'Yellow') return { x1: MAP_SIZE - ZONE_SIZE, y1: 0, x2: MAP_SIZE, y2: ZONE_SIZE };
+            return null;
+        }
+
+        function checkInsideBase(x, y, teamName) {
+            const b = getTeamBaseRegion(teamName);
+            if (!b) return false;
+            return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
+        }
+
+        // Host / Join Initialization
+        function initHostRoom() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Host';
+            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+            isHosting = true;
+            isPractice = false;
+
+            document.getElementById('net-status').innerText = 'Initializing Host Peer...';
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
+                promptGameModeSelection();
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Host Error: ${err.type}`;
+                if (err.type === 'unavailable-id') {
+                    showNotificationBox('Room ID already taken! Choose another code.');
+                }
+            });
+            peerInstance.on('connection', (conn) => {
+                setupServerConnection(conn);
+            });
+        }
+
+        function initJoinRoom() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
+            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+            isHosting = false;
+            isPractice = false;
+
+            document.getElementById('net-status').innerText = 'Connecting to Host...';
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                setupClientConnection(conn);
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
+                showNotificationBox('Could not connect to host room. Please check room code.');
+            });
+        }
+
+        function initPracticeMode() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
+            isHosting = false;
+            isPractice = true;
+            promptTeamSelection();
+        }
+
+        function promptGameModeSelection() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Game Mode';
+            opts.innerHTML = `
+                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team', 'Red')">2 Teams (Red vs Blue)</button>
+                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team', 'Red')">4 Teams (Red/Blue/Green/Yellow)</button>
+                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa', 'FFA')">Free For All (FFA)</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectGameModeAndTeam(mode, defaultTeam) {
+            currentMode = mode;
+            document.getElementById('modal-screen').style.display = 'none';
+            if (currentMode === 'ffa') {
+                assignTeamAndSpawn('FFA', '#8e24aa');
+            } else {
+                promptTeamSelection();
+            }
+        }
+
+        function promptTeamSelection() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Choose Your Team';
+            if (currentMode === 'ffa') {
+                opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA Neutral</button>`;
+            } else if (currentMode === '2team') {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                `;
+            } else {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                    <button class="btn-team-green" onclick="assignTeamAndSpawn('Green', '#43a047')">Green Team</button>
+                    <button class="btn-team-yellow" onclick="assignTeamAndSpawn('Yellow', '#fbc02d')">Yellow Team</button>
+                `;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function assignTeamAndSpawn(teamName, hexColor) {
+            playerTeam = teamName;
+            playerColor = hexColor;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            // Spawn player at base or center
+            const b = getTeamBaseRegion(playerTeam);
+            if (b) {
+                posX = (b.x1 + b.x2) / 2;
+                posY = (b.y1 + b.y2) / 2;
+            } else {
+                posX = MAP_SIZE / 2;
+                posY = MAP_SIZE / 2;
+            }
+
+            currentHp = 100;
+            currentStamina = 100;
+            inGameActive = true;
+            showUIInGame(true);
+            spawnTimeMarker = Date.now();
+            invulnerableSpawn = true;
+
+            if (isPractice) {
+                spawnPracticeBots();
+            }
+
+            if (!isHosting && hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'client_join',
+                    username: myUsername,
+                    team: playerTeam,
+                    color: playerColor,
+                    x: posX,
+                    y: posY
+                });
+            }
+
+            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
+            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+        }
+
+        function exitToLobby() {
+            inGameActive = false;
+            showUIInGame(false);
+            if (peerInstance) {
+                peerInstance.destroy();
+                peerInstance = null;
+            }
+            remotePlayers = {};
+            aiBots = [];
+            document.getElementById('net-status').innerText = 'Left room. Ready.';
+        }
+
+        function setupServerConnection(conn) {
+            peerConnections[conn.peer] = conn;
+            conn.on('data', (data) => {
+                if (data.type === 'client_join') {
+                    remotePlayers[conn.peer] = {
+                        username: data.username,
+                        team: data.team,
+                        color: data.color,
+                        x: data.x,
+                        y: data.y,
+                        hp: 100,
+                        coins: 100
+                    };
+                    // Broadcast back state
+                    broadcastStateToClients();
+                } else if (data.type === 'player_update') {
+                    if (remotePlayers[conn.peer]) {
+                        remotePlayers[conn.peer].x = data.x;
+                        remotePlayers[conn.peer].y = data.y;
+                        remotePlayers[conn.peer].hp = data.hp;
+                        remotePlayers[conn.peer].coins = data.coins;
+                        remotePlayers[conn.peer].username = data.username;
+                        remotePlayers[conn.peer].team = data.team;
+                        remotePlayers[conn.peer].color = data.color;
+                    }
+                    broadcastStateToClients();
+                }
+            });
+            conn.on('close', () => {
+                delete peerConnections[conn.peer];
+                delete remotePlayers[conn.peer];
+            });
+        }
+
+        function setupClientConnection(conn) {
+            hostConnection = conn;
+            conn.on('open', () => {
+                document.getElementById('net-status').innerText = 'Connected to Host!';
+                promptTeamSelection();
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'server_state') {
+                    if (data.players) {
+                        for (let pid in data.players) {
+                            if (pid !== peerInstance.id) {
+                                remotePlayers[pid] = data.players[pid];
+                            }
+                        }
+                    }
+                }
+            });
+            conn.on('close', () => {
+                showNotificationBox('Lost connection to host.');
+            });
+        }
+
+        function broadcastStateToClients() {
+            if (!isHosting) return;
+            let allPlayersState = {
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
+            };
+            for (let pid in remotePlayers) {
+                allPlayersState[pid] = remotePlayers[pid];
+            }
+            const packet = { type: 'server_state', players: allPlayersState };
+            for (let pid in peerConnections) {
+                if (peerConnections[pid].open) {
+                    peerConnections[pid].send(packet);
+                }
+            }
+        }
+
+        function spawnPracticeBots() {
+            aiBots = [];
+            for (let i = 0; i < 4; i++) {
+                aiBots.push({
+                    id: 'bot-' + i,
+                    username: 'Bot ' + (i + 1),
+                    team: i % 2 === 0 ? 'Blue' : 'Red',
+                    color: i % 2 === 0 ? '#1e88e5' : '#e53935',
+                    x: Math.random() * (MAP_SIZE - 400) + 200,
+                    y: Math.random() * (MAP_SIZE - 400) + 200,
+                    hp: 100,
+                    radius: RADIUS_PLAYER,
+                    vx: 0,
+                    vy: 0
+                });
+            }
+        }
+
+        function triggerAirdropSpawn() {
+            supplyCrates.push({
+                x: Math.random() * (MAP_SIZE - 600) + 300,
+                y: Math.random() * (MAP_SIZE - 600) + 300,
+                loot: 'gold'
+            });
+            showNotificationBox('✈️ Supply Airdrop has landed on the map!');
+        }
+
+        function spawnWorldLoot(type, subtype, x, y, value) {
+            const id = 'loot-' + Math.random().toString(36).substr(2, 9);
+            droppedLoot[id] = { type, subtype, x, y, value };
+        }
+
+        function executeSelfDestruct() {
+            currentHp = 0;
+            showNotificationBox('Self-destruct executed.');
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-text-input');
+            const txt = input.value.trim();
+            if (txt) {
+                const feed = document.getElementById('chat-feed');
+                feed.innerHTML += `<div class="chat-line"><b>${myUsername}:</b> ${escapeHtml(txt)}</div>`;
+                feed.scrollTop = feed.scrollHeight;
+                input.value = '';
+            }
+            input.blur();
+            input.style.display = 'none';
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Game Loop & Input handling
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouseXCoord = e.clientX - rect.left;
@@ -369,6 +725,7 @@
         });
 
         window.addEventListener('keydown', (e) => {
+            if (!inGameActive) return;
             if (document.getElementById('chat-text-input') === document.activeElement) {
                 if (e.code === 'Enter') sendChatMessage();
                 else if (e.code === 'Escape') {
@@ -403,6 +760,9 @@
             if (e.code === 'Tab') {
                 e.preventDefault();
                 toggleScoreboardDisplay(true);
+            }
+            if (e.code === 'Escape') {
+                exitToLobby();
             }
         });
 
@@ -451,11 +811,216 @@
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
+                const dist = Math.hypot(posX - item.x, posY - item.y);
+                if (dist < 45) {
+                    if (item.type === 'coin') {
+                        playerCoins += item.value;
+                        document.getElementById('coin-num').innerText = playerCoins;
+                    } else if (item.type === 'gun') {
+                        const emptyIdx = weaponBarSlots.findIndex(w => w === null);
+                        if (emptyIdx !== -1) weaponBarSlots[emptyIdx] = item.subtype;
+                        else pushToBackpack(item);
+                        refreshHotbarUI();
+                    }
+                    delete droppedLoot[lid];
+                    showNotificationBox('Picked up item!');
+                    break;
+                }
+            }
+
+            supplyCrates.forEach((crate, idx) => {
+                const dist = Math.hypot(posX - crate.x, posY - crate.y);
+                if (dist < 50) {
+                    playerCoins += 100;
+                    document.getElementById('coin-num').innerText = playerCoins;
+                    supplyCrates.splice(idx, 1);
+                    showNotificationBox('Opened Airdrop Crate (+100 🪙)!');
+                }
+            });
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!inGameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Attack or place block logic
+            if (activeHotbar === 2 && !actionCdBuild) {
+                // Place block
+                const bKey = `${Math.floor((posX + (clickX - canvas.width/2)) / 40)},${Math.floor((posY + (clickY - canvas.height/2)) / 40)}`;
+                worldBlocks[bKey] = { type: 'wood', hp: 100 };
+                actionCdBuild = true;
+                setTimeout(() => { actionCdBuild = false; }, 300);
+            } else if (!actionCdAttack) {
+                // Shoot or attack
+                bulletsList.push({
+                    x: posX,
+                    y: posY,
+                    vx: Math.cos(aimAngle) * 14,
+                    vy: Math.sin(aimAngle) * 14,
+                    team: playerTeam
+                });
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 200);
+            }
+        });
+
+        function updateGameLogic() {
+            if (!inGameActive) return;
+
+            let moveSpeed = 3.8;
+            if (activeRide === 'bike') moveSpeed = 4.4;
+            if (activeRide === 'car') moveSpeed = 5.2;
+
+            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
+                if (currentStamina > 2) {
+                    moveSpeed *= 1.5;
+                    currentStamina -= 0.6;
+                }
+            } else {
+                if (currentStamina < 100) currentStamina = Math.min(100, currentStamina + 0.3);
+            }
+
+            let dx = 0, dy = 0;
+            if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
+            if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
+            if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
+            if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            posX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
+            posY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
+
+            // Base entry check & immunity
+            if (checkInsideBase(posX, posY, playerTeam)) {
+                currentHp = Math.min(100, currentHp + 0.2); // regenerate inside base
+            }
+
+            // Aim angle toward cursor
+            const screenCenterX = canvas.width / 2;
+            const screenCenterY = canvas.height / 2;
+            aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
+
+            // Update bullets
+            for (let i = bulletsList.length - 1; i >= 0; i--) {
+                const b = bulletsList[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
+                    bulletsList.splice(i, 1);
+                }
+            }
+
+            // Update AI bots in practice mode
+            if (isPractice) {
+                aiBots.forEach(bot => {
+                    bot.x += (Math.random() - 0.5) * 2;
+                    bot.y += (Math.random() - 0.5) * 2;
+                });
+            }
+
+            // Sync with Peer
+            if (isHosting) {
+                broadcastStateToClients();
+            } else if (hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'player_update',
+                    username: myUsername,
+                    team: playerTeam,
+                    color: playerColor,
+                    x: posX,
+                    y: posY,
+                    hp: currentHp,
+                    coins: playerCoins
+                });
+            }
+
+            // HUD Meters update
+            document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
+            document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
+            document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
+            document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
+        }
+
+        function renderGameScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!inGameActive) return;
+
+            ctx.save();
+            let camX = posX - canvas.width / 2;
+            let camY = posY - canvas.height / 2;
+            if (cameraScoped) {
+                camX += (mouseXCoord - canvas.width / 2) * 0.35;
+                camY += (mouseYCoord - canvas.height / 2) * 0.35;
+            }
+            ctx.translate(-camX, -camY);
+
+            // Draw map grid and bases
+            ctx.fillStyle = '#1e362c';
+            ctx.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= MAP_SIZE; x += 80) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_SIZE); ctx.stroke();
+            }
+            for (let y = 0; y <= MAP_SIZE; y += 80) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, y); ctx.stroke();
+            }
+
+            // Draw Team Bases
+            const bases = [
+                { name: 'Red Stronghold', x: 0, y: 0, color: 'rgba(229,57,53,0.15)', border: '#e53935' },
+                { name: 'Blue Stronghold', x: MAP_SIZE - ZONE_SIZE, y: MAP_SIZE - ZONE_SIZE, color: 'rgba(30,136,229,0.15)', border: '#1e88e5' },
+                { name: 'Green Stronghold', x: 0, y: MAP_SIZE - ZONE_SIZE, color: 'rgba(67,160,71,0.15)', border: '#43a047' },
+                { name: 'Yellow Stronghold', x: MAP_SIZE - ZONE_SIZE, y: 0, color: 'rgba(251,192,45,0.15)', border: '#fbc02d' }
+            ];
+
+            bases.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, ZONE_SIZE, ZONE_SIZE);
+                ctx.strokeStyle = b.border;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(b.x, b.y, ZONE_SIZE, ZONE_SIZE);
+
+                ctx.fillStyle = b.border;
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText(b.name, b.x + 20, b.y + 35);
+            });
+
+            // Draw world blocks
+            for (let k in worldBlocks) {
+                const blk = worldBlocks[k];
+                const parts = k.split(',');
+                const bx = parseInt(parts[0]) * 40;
+                const by = parseInt(parts[1]) * 40;
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(bx, by, 40, 40);
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bx, by, 40, 40);
+
+                // Block Health Indicator on Head/Body
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(bx + 2, by - 10, 36, 5);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(bx + 2, by - 10, (blk.hp / 100) * 36, 5);
+            }
+
+            // Draw Loot
+            for (let lid in droppedLoot) {
+                const item = droppedLoot[lid];
                 ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ff9800';
                 ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
             }
 
+            // Draw Supply Crates
             supplyCrates.forEach(crate => {
                 ctx.fillStyle = '#ff5722';
                 ctx.fillRect(crate.x - 14, crate.y - 14, 28, 28);
@@ -467,13 +1032,14 @@
                 ctx.fillText('CRATE', crate.x, crate.y - 18);
             });
 
+            // Draw AI Bots
             if (isPractice) {
                 aiBots.forEach(bot => {
                     ctx.fillStyle = bot.color;
                     ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
 
-                    // Bot Health Bar
+                    // Bot Health Indicator
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
                     ctx.fillRect(bot.x - 18, bot.y - 32, 36, 6);
                     ctx.fillStyle = '#e53935';
@@ -481,6 +1047,7 @@
                 });
             }
 
+            // Draw Remote Players
             for (let pid in remotePlayers) {
                 const rp = remotePlayers[pid];
                 ctx.fillStyle = rp.color || '#fff';
@@ -492,13 +1059,14 @@
                 ctx.textAlign = 'center';
                 ctx.fillText(rp.username || 'Player', rp.x, rp.y - 28);
 
-                // Remote Player Health Bar
+                // Remote Player Health Indicator
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(rp.x - 18, rp.y - 42, 36, 6);
                 ctx.fillStyle = '#e53935';
                 ctx.fillRect(rp.x - 18, rp.y - 42, ((rp.hp || 100) / 100) * 36, 6);
             }
 
+            // Draw Local Player
             ctx.save();
             ctx.translate(posX, posY);
             ctx.rotate(aimAngle);
@@ -518,12 +1086,13 @@
             ctx.textAlign = 'center';
             ctx.fillText(myUsername + ' (You)', posX, posY - 28);
 
-            // Local Player Health Bar
+            // Local Player Health Indicator
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(posX - 18, posY - 42, 36, 6);
             ctx.fillStyle = '#e53935';
             ctx.fillRect(posX - 18, posY - 42, (Math.max(0, currentHp) / 100) * 36, 6);
 
+            // Draw Bullets
             ctx.fillStyle = '#ffca28';
             bulletsList.forEach(b => {
                 ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
@@ -534,6 +1103,7 @@
 
         function renderMinimapScene() {
             mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            if (!inGameActive) return;
             const scale = mCanvas.width / MAP_SIZE;
             
             mCtx.fillStyle = '#112218';
@@ -552,6 +1122,15 @@
                 mCtx.fill();
             }
         }
+
+        function gameLoop() {
+            updateGameLogic();
+            renderGameScene();
+            renderMinimapScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
