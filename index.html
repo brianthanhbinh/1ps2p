@@ -600,6 +600,7 @@
         function executeSelfDestruct() {
             if (selfDestructCountdown > 0) return;
             selfDestructCountdown = 30;
+            baseLockedOut = true;
             const banner = document.getElementById('self-destruct-banner');
             const cdSpan = document.getElementById('sd-countdown');
             if (banner) banner.style.display = 'block';
@@ -612,14 +613,8 @@
                 if (selfDestructCountdown <= 0) {
                     clearInterval(selfDestructTimerHandle);
                     if (banner) banner.style.display = 'none';
-                    currentHp = 100;
                     baseLockedOut = false;
-                    const b = getTeamBaseRegion(playerTeam);
-                    if (b) {
-                        posX = (b.x1 + b.x2) / 2;
-                        posY = (b.y1 + b.y2) / 2;
-                    }
-                    showNotificationBox('Base Re-entry unlocked! Respawned in Base!');
+                    showNotificationBox('Base Re-entry unlocked!');
                 }
             }, 1000);
         }
@@ -1092,8 +1087,7 @@
             const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
             const wasInBase = checkInsideBase(posX, posY, playerTeam);
 
-            if (wasInBase && !currentlyInBase) {
-                baseLockedOut = true; // Left base, now locked out
+            if (wasInBase && !currentlyInBase && !baseLockedOut) {
                 executeSelfDestruct();
             }
 
@@ -1233,39 +1227,107 @@
                 ctx.fillRect(bx + 2, by - 10, (blk.hp / 100) * 36, 5);
             }
 
-            // Draw Local Player with Gun / Tool Textures
-            ctx.save();
-            ctx.translate(posX, posY);
-            ctx.rotate(aimAngle);
-
-            // Draw Weapon Texture in Hand
-            if (activeHotbar === 0) {
-                // Sword
-                ctx.fillStyle = '#b0bec5';
-                ctx.fillRect(10, 4, 18, 3);
-            } else if (activeHotbar === 1) {
-                // Pickaxe
-                ctx.fillStyle = '#8d6e63';
-                ctx.fillRect(10, 2, 14, 4);
-                ctx.fillStyle = '#424242';
-                ctx.fillRect(22, -4, 4, 16);
-            } else if (activeHotbar >= 3 && activeHotbar <= 5 && weaponBarSlots[activeHotbar - 3]) {
-                // Gun Barrel Texture
-                ctx.fillStyle = '#37474f';
-                ctx.fillRect(8, -3, 22, 6);
-                ctx.fillStyle = '#111';
-                ctx.fillRect(24, -2, 8, 4);
+            // Draw Dropped Loot
+            for (let lid in droppedLoot) {
+                const item = droppedLoot[lid];
+                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#495057';
+                ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
             }
 
-            ctx.fillStyle = playerColor;
-            ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-            ctx.restore();
+            // Draw Supply Crates
+            supplyCrates.forEach(crate => {
+                ctx.fillStyle = '#ff9800';
+                ctx.fillRect(crate.x - 15, crate.y - 15, 30, 30);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(crate.x - 15, crate.y - 15, 30, 30);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText('📦', crate.x - 6, crate.y + 4);
+            });
 
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 11px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(myUsername + ' (You)', posX, posY - 28);
+            // Draw Remote Players
+            for (let pid in remotePlayers) {
+                const rp = remotePlayers[pid];
+                if (rp.hp <= 0) continue;
+                ctx.save();
+                ctx.translate(rp.x, rp.y);
+
+                ctx.fillStyle = rp.color || '#e53935';
+                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                // Name & HP Bar
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(rp.username || 'Enemy', 0, -26);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(-18, -20, 36, 4);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(-18, -20, (Math.max(0, rp.hp) / 100) * 36, 4);
+                ctx.restore();
+            }
+
+            // Draw Bots (Practice Mode)
+            aiBots.forEach(bot => {
+                if (bot.hp <= 0) return;
+                ctx.save();
+                ctx.translate(bot.x, bot.y);
+
+                ctx.fillStyle = bot.color || '#ff9800';
+                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(bot.username, 0, -26);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(-18, -20, 36, 4);
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / 100) * 36, 4);
+                ctx.restore();
+            });
+
+            // Draw Local Player with Gun / Tool Textures
+            if (currentHp > 0) {
+                ctx.save();
+                ctx.translate(posX, posY);
+                ctx.rotate(aimAngle);
+
+                // Draw Weapon Texture in Hand
+                if (activeHotbar === 0) {
+                    // Sword
+                    ctx.fillStyle = '#b0bec5';
+                    ctx.fillRect(10, 4, 18, 3);
+                } else if (activeHotbar === 1) {
+                    // Pickaxe
+                    ctx.fillStyle = '#8d6e63';
+                    ctx.fillRect(10, 2, 14, 4);
+                    ctx.fillStyle = '#424242';
+                    ctx.fillRect(22, -4, 4, 16);
+                } else if (activeHotbar >= 3 && activeHotbar <= 5 && weaponBarSlots[activeHotbar - 3]) {
+                    // Gun Barrel Texture
+                    ctx.fillStyle = '#37474f';
+                    ctx.fillRect(8, -3, 22, 6);
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(24, -2, 8, 4);
+                }
+
+                ctx.fillStyle = playerColor;
+                ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
+            }
 
             // Draw Bullets with Tracer Effect
             bulletsList.forEach(b => {
