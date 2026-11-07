@@ -7,7 +7,8 @@
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
       body, html { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      #game-canvas { width: 100%; height: 100%; display: block; background: #2b4c3f; }
+      #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
+      #game-canvas { width: 1200px; height: 800px; display: block; background: #2b4c3f; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
       
       #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
       
@@ -109,7 +110,9 @@
   </head>
   <body>
 
-    <canvas id="game-canvas"></canvas>
+    <div id="game-container">
+      <canvas id="game-canvas" width="1200" height="800"></canvas>
+    </div>
 
     <div id="ui">
       <div id="hud-container">
@@ -128,7 +131,7 @@
 
       <!-- Minimap Container -->
       <div id="minimap-container">
-        <canvas id="minimap-canvas"></canvas>
+        <canvas id="minimap-canvas" width="160" height="160"></canvas>
       </div>
 
       <!-- Return to Base Timer Pill -->
@@ -171,12 +174,12 @@
       <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">30s</span></div>
       <button id="pause-btn" onclick="leaveRoom()">⏸️ Leave Room (ESC)</button>
       <div id="status-msg">Click Host, Join or Practice to Start (Hold TAB for Scoreboard)</div>
-      <div id="controls-tip">WASD: Move | Shift: Sprint | Left-Click: Use | `: Zoom | E: Inventory | Q: Drop | F/X: Collect | Z: Drop Coins | R: Self-Destruct</div>
+      <div id="controls-tip">WASD: Move | Shift: Sprint | Left-Click: Use | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect | Z: Drop Coins</div>
 
       <!-- Inventory Modal -->
       <div id="inventory-modal">
         <h3>🎒 INVENTORY (32 SLOTS)</h3>
-        <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click slot to select item.</p>
+        <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click item to send to hotbar (if space) or click hotbar slot.</p>
         <div class="inventory-grid" id="inventory-grid"></div>
         <button style="width:100%; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleInventory()">Close (E)</button>
       </div>
@@ -210,14 +213,14 @@
       </div>
 
       <div id="hotbar">
-        <div class="slot active" id="slot-0" onclick="switchSlot(0)"><span>1</span><b>Sword</b></div>
-        <div class="slot" id="slot-1" onclick="switchSlot(1)"><span>2</span><b>Pickaxe</b></div>
-        <div class="slot" id="slot-2" onclick="switchSlot(2)"><span>3</span><b>Block</b></div>
-        <div class="slot" id="slot-3" onclick="switchSlot(3)"><span>4</span><b id="gun-slot-0-label">Empty</b></div>
-        <div class="slot" id="slot-4" onclick="switchSlot(4)"><span>5</span><b id="gun-slot-1-label">Empty</b></div>
-        <div class="slot" id="slot-5" onclick="switchSlot(5)"><span>6</span><b id="gun-slot-2-label">Empty</b></div>
-        <div class="slot" id="slot-6" onclick="switchSlot(6)"><span>7</span><b id="grenade-label">Grenade</b></div>
-        <div class="slot" id="slot-7" onclick="switchSlot(7)"><span>8</span><b id="bandage-label">Bandage</b></div>
+        <div class="slot active" id="slot-0" onclick="handleHotbarClick(0)"><span>1</span><b>Sword</b></div>
+        <div class="slot" id="slot-1" onclick="handleHotbarClick(1)"><span>2</span><b>Pickaxe</b></div>
+        <div class="slot" id="slot-2" onclick="handleHotbarClick(2)"><span>3</span><b>Block</b></div>
+        <div class="slot" id="slot-3" onclick="handleHotbarClick(3)"><span>4</span><b id="gun-slot-0-label">Empty</b></div>
+        <div class="slot" id="slot-4" onclick="handleHotbarClick(4)"><span>5</span><b id="gun-slot-1-label">Empty</b></div>
+        <div class="slot" id="slot-5" onclick="handleHotbarClick(5)"><span>6</span><b id="gun-slot-2-label">Empty</b></div>
+        <div class="slot" id="slot-6" onclick="handleHotbarClick(6)"><span>7</span><b id="grenade-label">Grenade</b></div>
+        <div class="slot" id="slot-7" onclick="handleHotbarClick(7)"><span>8</span><b id="bandage-label">Bandage</b></div>
       </div>
     </div>
 
@@ -226,15 +229,6 @@
       const ctx = canvas.getContext('2d');
       const minimapCanvas = document.getElementById('minimap-canvas');
       const minimapCtx = minimapCanvas.getContext('2d');
-
-      function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        minimapCanvas.width = 160;
-        minimapCanvas.height = 160;
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
 
       const WORLD_SIZE = 2500;
       const PLAYER_RADIUS = 16;
@@ -260,8 +254,8 @@
       let stamina = 100;
       const maxStamina = 100;
       let coins = 100;
-      let currentVehicle = null; // null, 'bike', 'car', 'tank'
-      let isScoping = false; // Zoom forward toward mouse when holding `
+      let currentVehicle = null;
+      let isScoping = false; // Scope toward mouse when holding `
 
       let isSpawnProtected = true;
       let isLeftBase = false;
@@ -274,9 +268,7 @@
       let grenadeCount = 3;
       let bandageCount = 2;
       let inventory = new Array(32).fill(null);
-      let selectedInvIndex = null; // For inventory slot swapping
 
-      let cameraZoom = 1.0; // Zoom level controlled by backtick `
       let blockCooldown = false;
       let attackCooldown = false;
 
@@ -340,11 +332,7 @@
       function toggleShop() {
         const modal = document.getElementById('shop-modal');
         if (!modal) return;
-        if (modal.style.display === 'block') {
-          modal.style.display = 'none';
-        } else {
-          modal.style.display = 'block';
-        }
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
       }
 
       function buyGun(type, cost) {
@@ -354,12 +342,15 @@
         }
         const emptyIdx = gunSlots.findIndex(g => g === null);
         if (emptyIdx === -1) {
-          alert('Hotbar gun slots are full! Drop a gun with Q first.');
-          return;
+          if (!addItemToInventory({ type: 'gun', subtype: type })) {
+            alert('Inventory and hotbar are full!');
+            return;
+          }
+        } else {
+          gunSlots[emptyIdx] = type;
         }
         coins -= cost;
         document.getElementById('coin-val').innerText = coins;
-        gunSlots[emptyIdx] = type;
         updateHotbarLabels();
       }
 
@@ -375,8 +366,9 @@
       }
 
       window.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
       });
 
       window.addEventListener('keydown', (e) => {
@@ -531,7 +523,7 @@
         }
       }
 
-      window.addEventListener('mousedown', (e) => {
+      canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || document.getElementById('lobby-panel').style.display !== 'none') return;
         if (document.getElementById('chat-input') === document.activeElement || document.getElementById('shop-modal').style.display === 'block') return;
         handleMouseAction();
@@ -655,9 +647,7 @@
         const key = `${bx},${by}`;
         if (placedBlocks[key]) {
           placedBlocks[key].hp -= 25;
-          if (placedBlocks[key].hp <= 0) {
-            delete placedBlocks[key];
-          }
+          if (placedBlocks[key].hp <= 0) delete placedBlocks[key];
         }
       }
 
@@ -675,12 +665,8 @@
       function toggleInventory() {
         const modal = document.getElementById('inventory-modal');
         if (!modal) return;
-        if (modal.style.display === 'block') {
-          modal.style.display = 'none';
-        } else {
-          modal.style.display = 'block';
-          renderInventoryGrid();
-        }
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        if (modal.style.display === 'block') renderInventoryGrid();
       }
 
       function renderInventoryGrid() {
@@ -690,38 +676,45 @@
         for (let i = 0; i < 32; i++) {
           const item = inventory[i];
           const div = document.createElement('div');
-          div.className = 'inv-slot' + (selectedInvIndex === i ? ' active' : '');
+          div.className = 'inv-slot';
           div.innerHTML = `<span>${i+1}</span><b>${item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : ''}</b>`;
-          div.onclick = () => handleInventoryClick(i);
+          div.onclick = () => moveFromInventoryToHotbar(i);
           grid.appendChild(div);
         }
       }
 
-      function handleInventoryClick(invIdx) {
-        if (selectedInvIndex === null) {
-          if (inventory[invIdx] !== null) {
-            selectedInvIndex = invIdx;
-            renderInventoryGrid();
-          }
-        } else {
-          // Swap inventory slots
-          const temp = inventory[selectedInvIndex];
-          inventory[selectedInvIndex] = inventory[invIdx];
-          inventory[invIdx] = temp;
-          selectedInvIndex = null;
-          renderInventoryGrid();
-        }
-      }
-
-      function transferToHotbar(invIdx, hotbarIdx) {
+      function moveFromInventoryToHotbar(invIdx) {
         const item = inventory[invIdx];
         if (!item) return;
         if (item.type === 'gun') {
-          const oldGun = gunSlots[hotbarIdx];
-          gunSlots[hotbarIdx] = item.subtype;
-          inventory[invIdx] = oldGun ? { type: 'gun', subtype: oldGun } : null;
-          updateHotbarLabels();
-          renderInventoryGrid();
+          const emptyHotbarIdx = gunSlots.findIndex(g => g === null);
+          if (emptyHotbarIdx !== -1) {
+            gunSlots[emptyHotbarIdx] = item.subtype;
+            inventory[invIdx] = null;
+            updateHotbarLabels();
+            renderInventoryGrid();
+          } else {
+            alert('Hotbar gun slots are full!');
+          }
+        }
+      }
+
+      function handleHotbarClick(hotbarIdx) {
+        switchSlot(hotbarIdx);
+        // If clicking a gun slot (4,5,6 corresponding to indices 3,4,5), send back to inventory if not empty
+        if (hotbarIdx >= 3 && hotbarIdx <= 5) {
+          const gunType = gunSlots[hotbarIdx - 3];
+          if (gunType) {
+            const emptyInvIdx = inventory.findIndex(slot => slot === null);
+            if (emptyInvIdx !== -1) {
+              inventory[emptyInvIdx] = { type: 'gun', subtype: gunType };
+              gunSlots[hotbarIdx - 3] = null;
+              updateHotbarLabels();
+              if (document.getElementById('inventory-modal').style.display === 'block') {
+                renderInventoryGrid();
+              }
+            }
+          }
         }
       }
 
@@ -766,9 +759,9 @@
 
       function spawnBots() {
         bots = [
-          { x: 1200, y: 1200, hp: 100, radius: 14, color: '#e53935', angle: 0 },
-          { x: 1400, y: 1300, hp: 100, radius: 14, color: '#1e88e5', angle: 0 },
-          { x: 1300, y: 1100, hp: 100, radius: 14, color: '#43a047', angle: 0 }
+          { x: 1200, y: 1200, hp: 100, radius: 14, color: '#e53935' },
+          { x: 1400, y: 1300, hp: 100, radius: 14, color: '#1e88e5' },
+          { x: 1300, y: 1100, hp: 100, radius: 14, color: '#43a047' }
         ];
       }
 
