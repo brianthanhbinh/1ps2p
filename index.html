@@ -451,669 +451,20 @@
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
-                if (Math.hypot(item.x - posX, item.y - posY) < 45) {
-                    if (item.type === 'coin') {
-                        playerCoins += item.amount;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                    } else if (item.type === 'gun') {
-                        pushToBackpack({ type: 'gun', subtype: item.subtype });
-                    } else if (item.type === 'grenade') {
-                        grenadesCount++;
-                        refreshHotbarUI();
-                    } else if (item.type === 'bandage') {
-                        bandagesCount++;
-                        refreshHotbarUI();
-                    }
-                    delete droppedLoot[lid];
-                    break;
-                }
-            }
-
-            for (let i = supplyCrates.length - 1; i >= 0; i--) {
-                const crate = supplyCrates[i];
-                if (Math.hypot(crate.x - posX, crate.y - posY) < 55) {
-                    if (crate.rewardType === 'gun') {
-                        pushToBackpack({ type: 'gun', subtype: crate.subtype });
-                    } else if (crate.rewardType === 'grenade') {
-                        grenadesCount += crate.amount || 2;
-                    } else if (crate.rewardType === 'bandage') {
-                        bandagesCount += crate.amount || 2;
-                    } else if (crate.rewardType === 'coins') {
-                        playerCoins += crate.amount || 150;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                    }
-                    refreshHotbarUI();
-                    supplyCrates.splice(i, 1);
-                    break;
-                }
-            }
-        }
-
-        function spawnWorldLoot(type, subtype, x, y, amount = 1) {
-            const id = 'loot_' + Math.random().toString(36).substr(2, 9);
-            droppedLoot[id] = { id, type, subtype, x, y, amount };
-        }
-
-        function respawnPlayerEntity() {
-            currentHp = 100;
-            invulnerableSpawn = true;
-            spawnTimeMarker = Date.now();
-            setTimeout(() => invulnerableSpawn = false, 2500);
-
-            if (currentMode !== 'ffa') {
-                if (playerTeam === 'Red') { posX = 160; posY = 160; }
-                else if (playerTeam === 'Blue') { posX = MAP_SIZE - 160; posY = MAP_SIZE - 160; }
-                else if (playerTeam === 'Green') { posX = 160; posY = MAP_SIZE - 160; }
-                else if (playerTeam === 'Yellow') { posX = MAP_SIZE - 160; posY = 160; }
-            } else {
-                posX = 600 + Math.random() * (MAP_SIZE - 1200);
-                posY = 600 + Math.random() * (MAP_SIZE - 1200);
-            }
-        }
-
-        function executeSelfDestruct() {
-            if (Date.now() - spawnTimeMarker < 3000) return;
-            weaponBarSlots.forEach(g => {
-                if (g) spawnWorldLoot('gun', g, posX + (Math.random()*40-20), posY + (Math.random()*40-20));
-            });
-            weaponBarSlots = [null, null, null];
-            activeRide = null;
-            refreshHotbarUI();
-            currentHp = 0;
-            respawnPlayerEntity();
-        }
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 0 || document.getElementById('lobby-box').style.display !== 'none') return;
-            if (document.getElementById('chat-text-input') === document.activeElement || document.getElementById('shop-panel').style.display === 'block') return;
-            triggerPlayerAction();
-        });
-
-        function triggerPlayerAction() {
-            if (actionCdAttack) return;
-            if (currentMode !== 'ffa' && checkInsideBase(posX, posY, playerTeam)) return;
-
-            const worldTargetX = posX + (mouseXCoord - canvas.width / 2);
-            const worldTargetY = posY + (mouseYCoord - canvas.height / 2);
-            const vecX = worldTargetX - posX;
-            const vecY = worldTargetY - posY;
-            const len = Math.hypot(vecX, vecY);
-            const dirX = len > 0 ? vecX / len : 1;
-            const dirY = len > 0 ? vecY / len : 0;
-
-            if (activeHotbar === 0) {
-                actionCdAttack = true;
-                setTimeout(() => actionCdAttack = false, 300);
-                executeMeleeStrike(dirX, dirY, 48, 32);
-            } else if (activeHotbar === 1) {
-                actionCdAttack = true;
-                setTimeout(() => actionCdAttack = false, 550);
-                executeMiningStrike(worldTargetX, worldTargetY);
-            } else if (activeHotbar === 2) {
-                if (actionCdBuild) return;
-                actionCdBuild = true;
-                const bx = Math.floor(worldTargetX / 40);
-                const by = Math.floor(worldTargetY / 40);
-                const k = `${bx},${by}`;
-                if (!worldBlocks[k]) {
-                    worldBlocks[k] = { bx, by, color: playerColor, hp: 100 };
-                    broadcastNetworkState();
-                }
-                setTimeout(() => actionCdBuild = false, 350);
-            } else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const weaponType = weaponBarSlots[activeHotbar - 3];
-                if (!weaponType) return;
-
-                actionCdAttack = true;
-                let cd = 350, spd = 14, dmg = 22;
-                if (weaponType === 'shotgun') { cd = 700; spd = 12; dmg = 18; }
-                if (weaponType === 'sniper') { cd = 1000; spd = 26; dmg = 60; }
-                if (weaponType === 'smg') { cd = 120; spd = 16; dmg = 13; }
-                if (weaponType === 'rocket') { cd = 1100; spd = 8; dmg = 75; }
-
-                setTimeout(() => actionCdAttack = false, cd);
-
-                const bullet = {
-                    x: posX + dirX * 24,
-                    y: posY + dirY * 24,
-                    vx: dirX * spd,
-                    vy: dirY * spd,
-                    weaponType,
-                    ownerId: myPeerId,
-                    ownerTeam: playerTeam,
-                    damage: dmg
-                };
-                bulletsList.push(bullet);
-                broadcastBullet(bullet);
-            }
-        }
-
-        function sendChatMessage() {
-            const inputEl = document.getElementById('chat-text-input');
-            const message = inputEl.value.trim();
-            inputEl.value = '';
-            inputEl.blur();
-            inputEl.style.display = 'none';
-            if (!message) return;
-            appendChatFeed(myUsername, currentMode === 'ffa' ? 'GLOBAL' : playerTeam, message);
-        }
-
-        function appendChatFeed(sender, badge, text) {
-            const feed = document.getElementById('chat-feed');
-            if (!feed) return;
-            const line = document.createElement('div');
-            line.className = 'chat-line';
-            line.innerHTML = `<span style="color:#ffca28;">[${badge}]</span> <b>${sender}:</b> ${escapeHtmlText(text)}`;
-            feed.appendChild(line);
-            feed.scrollTop = feed.scrollHeight;
-        }
-
-        function escapeHtmlText(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-        function executeMeleeStrike(nx, ny, reach, dmg) {
-            const hx = posX + nx * reach;
-            const hy = posY + ny * reach;
-            for (let pid in remotePlayers) {
-                const rp = remotePlayers[pid];
-                if (currentMode !== 'ffa' && (rp.team === playerTeam || checkInsideBase(rp.x, rp.y, rp.team))) continue;
-                if (Math.hypot(rp.x - hx, rp.y - hy) < RADIUS_PLAYER + 24) {
-                    dispatchDamageToPeer(pid, dmg);
-                }
-            }
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    if (Math.hypot(bot.x - hx, bot.y - hy) < RADIUS_PLAYER + 24) {
-                        bot.hp -= dmg;
-                        if (bot.hp <= 0) {
-                            bot.hp = 100;
-                            bot.x = 900 + Math.random() * 600;
-                            bot.y = 900 + Math.random() * 600;
-                            playerCoins += 30;
-                            document.getElementById('coin-num').innerText = playerCoins;
-                        }
-                    }
-                });
-            }
-        }
-
-        function dispatchDamageToPeer(targetId, dmg) {
-            if (isHosting && peerConnections[targetId]) {
-                peerConnections[targetId].send({ type: 'dmg', amount: dmg });
-            } else if (!isHosting && hostConnection && hostConnection.open) {
-                hostConnection.send({ type: 'peer_damage', targetId, amount: dmg });
-            }
-        }
-
-        function executeMiningStrike(tx, ty) {
-            const bx = Math.floor(tx / 40);
-            const by = Math.floor(ty / 40);
-            const k = `${bx},${by}`;
-            if (worldBlocks[k]) {
-                worldBlocks[k].hp -= 30;
-                if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
-                broadcastNetworkState();
-            }
-        }
-
-        function dropActiveItem() {
-            if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gIdx = activeHotbar - 3;
-                if (weaponBarSlots[gIdx]) {
-                    spawnWorldLoot('gun', weaponBarSlots[gIdx], posX + 25, posY + 25);
-                    weaponBarSlots[gIdx] = null;
-                    refreshHotbarUI();
-                }
-            }
-        }
-
-        function toggleInventoryPanel() {
-            const panel = document.getElementById('inventory-panel');
-            if (!panel) return;
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            if (panel.style.display === 'block') renderBackpackGrid();
-        }
-
-        function renderBackpackGrid() {
-            const grid = document.getElementById('inv-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            for (let i = 0; i < 32; i++) {
-                const item = backpackInventory[i];
-                const cell = document.createElement('div');
-                cell.className = 'inventory-slot';
-                cell.innerHTML = `<span>${i+1}</span><b>${item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : ''}</b>`;
-                cell.onclick = () => moveFromBackpackToHotbar(i);
-                grid.appendChild(cell);
-            }
-        }
-
-        function moveFromBackpackToHotbar(invIndex) {
-            const item = backpackInventory[invIndex];
-            if (!item) return;
-            if (item.type === 'gun') {
-                const emptySlot = weaponBarSlots.findIndex(g => g === null);
-                if (emptySlot !== -1) {
-                    weaponBarSlots[emptySlot] = item.subtype;
-                    backpackInventory[invIndex] = null;
-                    refreshHotbarUI();
-                    renderBackpackGrid();
-                } else {
-                    showNotificationBox('Hotbar weapon slots are full!');
-                }
-            }
-        }
-
-        function pushToBackpack(item) {
-            const emptyIdx = backpackInventory.findIndex(slot => slot === null);
-            if (emptyIdx !== -1) {
-                backpackInventory[emptyIdx] = item;
-                return true;
-            }
-            return false;
-        }
-
-        function initHostRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'HostUser';
-            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-            isHosting = true;
-            isPractice = false;
-            promptGameModeSelection();
-        }
-
-        function initJoinRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'ClientUser';
-            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-            isHosting = false;
-            isPractice = false;
-            initializePeerNetwork();
-        }
-
-        function initializePeerNetwork() {
-            const networkId = formatPeerId(roomCode);
-            if (peerInstance) {
-                try { peerInstance.destroy(); } catch(e){}
-            }
-            peerInstance = new Peer(isHosting ? networkId : undefined, {
-                config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
-            });
-
-            peerInstance.on('open', (id) => {
-                myPeerId = id;
-                document.getElementById('net-status').innerText = `Room: ${roomCode} (${isHosting ? 'Host' : 'Joined'})`;
-                if (!isHosting) {
-                    hostConnection = peerInstance.connect(networkId);
-                    setupHostLink(hostConnection);
-                }
-            });
-
-            peerInstance.on('error', (err) => {
-                console.error("Peer error:", err);
-                if (!isHosting) showNotificationBox('Failed to connect to room.');
-            });
-
-            peerInstance.on('connection', (conn) => {
-                peerConnections[conn.peer] = conn;
-                setupClientLink(conn);
-            });
-        }
-
-        function setupHostLink(conn) {
-            conn.on('open', () => {
-                conn.send({ type: 'handshake', username: myUsername, team: playerTeam, color: playerColor, currentMode });
-            });
-            conn.on('data', (packet) => {
-                if (packet.type === 'world_state') {
-                    remotePlayers = packet.players || {};
-                    worldBlocks = packet.blocks || {};
-                    droppedLoot = packet.items || {};
-                    if (packet.mode && packet.mode !== currentMode) currentMode = packet.mode;
-                } else if (packet.type === 'dmg') {
-                    if (!checkInsideBase(posX, posY, playerTeam)) {
-                        currentHp -= packet.amount;
-                        if (currentHp <= 0) executeSelfDestruct();
-                    }
-                } else if (packet.type === 'shot') {
-                    bulletsList.push(packet.bullet);
-                }
-            });
-        }
-
-        function setupClientLink(conn) {
-            conn.on('data', (packet) => {
-                if (packet.type === 'handshake') {
-                    currentMode = packet.mode || currentMode;
-                    remotePlayers[conn.peer] = { username: packet.username, team: packet.team, color: packet.color, x: 200, y: 200, hp: 100 };
-                    broadcastNetworkState();
-                } else if (packet.type === 'heartbeat') {
-                    if (remotePlayers[conn.peer]) {
-                        remotePlayers[conn.peer].x = packet.x;
-                        remotePlayers[conn.peer].y = packet.y;
-                        remotePlayers[conn.peer].hp = packet.hp;
-                        remotePlayers[conn.peer].username = packet.username;
-                        remotePlayers[conn.peer].team = packet.team;
-                        remotePlayers[conn.peer].color = packet.color;
-                    }
-                    broadcastNetworkState();
-                } else if (packet.type === 'peer_damage') {
-                    if (peerConnections[packet.targetId]) {
-                        peerConnections[packet.targetId].send({ type: 'dmg', amount: packet.amount });
-                    }
-                } else if (packet.type === 'shot') {
-                    bulletsList.push(packet.bullet);
-                    broadcastBullet(packet.bullet, conn.peer);
-                }
-            });
-            conn.on('close', () => {
-                delete remotePlayers[conn.peer];
-                delete peerConnections[conn.peer];
-                broadcastNetworkState();
-            });
-        }
-
-        function broadcastNetworkState() {
-            if (!isHosting) return;
-            const statePayload = {
-                type: 'world_state',
-                players: remotePlayers,
-                blocks: worldBlocks,
-                items: droppedLoot,
-                mode: currentMode
-            };
-            for (let pid in peerConnections) {
-                if (peerConnections[pid].open) {
-                    peerConnections[pid].send(statePayload);
-                }
-            }
-        }
-
-        function broadcastBullet(bulletData, excludeId = null) {
-            if (isHosting) {
-                for (let pid in peerConnections) {
-                    if (pid !== excludeId && peerConnections[pid].open) {
-                        peerConnections[pid].send({ type: 'shot', bullet: bulletData });
-                    }
-                }
-            } else if (hostConnection && hostConnection.open) {
-                hostConnection.send({ type: 'shot', bullet: bulletData });
-            }
-        }
-
-        function initPracticeMode() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
-            isPractice = true;
-            currentMode = 'ffa';
-            playerTeam = 'FFA';
-            playerColor = '#8e24aa';
-            revealGameUI();
-            spawnPracticeBots();
-            launchEngineLoop();
-        }
-
-        function promptGameModeSelection() {
-            const screen = document.getElementById('modal-screen');
-            document.getElementById('modal-title').innerText = 'Select Match Game Mode';
-            document.getElementById('modal-options').innerHTML = `
-                <button class="btn-team-ffa" onclick="selectModeType('ffa')">Free For All (FFA)</button>
-                <button class="btn-team-red" onclick="selectModeType('2team')">2 Teams (Red vs Blue)</button>
-                <button class="btn-team-blue" onclick="selectModeType('4team')">4 Teams (4 Corner Bases)</button>
-            `;
-            screen.style.display = 'flex';
-        }
-
-        function selectModeType(modeVal) {
-            currentMode = modeVal;
-            document.getElementById('modal-screen').style.display = 'none';
-            promptTeamSelection();
-        }
-
-        function promptTeamSelection() {
-            const screen = document.getElementById('modal-screen');
-            document.getElementById('modal-title').innerText = 'Select Your Team';
-            let htmlOptions = '';
-            if (currentMode === 'ffa') {
-                htmlOptions = `<button class="btn-team-ffa" onclick="finalizeTeamSelection('FFA', '#8e24aa')">FFA Neutral</button>`;
-            } else if (currentMode === '2team') {
-                htmlOptions = `
-                    <button class="btn-team-red" onclick="finalizeTeamSelection('Red', '#e53935')">Red Faction</button>
-                    <button class="btn-team-blue" onclick="finalizeTeamSelection('Blue', '#1e88e5')">Blue Faction</button>
-                `;
-            } else {
-                htmlOptions = `
-                    <button class="btn-team-red" onclick="finalizeTeamSelection('Red', '#e53935')">Red Corner Base</button>
-                    <button class="btn-team-blue" onclick="finalizeTeamSelection('Blue', '#1e88e5')">Blue Corner Base</button>
-                    <button class="btn-team-green" onclick="finalizeTeamSelection('Green', '#43a047')">Green Corner Base</button>
-                    <button class="btn-team-yellow" onclick="finalizeTeamSelection('Yellow', '#fbc02d')">Yellow Corner Base</button>
-                `;
-            }
-            document.getElementById('modal-options').innerHTML = htmlOptions;
-            screen.style.display = 'flex';
-        }
-
-        function finalizeTeamSelection(teamName, hexColor) {
-            playerTeam = teamName;
-            playerColor = hexColor;
-            document.getElementById('modal-screen').style.display = 'none';
-            revealGameUI();
-            respawnPlayerEntity();
-            initializePeerNetwork();
-            launchEngineLoop();
-        }
-
-        function revealGameUI() {
-            document.getElementById('lobby-box').style.display = 'none';
-            document.getElementById('leave-btn').style.display = 'block';
-            document.getElementById('shop-toggle-btn').style.display = 'block';
-            document.getElementById('minimap-box').style.display = 'block';
-            document.getElementById('stats-hud').style.display = 'flex';
-            document.getElementById('wallet-badge').style.display = 'flex';
-            document.getElementById('hotbar-dock').style.display = 'flex';
-            document.getElementById('airdrop-banner').style.display = 'block';
-            document.getElementById('tip-banner').style.display = 'block';
-        }
-
-        function spawnPracticeBots() {
-            aiBots = [
-                { x: 1300, y: 1300, hp: 100, radius: 15, color: '#e53935' },
-                { x: 1500, y: 1400, hp: 100, radius: 15, color: '#1e88e5' },
-                { x: 1400, y: 1200, hp: 100, radius: 15, color: '#43a047' }
-            ];
-        }
-
-        function exitToLobby() {
-            location.reload();
-        }
-
-        function launchEngineLoop() {
-            airdropIntervalHandle = setInterval(() => {
-                airdropTimerSec--;
-                const timerDisplay = document.getElementById('airdrop-countdown');
-                if (timerDisplay) timerDisplay.innerText = `${airdropTimerSec}s`;
-                if (airdropTimerSec <= 0) {
-                    airdropTimerSec = 30;
-                    const possibleRewards = ['gun', 'gun', 'grenade', 'bandage', 'coins'];
-                    const chosenReward = possibleRewards[Math.floor(Math.random() * possibleRewards.length)];
-                    let sub = 'pistol';
-                    let qty = 1;
-                    if (chosenReward === 'gun') {
-                        const arsenal = ['pistol', 'smg', 'shotgun', 'sniper', 'rocket'];
-                        sub = arsenal[Math.floor(Math.random() * arsenal.length)];
-                    } else if (chosenReward === 'grenade') { qty = 2; }
-                    else if (chosenReward === 'bandage') { qty = 2; }
-                    else if (chosenReward === 'coins') { qty = 180; }
-
-                    supplyCrates.push({
-                        x: MAP_SIZE / 2 + (Math.random() * 900 - 450),
-                        y: MAP_SIZE / 2 + (Math.random() * 900 - 450),
-                        rewardType: chosenReward,
-                        subtype: sub,
-                        amount: qty
-                    });
-                }
-            }, 1000);
-
-            function runFrame() {
-                updateEngineLogic();
-                renderCanvasScene();
-                renderMinimapScene();
-                requestAnimationFrame(runFrame);
-            }
-            requestAnimationFrame(runFrame);
-        }
-
-        function updateEngineLogic() {
-            let moveSpeed = 4;
-            if (activeRide === 'bike') moveSpeed = 4.7;
-            if (activeRide === 'car') moveSpeed = 5.8;
-            if (activeRide === 'tank') moveSpeed = 3.4;
-
-            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
-                if (currentStamina > 0) {
-                    moveSpeed *= 1.45;
-                    currentStamina = Math.max(0, currentStamina - 45 * 0.016);
-                }
-            } else {
-                currentStamina = Math.min(100, currentStamina + 32 * 0.016);
-            }
-
-            document.getElementById('stamina-bar-fill').style.width = `${currentStamina}%`;
-            document.getElementById('hp-bar-fill').style.width = `${Math.max(0, currentHp)}%`;
-            document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-
-            let inputDx = 0, inputDy = 0;
-            if (keyboardInput['KeyW']) inputDy -= 1;
-            if (keyboardInput['KeyS']) inputDy += 1;
-            if (keyboardInput['KeyA']) inputDx -= 1;
-            if (keyboardInput['KeyD']) inputDx += 1;
-            if (inputDx !== 0 && inputDy !== 0) { inputDx *= 0.7071; inputDy *= 0.7071; }
-
-            let targetX = posX + inputDx * moveSpeed;
-            let targetY = posY + inputDy * moveSpeed;
-
-            if (currentMode !== 'ffa') {
-                ['Red', 'Blue', 'Green', 'Yellow'].forEach(tm => {
-                    if (tm !== playerTeam && checkInsideBase(targetX, targetY, tm)) {
-                        if (tm === 'Red') targetY = Math.max(targetY, ZONE_SIZE + RADIUS_PLAYER);
-                        if (tm === 'Blue') targetY = Math.min(targetY, MAP_SIZE - ZONE_SIZE - RADIUS_PLAYER);
-                        if (tm === 'Green') targetY = Math.min(targetY, MAP_SIZE - ZONE_SIZE - RADIUS_PLAYER);
-                        if (tm === 'Yellow') targetY = Math.max(targetY, ZONE_SIZE + RADIUS_PLAYER);
-                    }
-                });
-            }
-
-            const checkBx = Math.floor(targetX / 40);
-            const checkBy = Math.floor(targetY / 40);
-            if (!worldBlocks[`${checkBx},${Math.floor(posY / 40)}`]) {
-                posX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, targetX));
-            }
-            if (!worldBlocks[`${Math.floor(posX / 40)},${checkBy}`]) {
-                posY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, targetY));
-            }
-
-            aimAngle = Math.atan2(mouseYCoord - canvas.height / 2, mouseXCoord - canvas.width / 2);
-
-            if (!isHosting && hostConnection && hostConnection.open) {
-                hostConnection.send({ type: 'heartbeat', x: posX, y: posY, hp: currentHp, username: myUsername, team: playerTeam, color: playerColor });
-            }
-
-            for (let i = bulletsList.length - 1; i >= 0; i--) {
-                const b = bulletsList[i];
-                b.x += b.vx;
-                b.y += b.vy;
-
-                const bColX = Math.floor(b.x / 40);
-                const bColY = Math.floor(b.y / 40);
-                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE || worldBlocks[`${bColX},${bColY}`]) {
-                    bulletsList.splice(i, 1);
-                    continue;
-                }
-
-                if (Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER && b.ownerId !== myPeerId) {
-                    if (currentMode === 'ffa' || b.ownerTeam !== playerTeam) {
-                        if (!checkInsideBase(posX, posY, playerTeam)) {
-                            currentHp -= b.damage;
-                            if (currentHp <= 0) executeSelfDestruct();
-                        }
-                        bulletsList.splice(i, 1);
-                        continue;
-                    }
-                }
-            }
-
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    const ang = Math.atan2(posY - bot.y, posX - bot.x);
-                    bot.x += Math.cos(ang) * 2.1;
-                    bot.y += Math.sin(ang) * 2.1;
-                });
-            }
-        }
-
-        function renderCanvasScene() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-
-            let cameraX = posX;
-            let cameraY = posY;
-            if (cameraScoped) {
-                cameraX += (mouseXCoord - canvas.width / 2) * 0.45;
-                cameraY += (mouseYCoord - canvas.height / 2) * 0.45;
-            }
-
-            ctx.translate(canvas.width / 2 - cameraX, canvas.height / 2 - cameraY);
-
-            ctx.fillStyle = '#1e362c';
-            ctx.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
-            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x <= MAP_SIZE; x += 100) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_SIZE); ctx.stroke();
-            }
-            for (let y = 0; y <= MAP_SIZE; y += 100) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, y); ctx.stroke();
-            }
-
-            if (currentMode !== 'ffa') {
-                ['Red', 'Blue', 'Green', 'Yellow'].forEach(tm => {
-                    const b = getTeamBaseRegion(tm);
-                    if (!b) return;
-                    ctx.fillStyle = tm === 'Red' ? 'rgba(229,57,53,0.18)' : tm === 'Blue' ? 'rgba(30,136,229,0.18)' : tm === 'Green' ? 'rgba(67,160,71,0.18)' : 'rgba(251,192,45,0.18)';
-                    ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-                    ctx.strokeStyle = tm === 'Red' ? '#e53935' : tm === 'Blue' ? '#1e88e5' : tm === 'Green' ? '#43a047' : '#fbc02d';
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 15px sans-serif';
-                    ctx.fillText(`${tm} Stronghold`, b.x1 + 20, b.y1 + 30);
-                });
-            }
-
-            for (let k in worldBlocks) {
-                const blk = worldBlocks[k];
-                ctx.fillStyle = blk.color;
-                ctx.fillRect(blk.bx * 40, blk.by * 40, 40, 40);
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(blk.bx * 40, blk.by * 40, 40, 40);
-            }
-
-            for (let lid in droppedLoot) {
-                const item = droppedLoot[lid];
-                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#fff';
+                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ff9800';
                 ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
             }
 
             supplyCrates.forEach(crate => {
-                ctx.fillStyle = '#795548';
-                ctx.fillRect(crate.x - 22, crate.y - 22, 44, 44);
-                ctx.strokeStyle = '#ffca28';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(crate.x - 22, crate.y - 22, 44, 44);
+                ctx.fillStyle = '#ff5722';
+                ctx.fillRect(crate.x - 14, crate.y - 14, 28, 28);
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.strokeRect(crate.x - 14, crate.y - 14, 28, 28);
                 ctx.fillStyle = '#fff';
-                ctx.font = '10px sans-serif';
+                ctx.font = 'bold 9px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('📦 AIRDROP', crate.x, crate.y - 28);
+                ctx.fillText('CRATE', crate.x, crate.y - 18);
             });
 
             if (isPractice) {
@@ -1121,6 +472,12 @@
                     ctx.fillStyle = bot.color;
                     ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+
+                    // Bot Health Bar
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(bot.x - 18, bot.y - 32, 36, 6);
+                    ctx.fillStyle = '#e53935';
+                    ctx.fillRect(bot.x - 18, bot.y - 32, (bot.hp / 100) * 36, 6);
                 });
             }
 
@@ -1133,7 +490,13 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(rp.username || 'Player', rp.x, rp.y - 22);
+                ctx.fillText(rp.username || 'Player', rp.x, rp.y - 28);
+
+                // Remote Player Health Bar
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(rp.x - 18, rp.y - 42, 36, 6);
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(rp.x - 18, rp.y - 42, ((rp.hp || 100) / 100) * 36, 6);
             }
 
             ctx.save();
@@ -1153,7 +516,13 @@
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(myUsername + ' (You)', posX, posY - 22);
+            ctx.fillText(myUsername + ' (You)', posX, posY - 28);
+
+            // Local Player Health Bar
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(posX - 18, posY - 42, 36, 6);
+            ctx.fillStyle = '#e53935';
+            ctx.fillRect(posX - 18, posY - 42, (Math.max(0, currentHp) / 100) * 36, 6);
 
             ctx.fillStyle = '#ffca28';
             bulletsList.forEach(b => {
@@ -1165,36 +534,23 @@
 
         function renderMinimapScene() {
             mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
-            const scaleFactor = mCanvas.width / MAP_SIZE;
-
-            mCtx.fillStyle = '#14271f';
+            const scale = mCanvas.width / MAP_SIZE;
+            
+            mCtx.fillStyle = '#112218';
             mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
-            mCtx.fillStyle = '#ffca28';
-            supplyCrates.forEach(c => {
-                mCtx.fillRect(c.x * scaleFactor - 2, c.y * scaleFactor - 2, 4, 4);
-            });
+            mCtx.fillStyle = playerColor;
+            mCtx.beginPath();
+            mCtx.arc(posX * scale, posY * scale, 4, 0, Math.PI * 2);
+            mCtx.fill();
 
             for (let pid in remotePlayers) {
                 const rp = remotePlayers[pid];
-                mCtx.fillStyle = rp.color || '#03a9f4';
+                mCtx.fillStyle = rp.color || '#fff';
                 mCtx.beginPath();
-                mCtx.arc(rp.x * scaleFactor, rp.y * scaleFactor, 3, 0, Math.PI * 2);
+                mCtx.arc(rp.x * scale, rp.y * scale, 3, 0, Math.PI * 2);
                 mCtx.fill();
             }
-
-            mCtx.fillStyle = '#ffeb3b';
-            mCtx.beginPath();
-            mCtx.arc(posX * scaleFactor, posY * scaleFactor, 4, 0, Math.PI * 2);
-            mCtx.fill();
-
-            const viewportW = canvas.width * scaleFactor;
-            const viewportH = canvas.height * scaleFactor;
-            const viewportX = (posX * scaleFactor) - (viewportW / 2);
-            const viewportY = (posY * scaleFactor) - (viewportH / 2);
-            mCtx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-            mCtx.lineWidth = 1.5;
-            mCtx.strokeRect(viewportX, viewportY, viewportW, viewportH);
         }
     </script>
 </body>
