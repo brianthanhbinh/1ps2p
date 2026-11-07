@@ -66,13 +66,13 @@
         #minimap-box { position: absolute; top: 16px; right: 16px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 10px; overflow: hidden; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 6px 20px rgba(0,0,0,0.7); }
         #canvas-minimap { width: 100%; height: 100%; display: block; }
 
-        #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
+        #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; }
         #airdrop-countdown { color: #ffca28; }
 
         #leave-btn { position: absolute; top: 185px; right: 16px; background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; transition: background 0.2s; }
         #leave-btn:hover { background: #e53935; }
 
-        #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; }
+        #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
         /* Hotbar */
         #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
@@ -909,6 +909,8 @@
             document.getElementById('stats-hud').style.display = 'flex';
             document.getElementById('wallet-badge').style.display = 'flex';
             document.getElementById('hotbar-dock').style.display = 'flex';
+            document.getElementById('airdrop-banner').style.display = 'block';
+            document.getElementById('tip-banner').style.display = 'block';
         }
 
         function spawnPracticeBots() {
