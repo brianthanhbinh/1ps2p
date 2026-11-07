@@ -264,7 +264,7 @@
         let myName = 'Combatant';
         let roomId = 'alpha';
         let myTeam = 'Red';
-        let gameMode = '2-Team'; // 2-Team, 4-Team, FFA
+        let gameMode = '2-Team';
         let coins = 100;
 
         const player = {
@@ -290,7 +290,7 @@
 
         let inventory = new Array(32).fill(null);
         let selectedSlot = 0;
-        let chatChannel = 'Team'; // Team or Global
+        let chatChannel = 'Team';
 
         let blocks = [];
         let bullets = [];
@@ -304,12 +304,11 @@
         let airdropTimer = 45;
         let airdropCrates = [];
 
-        // Bases setup
         const bases = {
-            Red: { x: 400, y: 400, w: 600, h: 600, color: '#e53935' },
-            Blue: { x: 2800, y: 2800, w: 600, h: 600, color: '#1e88e5' },
-            Green: { x: 2800, y: 400, w: 600, h: 600, color: '#43a047' },
-            Yellow: { x: 400, y: 2800, w: 600, h: 600, color: '#fbc02d' }
+            Red: { x: 200, y: 200, w: 600, h: 600, color: '#e53935' },
+            Blue: { x: 2400, y: 2400, w: 600, h: 600, color: '#1e88e5' },
+            Green: { x: 2400, y: 200, w: 600, h: 600, color: '#43a047' },
+            Yellow: { x: 200, y: 2400, w: 600, h: 600, color: '#fbc02d' }
         };
 
         window.addEventListener('keydown', e => {
@@ -333,7 +332,6 @@
             if (e.key >= '1' && e.key <= '8') {
                 selectHotbarSlot(parseInt(e.key) - 1);
             }
-            // Debug shortcut Ctrl+Alt+C
             if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
                 document.getElementById('debug-modal').style.display = 'block';
@@ -375,25 +373,32 @@
             setTimeout(() => { if(notif.textContent === text) notif.textContent = ''; }, 3000);
         }
 
-        // --- Lobby & Networking ---
         function initHostRoom() {
             myName = document.getElementById('input-username').value.trim() || 'Host';
             roomId = document.getElementById('input-room').value.trim() || 'alpha';
             isHost = true;
             document.getElementById('net-status').textContent = 'Creating Peer Room...';
-            peer = new Peer(roomId);
-            peer.on('open', id => {
-                myPeerId = id;
-                document.getElementById('net-status').textContent = `Room Hosted (${id}). Opening Mode Selection...`;
-                openTeamSelectionModal('host');
-            });
-            peer.on('error', err => {
-                document.getElementById('net-status').textContent = 'Error: Room ID taken or network failed.';
-            });
-            peer.on('connection', conn => {
-                connections.push(conn);
-                setupPeerConnection(conn);
-            });
+            try {
+                peer = new Peer(roomId);
+                peer.on('open', id => {
+                    myPeerId = id;
+                    document.getElementById('net-status').textContent = `Room Hosted (${id}). Opening Mode Selection...`;
+                    openTeamSelectionModal('host');
+                });
+                peer.on('error', err => {
+                    console.warn("PeerJS cloud blocked or unavailable in sandbox. Falling back to Local Solo / Bot Match.");
+                    document.getElementById('net-status').textContent = 'Sandbox Network Restricted. Starting Solo/Bot Practice!';
+                    setTimeout(() => openTeamSelectionModal('solo'), 1000);
+                });
+                peer.on('connection', conn => {
+                    connections.push(conn);
+                    setupPeerConnection(conn);
+                });
+            } catch (e) {
+                console.warn("PeerJS exception caught, fallback to offline bot mode.");
+                document.getElementById('net-status').textContent = 'Sandbox Network Restricted. Starting Solo/Bot Practice!';
+                setTimeout(() => openTeamSelectionModal('solo'), 1000);
+            }
         }
 
         function initJoinRoom() {
@@ -401,15 +406,22 @@
             roomId = document.getElementById('input-room').value.trim() || 'alpha';
             isHost = false;
             document.getElementById('net-status').textContent = 'Connecting to Room...';
-            peer = new Peer();
-            peer.on('open', id => {
-                myPeerId = id;
-                clientConn = peer.connect(roomId);
-                setupPeerConnection(clientConn);
-            });
-            peer.on('error', err => {
-                document.getElementById('net-status').textContent = 'Failed to connect to room.';
-            });
+            try {
+                peer = new Peer();
+                peer.on('open', id => {
+                    myPeerId = id;
+                    clientConn = peer.connect(roomId);
+                    setupPeerConnection(clientConn);
+                });
+                peer.on('error', err => {
+                    console.warn("PeerJS join failed in sandbox. Falling back to Solo Practice.");
+                    document.getElementById('net-status').textContent = 'Network Restricted. Starting Practice vs Bots!';
+                    setTimeout(() => openTeamSelectionModal('solo'), 1000);
+                });
+            } catch (e) {
+                document.getElementById('net-status').textContent = 'Network Restricted. Starting Practice vs Bots!';
+                setTimeout(() => openTeamSelectionModal('solo'), 1000);
+            }
         }
 
         function initPracticeMode() {
@@ -473,7 +485,6 @@
             document.getElementById('tip-banner').style.display = 'block';
             document.getElementById('chat-text-input').style.display = 'block';
 
-            // Spawn player in their base
             if (bases[team]) {
                 player.x = bases[team].x + bases[team].w / 2;
                 player.y = bases[team].y + bases[team].h / 2;
@@ -482,7 +493,6 @@
             gameActive = true;
             showNotification(`Match Started! Team: ${team}`);
 
-            // Spawn initial bots if solo or host
             if (isHost && connections.length === 0) {
                 spawnPracticeBots();
             }
@@ -494,7 +504,6 @@
             conn.on('open', () => {
                 document.getElementById('net-status').textContent = 'Connected to Peer!';
                 if (!isHost) {
-                    // Client joins
                     document.getElementById('lobby-box').style.display = 'none';
                     openTeamSelectionModal('client');
                 }
@@ -547,7 +556,6 @@
             }
         }
 
-        // --- Gameplay Mechanics & Inventory ---
         function selectHotbarSlot(idx) {
             selectedSlot = idx;
             document.querySelectorAll('.hotbar-slot').forEach((el, i) => {
@@ -578,10 +586,9 @@
         function transferInventoryToHotbar(invIdx) {
             let item = inventory[invIdx];
             if (!item) return;
-            // Find first empty hotbar slot or replace current
-            let emptyIdx = hotbar.findIndex(h => h.type === 'empty');
-            if (emptyIdx !== -1) {
-                hotbar[emptyIdx] = item;
+            let emptyH = hotbar.findIndex(h => h.type === 'empty');
+            if (emptyH !== -1) {
+                hotbar[emptyH] = item;
                 inventory[invIdx] = null;
             } else {
                 let temp = hotbar[selectedSlot];
@@ -647,7 +654,6 @@
             updateHotbarUI();
         }
 
-        // --- Vehicle System ---
         const vehicleSpecs = {
             bike: { name: 'Bike', icon: '🚲', seats: 2, speedMult: 1.15, cost: 250 },
             motorcycle: { name: 'Motorcycle', icon: '🏍️', seats: 3, speedMult: 1.25, cost: 350 },
@@ -661,14 +667,14 @@
             let spec = vehicleSpecs[type];
             if (!spec) return;
             vehicles.push({
-                id: 'veh_' + Math.random().toString(36.substring(2)),
+                id: 'veh_' + Math.random().toString(36).substring(2),
                 type: type,
                 name: spec.name,
                 icon: spec.icon,
                 team: myTeam,
                 x: player.x + Math.cos(player.angle) * 50,
                 y: player.y + Math.sin(player.angle) * 50,
-                passengers: [myTeam], // host/purchaser starts inside
+                passengers: [myTeam],
                 maxSeats: spec.seats,
                 speedMult: spec.speedMult,
                 hp: 300, maxHp: 300
@@ -677,7 +683,7 @@
         }
 
         function enterNearestVehicle() {
-            if (player.currentVehicleId) return; // already in one
+            if (player.currentVehicleId) return;
             let nearest = vehicles.find(v => v.team === myTeam && Math.hypot(v.x - player.x, v.y - player.y) < 60 && v.passengers.length < v.maxSeats);
             if (nearest) {
                 nearest.passengers.push(myTeam);
@@ -698,7 +704,6 @@
             }
         }
 
-        // --- Coin Drop & Debug Password ---
         function openCoinModal() {
             document.getElementById('coin-modal').style.display = 'block';
         }
@@ -735,7 +740,6 @@
             document.getElementById('debug-pw-input').value = '';
         }
 
-        // --- Chat System ---
         function toggleChatInput() {
             const input = document.getElementById('chat-text-input');
             if (document.activeElement === input) {
@@ -765,7 +769,6 @@
             feed.scrollTop = feed.scrollHeight;
         }
 
-        // --- Core Action & Item Usage ---
         function useSelectedHotbarItem() {
             let item = hotbar[selectedSlot];
             if (!item || item.type === 'empty') return;
@@ -788,7 +791,6 @@
                 bullets.push(bullet);
                 broadcastData({ type: 'spawn_bullet', bullet });
             } else if (item.type === 'tool') {
-                // Pickaxe mine block
                 let targetX = player.x + Math.cos(player.angle) * 40;
                 let targetY = player.y + Math.sin(player.angle) * 40;
                 let hitB = blocks.find(b => targetX >= b.x && targetX <= b.x + b.w && targetY >= b.y && targetY <= b.y + b.h);
@@ -825,11 +827,9 @@
             }
         }
 
-        // --- Main Update Loop ---
         function gameLoop() {
             if (!gameActive) return;
 
-            // Movement Physics
             let dx = 0, dy = 0;
             if (keys['w'] || keys['arrowup']) dy -= 1;
             if (keys['s'] || keys['arrowdown']) dy += 1;
@@ -860,11 +860,9 @@
                 player.y += dy * currentSpeed;
             }
 
-            // Clamp World Bounds
             player.x = Math.max(20, Math.min(WORLD_W - 20, player.x));
             player.y = Math.max(20, Math.min(WORLD_H - 20, player.y));
 
-            // Base Entry Check & Safe Zone
             let inMyBase = false;
             if (bases[myTeam]) {
                 let b = bases[myTeam];
@@ -874,22 +872,18 @@
             }
             player.inBase = inMyBase;
 
-            // Block Collision checks
             blocks.forEach(b => {
                 if (player.x + player.radius > b.x && player.x - player.radius < b.x + b.w &&
                     player.y + player.radius > b.y && player.y - player.radius < b.y + b.h) {
-                    // Push out
                     player.x -= dx * currentSpeed;
                     player.y -= dy * currentSpeed;
                 }
             });
 
-            // Update Bullets
             bullets.forEach((b, idx) => {
                 b.x += b.vx;
                 b.y += b.vy;
 
-                // Check block collision
                 blocks.forEach((block, blkIdx) => {
                     if (b.x >= block.x && b.x <= block.x + block.w && b.y >= block.y && b.y <= block.y + block.h) {
                         block.hp -= b.damage;
@@ -900,7 +894,6 @@
                 });
             });
 
-            // Update Grenades
             grenades.forEach((g, idx) => {
                 g.x += g.vx; g.y += g.vy;
                 g.vx *= 0.95; g.vy *= 0.95;
@@ -911,7 +904,6 @@
                 }
             });
 
-            // Update HUD
             document.getElementById('hp-num').textContent = Math.round(player.hp);
             document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
             document.getElementById('stamina-num').textContent = Math.round(player.stamina);
@@ -944,7 +936,6 @@
             showNotification('You were eliminated! Respawned in base.');
         }
 
-        // --- Rendering Engine ---
         function renderGameScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -953,7 +944,6 @@
             let camY = mouse.scoping ? player.y + (mouse.y - window.innerHeight/2)*0.6 : player.y;
             ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
 
-            // Draw World Grid & Bases
             ctx.strokeStyle = '#274e3e';
             ctx.lineWidth = 1;
             const step = 80;
@@ -964,7 +954,6 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke();
             }
 
-            // Draw Bases
             for (let k in bases) {
                 let b = bases[k];
                 ctx.fillStyle = b.color + '22';
@@ -977,7 +966,6 @@
                 ctx.fillText(`${k} Stronghold`, b.x + 20, b.y + 30);
             }
 
-            // Draw Vehicles
             vehicles.forEach(v => {
                 ctx.fillStyle = bases[v.team]?.color || '#888';
                 ctx.fillRect(v.x - 20, v.y - 15, 40, 30);
@@ -986,19 +974,16 @@
                 ctx.fillText(`${v.icon} (${v.passengers.length}/${v.maxSeats})`, v.x - 20, v.y - 20);
             });
 
-            // Draw Blocks
             blocks.forEach(b => {
                 ctx.fillStyle = '#8d5524';
                 ctx.fillRect(b.x, b.y, b.w, b.h);
                 ctx.strokeStyle = '#d7ccc8';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(b.x, b.y, b.w, b.h);
-                // Health Indicator on block body/head
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(b.x, b.y - 6, b.w * (b.hp / b.maxHp), 4);
             });
 
-            // Draw Bullets & Grenades
             bullets.forEach(b => {
                 ctx.fillStyle = b.isRocket ? '#ff5722' : '#ffeb3b';
                 ctx.beginPath(); ctx.arc(b.x, b.y, b.isRocket ? 6 : 3, 0, Math.PI * 2); ctx.fill();
@@ -1010,25 +995,21 @@
                 ctx.strokeStyle = '#ff9800'; ctx.stroke();
             });
 
-            // Draw Bots
             bots.forEach(bot => {
                 ctx.fillStyle = bases[bot.team]?.color || '#9c27b0';
                 ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
                 ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-                // Bot Health Indicator
                 ctx.fillStyle = '#e53935';
                 ctx.fillRect(bot.x - 16, bot.y - 26, 32, 4);
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(bot.x - 16, bot.y - 26, 32 * (bot.hp / bot.maxHp), 4);
             });
 
-            // Draw Local Player
             let teamColor = bases[myTeam]?.color || '#ab47bc';
             ctx.fillStyle = teamColor;
             ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2); ctx.fill();
             ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-            // Player Health Indicator
             ctx.fillStyle = '#e53935';
             ctx.fillRect(player.x - 18, player.y - 28, 36, 5);
             ctx.fillStyle = '#4caf50';
@@ -1050,14 +1031,12 @@
 
             let scale = miniCanvas.width / WORLD_W;
 
-            // Draw Minimap Bases
             for (let k in bases) {
                 let b = bases[k];
                 miniCtx.fillStyle = b.color;
                 miniCtx.fillRect(b.x * scale, b.y * scale, b.w * scale, b.h * scale);
             }
 
-            // Draw Local Player on Minimap
             miniCtx.fillStyle = '#fff';
             miniCtx.beginPath();
             miniCtx.arc(player.x * scale, player.y * scale, 3, 0, Math.PI * 2);
