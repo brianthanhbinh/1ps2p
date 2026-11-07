@@ -14,15 +14,23 @@
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Lobby Menu */
-        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 400px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
-        #lobby-box h1 { margin-bottom: 18px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
+        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 420px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
+        #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
+        .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
+        .lobby-content { display: none; text-align: left; }
+        .lobby-content.active { display: block; }
         #lobby-box input, #lobby-box button { width: 100%; margin: 7px 0; padding: 11px 14px; border: none; border-radius: 8px; font-family: inherit; font-size: 14px; }
         #lobby-box input { background: #252533; color: #fff; border: 1px solid #444; text-align: center; outline: none; }
         #lobby-box button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         #lobby-box button:hover { background: #45a049; }
         #btn-bot-mode { background: #ff9800; }
         #btn-bot-mode:hover { background: #fb8c00; }
-        #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; }
+        #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
+        .peer-list-box { max-height: 150px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
+        .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.04); margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
+        .peer-item button { width: auto; padding: 4px 10px; margin: 0; font-size: 11px; }
 
         /* Modal Overlay */
         #modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 40; }
@@ -50,13 +58,13 @@
         #shop-toggle-btn { position: absolute; top: 120px; left: 16px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
         #shop-toggle-btn:hover { background: #f57c00; }
 
-        /* Shop Modal */
-        #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 400px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
+        /* Shop Panel */
+        #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
         #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
         .shop-tabs-row { display: flex; gap: 6px; margin-bottom: 14px; }
         .shop-tab { flex: 1; padding: 7px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .shop-tab.active { background: #ff9800; color: #fff; border-color: #ffb74d; }
-        .shop-content { display: none; max-height: 230px; overflow-y: auto; text-align: left; }
+        .shop-content { display: none; max-height: 260px; overflow-y: auto; text-align: left; }
         .shop-content.active { display: block; }
         .shop-item-card { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 9px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; font-size: 13px; }
         .shop-item-card button { background: #4caf50; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
@@ -69,7 +77,6 @@
         #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; }
         #airdrop-countdown { color: #ffca28; }
 
-        /* Self Destruct Banner HUD */
         #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
 
         #leave-btn { position: absolute; top: 185px; right: 16px; background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; transition: background 0.2s; }
@@ -150,12 +157,18 @@
                 <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 450)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Minigun</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('gun', 'minigun', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
-                <div class="shop-item-card"><span>🚲 Fast Bike (+15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🏎️ Combat Car (+40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🛡️ Heavy Tank (Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚲 Fast Bike (Cap: 1 | +15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -174,7 +187,7 @@
         <div id="self-destruct-banner">⏳ Base Lockout / Respawn: <span id="sd-countdown">30s</span></div>
         <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
-        <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect</div>
+        <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | J: Hop In | H: Leave Vehicle</div>
 
         <!-- Inventory Modal -->
         <div id="inventory-panel">
@@ -193,11 +206,27 @@
         <!-- Lobby Setup Panel -->
         <div id="lobby-box">
             <h1>2D P2P Arena</h1>
-            <input type="text" id="input-username" placeholder="Your Name" value="Combatant">
-            <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
-            <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
-            <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
-            <button id="btn-bot-mode" onclick="initPracticeMode()">🤖 Practice vs Bots</button>
+            <div class="lobby-tabs">
+                <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Available Peers</button>
+            </div>
+
+            <div id="lobby-tab-main" class="lobby-content active">
+                <input type="text" id="input-username" placeholder="Your Name" value="Combatant">
+                <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
+                <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
+                <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
+                <button id="btn-bot-mode" onclick="initPracticeMode()">🤖 Practice vs Bots</button>
+            </div>
+
+            <div id="lobby-tab-peers" class="lobby-content">
+                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Discovered active online rooms:</p>
+                <div class="peer-list-box" id="peer-list-container">
+                    <div style="text-align:center; color:#777; font-size:11px; padding:20px;">Scanning for rooms...</div>
+                </div>
+                <button style="background:#2196f3;" onclick="scanAvailablePeers()">🔄 Refresh Peers</button>
+            </div>
+
             <div id="net-status">Ready to Connect</div>
         </div>
 
@@ -259,11 +288,11 @@
         let currentHp = 100;
         let currentStamina = 100;
         let playerCoins = 100;
-        let activeRide = null;
+        let activeRide = null; // Owned vehicle type (e.g. 'car', 'tank')
+        let boardedVehicle = null; // Currently boarded vehicle object reference
         let cameraScoped = false;
 
         let baseLockedOut = false;
-        let lastBaseExitTime = 0;
         let selfDestructCountdown = 0;
         let selfDestructTimerHandle = null;
 
@@ -286,6 +315,9 @@
         let droppedLoot = {};
         let supplyCrates = [];
         let bulletsList = [];
+        let activeGrenades = [];
+        let activeVehiclesList = []; // Array of vehicle instances deployed in world
+        let floatingParticles = [];
 
         let airdropTimerSec = 30;
         let airdropIntervalHandle = null;
@@ -294,6 +326,56 @@
 
         function formatPeerId(code) {
             return PEER_PREFIX + code.trim().toLowerCase();
+        }
+
+        function switchLobbyTab(tabKey, btnElement) {
+            document.querySelectorAll('.lobby-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
+            if (targetContent) targetContent.classList.add('active');
+            if (tabKey === 'peers') scanAvailablePeers();
+        }
+
+        function scanAvailablePeers() {
+            const container = document.getElementById('peer-list-container');
+            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">Checking active rooms...</div>`;
+            
+            // Temporary Peer instance for listing available rooms via PeerJS listAllPeers if supported or simulation
+            const tempPeer = new Peer({ debug: 0 });
+            tempPeer.on('open', () => {
+                if (tempPeer.listAllPeers) {
+                    tempPeer.listAllPeers((peers) => {
+                        const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX));
+                        if (arenaPeers.length === 0) {
+                            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">No active public rooms found. Host your own!</div>`;
+                        } else {
+                            let html = '';
+                            arenaPeers.forEach(pid => {
+                                const code = pid.replace(PEER_PREFIX, '');
+                                html += `<div class="peer-item"><span>Room: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                            });
+                            container.innerHTML = html;
+                        }
+                        tempPeer.destroy();
+                    });
+                } else {
+                    // Fallback if listAllPeers is disabled on server
+                    setTimeout(() => {
+                        container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Enter exact room code in Match Setup tab to join.</div>`;
+                        tempPeer.destroy();
+                    }, 800);
+                }
+            });
+            tempPeer.on('error', () => {
+                container.innerHTML = `<div style="text-align:center; color:#e53935; font-size:11px; padding:15px;">Peer discovery unavailable.</div>`;
+            });
+        }
+
+        function joinDiscoveredPeer(code) {
+            document.getElementById('input-room').value = code;
+            switchLobbyTab('main', document.querySelector('.lobby-tab'));
+            initJoinRoom();
         }
 
         function showUIInGame(active) {
@@ -416,6 +498,25 @@
                 }
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
+                // Deploy vehicle right next to player
+                let capacity = 1;
+                if (subtypeName === 'car') capacity = 2;
+                if (subtypeName === 'tank') capacity = 3;
+                if (subtypeName === 'hovercraft') capacity = 2;
+                if (subtypeName === 'mech') capacity = 1;
+
+                const newVeh = {
+                    id: 'veh-' + Math.random().toString(36).substr(2, 9),
+                    type: subtypeName,
+                    x: posX + 40,
+                    y: posY + 40,
+                    team: playerTeam,
+                    color: playerColor,
+                    capacity: capacity,
+                    passengers: []
+                };
+                activeVehiclesList.push(newVeh);
+                showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
             }
             playerCoins -= price;
             document.getElementById('coin-num').innerText = playerCoins;
@@ -444,9 +545,8 @@
             return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
         }
 
-        // Check if an enemy is trying to enter another team's base
         function isEnemyTryingToEnterBase(x, y, myTeam) {
-            if (myTeam === 'FFA') return false; // In FFA, bases are neutral
+            if (myTeam === 'FFA') return false;
             const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
             for (let t of teamNames) {
                 if (t !== myTeam) {
@@ -509,7 +609,7 @@
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = true;
-            currentMode = '4team'; // Practice has full team options
+            currentMode = '4team';
             promptTeamSelection();
         }
 
@@ -646,13 +746,13 @@
         function setupServerConnection(conn) {
             peerConnections[conn.peer] = conn;
             conn.on('open', () => {
-                // Send current game mode, world blocks, and loot state immediately to joining client
                 conn.send({ 
                     type: 'room_config', 
                     mode: currentMode,
                     blocks: worldBlocks,
                     loot: droppedLoot,
-                    crates: supplyCrates
+                    crates: supplyCrates,
+                    vehicles: activeVehiclesList
                 });
             });
             conn.on('data', (data) => {
@@ -690,6 +790,9 @@
                 } else if (data.type === 'remove_crate') {
                     supplyCrates.splice(data.index, 1);
                     broadcastStateToClients();
+                } else if (data.type === 'update_vehicles') {
+                    activeVehiclesList = data.vehicles;
+                    broadcastStateToClients();
                 }
             });
             conn.on('close', () => {
@@ -709,6 +812,7 @@
                     if (data.blocks) worldBlocks = data.blocks;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
                     promptTeamSelection();
                 } else if (data.type === 'server_state') {
                     if (data.players) {
@@ -721,6 +825,7 @@
                     if (data.blocks) worldBlocks = data.blocks;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
                 }
             });
             conn.on('close', () => {
@@ -741,7 +846,8 @@
                 players: allPlayersState,
                 blocks: worldBlocks,
                 loot: droppedLoot,
-                crates: supplyCrates
+                crates: supplyCrates,
+                vehicles: activeVehiclesList
             };
             for (let pid in peerConnections) {
                 if (peerConnections[pid].open) {
@@ -806,7 +912,6 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        // Game Loop & Input handling
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouseXCoord = e.clientX - rect.left;
@@ -840,6 +945,8 @@
             if (e.code === 'KeyZ') openCoinModal();
             if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
             if (e.code === 'KeyR') executeSelfDestruct();
+            if (e.code === 'KeyJ') tryHopOnVehicle();
+            if (e.code === 'KeyH') dismountVehicle();
             if (e.code === 'KeyT') {
                 e.preventDefault();
                 const chatInput = document.getElementById('chat-text-input');
@@ -860,6 +967,59 @@
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
             if (e.code === 'Tab') toggleScoreboardDisplay(false);
         });
+
+        function tryHopOnVehicle() {
+            if (boardedVehicle) {
+                showNotificationBox('Already boarded a vehicle! Press H to dismount.');
+                return;
+            }
+            // Find nearest vehicle belonging to teammate or neutral
+            let closestVeh = null;
+            let minDist = 70;
+            activeVehiclesList.forEach(veh => {
+                const dist = Math.hypot(posX - veh.x, posY - veh.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestVeh = veh;
+                }
+            });
+
+            if (!closestVeh) {
+                showNotificationBox('No vehicle nearby to hop onto!');
+                return;
+            }
+
+            // Teammate-only vehicle check
+            if (playerTeam !== 'FFA' && closestVeh.team !== playerTeam) {
+                showNotificationBox('⚠️ Access Denied! You can only hop onto teammate vehicles!');
+                return;
+            }
+
+            if (closestVeh.passengers.length >= closestVeh.capacity) {
+                showNotificationBox('Vehicle is at full passenger capacity!');
+                return;
+            }
+
+            closestVeh.passengers.push(myUsername);
+            boardedVehicle = closestVeh;
+            showNotificationBox(`Hopped onto ${closestVeh.type.toUpperCase()}! Press H to leave.`);
+            if (isHosting) broadcastStateToClients();
+            else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'update_vehicles', vehicles: activeVehiclesList });
+            }
+        }
+
+        function dismountVehicle() {
+            if (!boardedVehicle) return;
+            const idx = boardedVehicle.passengers.indexOf(myUsername);
+            if (idx !== -1) boardedVehicle.passengers.splice(idx, 1);
+            showNotificationBox('Dismounted vehicle.');
+            boardedVehicle = null;
+            if (isHosting) broadcastStateToClients();
+            else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'update_vehicles', vehicles: activeVehiclesList });
+            }
+        }
 
         function toggleScoreboardDisplay(show) {
             const panel = document.getElementById('scoreboard-panel');
@@ -925,7 +1085,8 @@
             supplyCrates.forEach((crate, idx) => {
                 const dist = Math.hypot(posX - crate.x, posY - crate.y);
                 if (dist < 50) {
-                    playerCoins += 100;
+                    const randomCoinReward = Math.floor(Math.random() * 150) + 1;
+                    playerCoins += randomCoinReward;
                     document.getElementById('coin-num').innerText = playerCoins;
                     supplyCrates.splice(idx, 1);
                     if (isHosting) {
@@ -933,7 +1094,7 @@
                     } else if (hostConnection && hostConnection.open) {
                         hostConnection.send({ type: 'remove_crate', index: idx });
                     }
-                    showNotificationBox('Opened Airdrop Crate (+100 🪙)!');
+                    showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
                 }
             });
         }
@@ -944,7 +1105,6 @@
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
 
-            // Base Safe Zone Rule: Shooting disabled inside bases
             if (checkInsideBase(posX, posY, playerTeam)) {
                 showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
                 return;
@@ -966,7 +1126,7 @@
                         
                         const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
                         if (distToBlock <= 90) {
-                            blk.hp -= 35; // Damage block
+                            blk.hp -= 35;
                             showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
                             if (blk.hp <= 0) {
                                 delete worldBlocks[k];
@@ -1006,7 +1166,52 @@
                 setTimeout(() => { actionCdBuild = false; }, 300);
             }
 
-            // Shooting Logic (Only equipped guns in slots 4, 5, 6)
+            // Grenade Throwing (Slot 7)
+            else if (activeHotbar === 6) {
+                if (grenadesCount <= 0) {
+                    showNotificationBox('No grenades remaining! Buy more from Shop (B).');
+                    return;
+                }
+                grenadesCount--;
+                refreshHotbarUI();
+
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+                const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
+                const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
+                const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
+
+                activeGrenades.push({
+                    startX: posX,
+                    startY: posY,
+                    x: posX,
+                    y: posY,
+                    targetX: targetWorldX,
+                    targetY: targetWorldY,
+                    vx: Math.cos(throwAngle) * speedFactor,
+                    vy: Math.sin(throwAngle) * speedFactor,
+                    fuseTime: Math.max(10, Math.floor(distToTarget / speedFactor))
+                });
+                showNotificationBox('Grenade thrown!');
+            }
+
+            // Bandage Healing (Slot 8)
+            else if (activeHotbar === 7) {
+                if (bandagesCount <= 0) {
+                    showNotificationBox('No bandages remaining!');
+                    return;
+                }
+                if (currentHp >= 100) {
+                    showNotificationBox('Health is already full!');
+                    return;
+                }
+                bandagesCount--;
+                currentHp = Math.min(100, currentHp + 40);
+                refreshHotbarUI();
+                showNotificationBox('Used bandage (+40 HP)!');
+            }
+
+            // Shooting Logic (Equipped Guns in Slots 4, 5, 6)
             else if (activeHotbar >= 3 && activeHotbar <= 5) {
                 const gunEquipped = weaponBarSlots[activeHotbar - 3];
                 if (!gunEquipped) {
@@ -1014,16 +1219,30 @@
                     return;
                 }
                 if (!actionCdAttack) {
-                    bulletsList.push({
-                        x: posX,
-                        y: posY,
-                        vx: Math.cos(aimAngle) * 16,
-                        vy: Math.sin(aimAngle) * 16,
-                        type: gunEquipped,
-                        team: playerTeam
-                    });
+                    let bulletCount = 1;
+                    if (gunEquipped === 'shotgun') bulletCount = 5;
+
+                    for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
+                        let spread = (bIdx - 2) * 0.08;
+                        if (bulletCount === 1) spread = 0;
+
+                        bulletsList.push({
+                            x: posX,
+                            y: posY,
+                            vx: Math.cos(aimAngle + spread) * 18,
+                            vy: Math.sin(aimAngle + spread) * 18,
+                            type: gunEquipped,
+                            team: playerTeam
+                        });
+                    }
+
                     actionCdAttack = true;
-                    const cdTime = gunEquipped === 'sniper' ? 800 : gunEquipped === 'smg' ? 100 : 250;
+                    let cdTime = 250;
+                    if (gunEquipped === 'sniper') cdTime = 800;
+                    if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
+                    if (gunEquipped === 'laser' || gunEquipped === 'plasma') cdTime = 200;
+                    if (gunEquipped === 'rocket') cdTime = 600;
+
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
                 }
             }
@@ -1035,6 +1254,13 @@
             let moveSpeed = 3.8;
             if (activeRide === 'bike') moveSpeed = 4.4;
             if (activeRide === 'car') moveSpeed = 5.2;
+            if (activeRide === 'tank') moveSpeed = 3.2;
+            if (activeRide === 'hovercraft') moveSpeed = 4.8;
+            if (activeRide === 'mech') moveSpeed = 3.0;
+
+            if (boardedVehicle) {
+                moveSpeed *= 1.25;
+            }
 
             if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
                 if (currentStamina > 2) {
@@ -1078,14 +1304,12 @@
                 }
             }
 
-            // STRICT ENEMY BASE PROTECTION: Block movement if trying to enter an enemy base
             if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
                 showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
                 nextX = posX;
                 nextY = posY;
             }
 
-            // Base re-entry lockout rule for own team base
             const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
             const wasInBase = checkInsideBase(posX, posY, playerTeam);
 
@@ -1098,6 +1322,11 @@
             } else {
                 posX = nextX;
                 posY = nextY;
+                // Update boarded vehicle position if driving
+                if (boardedVehicle) {
+                    boardedVehicle.x = posX;
+                    boardedVehicle.y = posY;
+                }
             }
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
@@ -1108,32 +1337,101 @@
             const screenCenterY = canvas.height / 2;
             aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
 
+            // Update Grenades with Wall Collisions & Expanding Shockwave Circle
+            for (let i = activeGrenades.length - 1; i >= 0; i--) {
+                const g = activeGrenades[i];
+                g.x += g.vx;
+                g.y += g.vy;
+                g.fuseTime--;
+
+                let hitWall = false;
+                for (let k in worldBlocks) {
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+                    if (g.x >= bx && g.x <= bx + 40 && g.y >= by && g.y <= by + 40) {
+                        worldBlocks[k].hp -= 70;
+                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+                        hitWall = true;
+                        break;
+                    }
+                }
+
+                if (hitWall || g.fuseTime <= 0 || Math.hypot(g.x - g.targetX, g.y - g.targetY) < 15) {
+                    const explRadius = 100;
+                    if (isPractice) {
+                        aiBots.forEach(bot => {
+                            if (bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
+                                bot.hp -= 80;
+                                if (bot.hp <= 0) onEnemyEliminated();
+                            }
+                        });
+                    }
+                    if (Math.hypot(g.x - posX, g.y - posY) < explRadius) {
+                        currentHp -= 50;
+                        if (currentHp <= 0) showNotificationBox('You were blown up by a grenade!');
+                    }
+
+                    floatingParticles.push({
+                        x: g.x,
+                        y: g.y,
+                        radius: 10,
+                        maxRadius: explRadius,
+                        alpha: 1.0,
+                        isShockwave: true
+                    });
+
+                    activeGrenades.splice(i, 1);
+                }
+            }
+
+            // Update Floating Particles & Shockwave Circles
+            for (let i = floatingParticles.length - 1; i >= 0; i--) {
+                const fp = floatingParticles[i];
+                if (fp.isShockwave) {
+                    fp.radius += 6;
+                    fp.alpha -= 0.05;
+                    if (fp.alpha <= 0 || fp.radius >= fp.maxRadius) floatingParticles.splice(i, 1);
+                } else {
+                    if (fp.vx) fp.x += fp.vx;
+                    if (fp.vy) fp.y += fp.vy;
+                    fp.alpha -= 0.02;
+                    if (fp.alpha <= 0) floatingParticles.splice(i, 1);
+                }
+            }
+
             // Bullet Movement & Damage Logic
             for (let i = bulletsList.length - 1; i >= 0; i--) {
                 const b = bulletsList[i];
                 b.x += b.vx;
                 b.y += b.vy;
 
-                // Bullet Block Collisions
                 for (let k in worldBlocks) {
                     const parts = k.split(',');
                     const bx = parseInt(parts[0]) * 40;
                     const by = parseInt(parts[1]) * 40;
 
                     if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
-                        worldBlocks[k].hp -= 25;
+                        let dmg = 25;
+                        if (b.type === 'sniper') dmg = 70;
+                        if (b.type === 'rocket') dmg = 90;
+                        if (b.type === 'plasma') dmg = 45;
+                        worldBlocks[k].hp -= dmg;
                         if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
                         bulletsList.splice(i, 1);
                         break;
                     }
                 }
 
-                // Bullet Bot Hits
                 if (isPractice) {
                     aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 4) {
                             if (b.team !== bot.team) {
-                                bot.hp -= 35;
+                                let hitDmg = 35;
+                                if (b.type === 'sniper') hitDmg = 75;
+                                if (b.type === 'rocket') hitDmg = 90;
+                                if (b.type === 'laser') hitDmg = 40;
+                                bot.hp -= hitDmg;
                                 if (bot.hp <= 0) onEnemyEliminated();
                             }
                         }
@@ -1188,7 +1486,6 @@
             }
             ctx.translate(-camX, -camY);
 
-            // Draw map grid and bases
             ctx.fillStyle = '#1e362c';
             ctx.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
 
@@ -1201,7 +1498,6 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, y); ctx.stroke();
             }
 
-            // Draw Team Bases
             const bases = [
                 { name: 'Red Stronghold', x: 0, y: 0, color: 'rgba(229,57,53,0.15)', border: '#e53935' },
                 { name: 'Blue Stronghold', x: MAP_SIZE - ZONE_SIZE, y: MAP_SIZE - ZONE_SIZE, color: 'rgba(30,136,229,0.15)', border: '#1e88e5' },
@@ -1221,7 +1517,23 @@
                 ctx.fillText(b.name, b.x + 20, b.y + 35);
             });
 
-            // Draw world blocks with textures
+            // Draw Vehicles in world
+            activeVehiclesList.forEach(veh => {
+                ctx.save();
+                ctx.translate(veh.x, veh.y);
+                ctx.fillStyle = veh.color || '#ff9800';
+                ctx.fillRect(-22, -14, 44, 28);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-22, -14, 44, 28);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${veh.type.toUpperCase()} (${veh.passengers.length}/${veh.capacity})`, 0, -20);
+                ctx.restore();
+            });
+
             for (let k in worldBlocks) {
                 const blk = worldBlocks[k];
                 if (!blk) continue;
@@ -1234,18 +1546,15 @@
                 ctx.lineWidth = 2.5;
                 ctx.strokeRect(bx, by, 40, 40);
 
-                // Wood texture crosslines
                 ctx.strokeStyle = 'rgba(0,0,0,0.15)';
                 ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx+40, by+40); ctx.stroke();
 
-                // Block Health Indicator
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(bx + 2, by - 10, 36, 5);
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(bx + 2, by - 10, (Math.max(0, blk.hp) / 100) * 36, 5);
             }
 
-            // Draw Dropped Loot
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
                 if (!item) continue;
@@ -1254,7 +1563,6 @@
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
             }
 
-            // Draw Supply Crates
             supplyCrates.forEach(crate => {
                 ctx.fillStyle = '#ff9800';
                 ctx.fillRect(crate.x - 15, crate.y - 15, 30, 30);
@@ -1266,7 +1574,6 @@
                 ctx.fillText('📦', crate.x - 6, crate.y + 4);
             });
 
-            // Draw Remote Players safely without breaking the render loop when one dies
             for (let pid in remotePlayers) {
                 const rp = remotePlayers[pid];
                 if (!rp || rp.hp <= 0) continue;
@@ -1277,7 +1584,6 @@
                 ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
 
-                // Name & HP Bar
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
@@ -1290,7 +1596,6 @@
                 ctx.restore();
             }
 
-            // Draw Bots (Practice Mode) safely
             aiBots.forEach(bot => {
                 if (!bot || bot.hp <= 0) return;
                 ctx.save();
@@ -1312,13 +1617,11 @@
                 ctx.restore();
             });
 
-            // Draw Local Player with Gun / Tool Textures
             if (currentHp > 0) {
                 ctx.save();
                 ctx.translate(posX, posY);
                 ctx.rotate(aimAngle);
 
-                // Draw Weapon Texture in Hand
                 if (activeHotbar === 0) {
                     ctx.fillStyle = '#b0bec5';
                     ctx.fillRect(10, 4, 18, 3);
@@ -1327,6 +1630,15 @@
                     ctx.fillRect(10, 2, 14, 4);
                     ctx.fillStyle = '#424242';
                     ctx.fillRect(22, -4, 4, 16);
+                } else if (activeHotbar === 6) {
+                    ctx.fillStyle = '#d32f2f';
+                    ctx.beginPath(); ctx.arc(14, 6, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
+                } else if (activeHotbar === 7) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(10, 3, 14, 8);
+                    ctx.fillStyle = '#e53935';
+                    ctx.fillRect(14, 5, 6, 4);
                 } else if (activeHotbar >= 3 && activeHotbar <= 5 && weaponBarSlots[activeHotbar - 3]) {
                     ctx.fillStyle = '#37474f';
                     ctx.fillRect(8, -3, 22, 6);
@@ -1345,9 +1657,31 @@
                 ctx.fillText(myUsername + ' (You)', posX, posY - 28);
             }
 
-            // Draw Bullets with Tracer Effect
+            activeGrenades.forEach(g => {
+                ctx.fillStyle = '#e53935';
+                ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
+            });
+
+            floatingParticles.forEach(fp => {
+                ctx.save();
+                ctx.globalAlpha = fp.alpha;
+                if (fp.isShockwave) {
+                    ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#4caf50';
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.fillText(fp.text, fp.x, fp.y);
+                }
+                ctx.restore();
+            });
+
             bulletsList.forEach(b => {
-                ctx.fillStyle = '#ffca28';
+                ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
                 ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = 'rgba(255,202,40,0.5)';
                 ctx.lineWidth = 2;
