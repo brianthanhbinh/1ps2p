@@ -242,6 +242,7 @@
         let myUsername = 'Combatant';
         let roomCode = 'alpha';
         let currentMode = 'ffa';
+        let hostGameMode = 'ffa'; // Synced mode from host
         let playerTeam = 'FFA';
         let playerColor = '#8e24aa';
 
@@ -489,6 +490,7 @@
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = true;
+            currentMode = '4team'; // Practice has full team options
             promptTeamSelection();
         }
 
@@ -498,21 +500,18 @@
             const opts = document.getElementById('modal-options');
             title.innerText = 'Select Game Mode';
             opts.innerHTML = `
-                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team', 'Red')">2 Teams (Red vs Blue)</button>
-                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team', 'Red')">4 Teams (Red/Blue/Green/Yellow)</button>
-                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa', 'FFA')">Free For All (FFA)</button>
+                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
+                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
+                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
             `;
             modal.style.display = 'flex';
         }
 
-        function selectGameModeAndTeam(mode, defaultTeam) {
+        function selectGameModeAndTeam(mode) {
             currentMode = mode;
+            hostGameMode = mode;
             document.getElementById('modal-screen').style.display = 'none';
-            if (currentMode === 'ffa') {
-                assignTeamAndSpawn('FFA', '#8e24aa');
-            } else {
-                promptTeamSelection();
-            }
+            promptTeamSelection();
         }
 
         function promptTeamSelection() {
@@ -520,9 +519,12 @@
             const title = document.getElementById('modal-title');
             const opts = document.getElementById('modal-options');
             title.innerText = 'Choose Your Team';
-            if (currentMode === 'ffa') {
+            
+            const activeMode = isHosting ? currentMode : hostGameMode;
+
+            if (activeMode === 'ffa') {
                 opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA Neutral</button>`;
-            } else if (currentMode === '2team') {
+            } else if (activeMode === '2team') {
                 opts.innerHTML = `
                     <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
                     <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
@@ -593,6 +595,10 @@
 
         function setupServerConnection(conn) {
             peerConnections[conn.peer] = conn;
+            // Send current game mode immediately to joining client
+            conn.on('open', () => {
+                conn.send({ type: 'room_config', mode: currentMode });
+            });
             conn.on('data', (data) => {
                 if (data.type === 'client_join') {
                     remotePlayers[conn.peer] = {
@@ -604,7 +610,6 @@
                         hp: 100,
                         coins: 100
                     };
-                    // Broadcast back state
                     broadcastStateToClients();
                 } else if (data.type === 'player_update') {
                     if (remotePlayers[conn.peer]) {
@@ -629,10 +634,12 @@
             hostConnection = conn;
             conn.on('open', () => {
                 document.getElementById('net-status').innerText = 'Connected to Host!';
-                promptTeamSelection();
             });
             conn.on('data', (data) => {
-                if (data.type === 'server_state') {
+                if (data.type === 'room_config') {
+                    hostGameMode = data.mode || '4team';
+                    promptTeamSelection();
+                } else if (data.type === 'server_state') {
                     if (data.players) {
                         for (let pid in data.players) {
                             if (pid !== peerInstance.id) {
