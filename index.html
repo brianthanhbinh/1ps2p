@@ -304,6 +304,7 @@
         let airdropTimer = 45;
         let airdropCrates = [];
 
+        // Symmetrically centered team bases on 3200x3200 world map
         const bases = {
             Red: { x: 200, y: 200, w: 600, h: 600, color: '#e53935' },
             Blue: { x: 2400, y: 2400, w: 600, h: 600, color: '#1e88e5' },
@@ -313,34 +314,28 @@
 
         window.addEventListener('keydown', e => {
             keys[e.key.toLowerCase()] = true;
-            if (e.key === 'Shift') player.isSprinting = true;
-            if (e.key === '`') mouse.scoping = !mouse.scoping;
-            if (e.key.toLowerCase() === 'e') toggleInventoryPanel();
-            if (e.key.toLowerCase() === 'b') toggleShopPanel();
-            if (e.key.toLowerCase() === 'q') openCoinModal();
-            if (e.key.toLowerCase() === 'j') enterNearestVehicle();
-            if (e.key.toLowerCase() === 'h') leaveVehicle();
-            if (e.key.toLowerCase() === 't') {
-                e.preventDefault();
-                toggleChatInput();
-            }
+            if (e.key === 'e' || e.key === 'E') toggleInventoryPanel();
+            if (e.key === 'b' || e.key === 'B') toggleShopPanel();
+            if (e.key === 'q' || e.key === 'Q') openCoinModal();
+            if (e.key === 'j' || e.key === 'J') enterNearestVehicle();
+            if (e.key === 'h' || e.key === 'H') leaveVehicle();
             if (e.key === 'Tab') {
                 e.preventDefault();
-                document.getElementById('scoreboard-panel').style.display = 'block';
+                const sb = document.getElementById('scoreboard-panel');
+                sb.style.display = 'block';
                 updateScoreboard();
             }
-            if (e.key >= '1' && e.key <= '8') {
-                selectHotbarSlot(parseInt(e.key) - 1);
-            }
-            if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'c') {
+            if (e.ctrlKey && e.altKey && (e.key === 'c' || e.key === 'C')) {
                 e.preventDefault();
                 document.getElementById('debug-modal').style.display = 'block';
+            }
+            if (!isNaN(e.key) && parseInt(e.key) >= 1 && parseInt(e.key) <= 8) {
+                selectHotbarSlot(parseInt(e.key) - 1);
             }
         });
 
         window.addEventListener('keyup', e => {
             keys[e.key.toLowerCase()] = false;
-            if (e.key === 'Shift') player.isSprinting = false;
             if (e.key === 'Tab') {
                 document.getElementById('scoreboard-panel').style.display = 'none';
             }
@@ -349,132 +344,107 @@
         window.addEventListener('mousemove', e => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
-            let camX = mouse.scoping ? player.x + (mouse.x - window.innerWidth/2)*0.6 : player.x;
-            let camY = mouse.scoping ? player.y + (mouse.y - window.innerHeight/2)*0.6 : player.y;
-            mouse.worldX = mouse.x - window.innerWidth / 2 + camX;
-            mouse.worldY = mouse.y - window.innerHeight / 2 + camY;
+            mouse.worldX = e.clientX - window.innerWidth / 2 + player.x;
+            mouse.worldY = e.clientY - window.innerHeight / 2 + player.y;
             player.angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
         });
 
         window.addEventListener('mousedown', e => {
             if (e.button === 0 && gameActive) {
-                mouse.isDown = true;
                 useSelectedHotbarItem();
             }
         });
 
-        window.addEventListener('mouseup', e => {
-            if (e.button === 0) mouse.isDown = false;
+        window.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            mouse.scoping = !mouse.scoping;
         });
-
-        function showNotification(text) {
-            const notif = document.getElementById('room-notification');
-            notif.textContent = text;
-            setTimeout(() => { if(notif.textContent === text) notif.textContent = ''; }, 3000);
-        }
 
         function initHostRoom() {
             myName = document.getElementById('input-username').value.trim() || 'Host';
             roomId = document.getElementById('input-room').value.trim() || 'alpha';
             isHost = true;
-            document.getElementById('net-status').textContent = 'Creating Peer Room...';
-            try {
-                peer = new Peer(roomId);
-                peer.on('open', id => {
-                    myPeerId = id;
-                    document.getElementById('net-status').textContent = `Room Hosted (${id}). Opening Mode Selection...`;
-                    openTeamSelectionModal('host');
-                });
-                peer.on('error', err => {
-                    console.warn("PeerJS cloud blocked or unavailable in sandbox. Falling back to Local Solo / Bot Match.");
-                    document.getElementById('net-status').textContent = 'Sandbox Network Restricted. Starting Solo/Bot Practice!';
-                    setTimeout(() => openTeamSelectionModal('solo'), 1000);
-                });
-                peer.on('connection', conn => {
-                    connections.push(conn);
-                    setupPeerConnection(conn);
-                });
-            } catch (e) {
-                console.warn("PeerJS exception caught, fallback to offline bot mode.");
-                document.getElementById('net-status').textContent = 'Sandbox Network Restricted. Starting Solo/Bot Practice!';
-                setTimeout(() => openTeamSelectionModal('solo'), 1000);
-            }
+            setupPeerNetwork(true);
         }
 
         function initJoinRoom() {
-            myName = document.getElementById('input-username').value.trim() || 'Combatant';
+            myName = document.getElementById('input-username').value.trim() || 'Guest';
             roomId = document.getElementById('input-room').value.trim() || 'alpha';
             isHost = false;
-            document.getElementById('net-status').textContent = 'Connecting to Room...';
+            setupPeerNetwork(false);
+        }
+
+        function initPracticeMode() {
+            myName = document.getElementById('input-username').value.trim() || 'SoloPlayer';
+            gameMode = '2-Team';
+            showTeamSelectionModal(() => {
+                startMatchSession();
+                spawnPracticeBots();
+            });
+        }
+
+        function setupPeerNetwork(hosting) {
+            document.getElementById('net-status').textContent = 'Connecting to P2P network...';
             try {
                 peer = new Peer();
                 peer.on('open', id => {
                     myPeerId = id;
-                    clientConn = peer.connect(roomId);
-                    setupPeerConnection(clientConn);
+                    document.getElementById('net-status').textContent = `My ID: ${id}`;
+                    if (hosting) {
+                        showTeamSelectionModal(() => {
+                            startMatchSession();
+                            document.getElementById('room-notification').textContent = `Hosting Room: ${roomId}`;
+                        });
+                    } else {
+                        connectToHost(roomId);
+                    }
                 });
                 peer.on('error', err => {
-                    console.warn("PeerJS join failed in sandbox. Falling back to Solo Practice.");
-                    document.getElementById('net-status').textContent = 'Network Restricted. Starting Practice vs Bots!';
-                    setTimeout(() => openTeamSelectionModal('solo'), 1000);
+                    document.getElementById('net-status').textContent = 'P2P Error - Falling back to Solo Practice';
+                    setTimeout(initPracticeMode, 1500);
                 });
-            } catch (e) {
-                document.getElementById('net-status').textContent = 'Network Restricted. Starting Practice vs Bots!';
-                setTimeout(() => openTeamSelectionModal('solo'), 1000);
+            } catch (err) {
+                initPracticeMode();
             }
         }
 
-        function initPracticeMode() {
-            myName = document.getElementById('input-username').value.trim() || 'Combatant';
-            isHost = true;
-            openTeamSelectionModal('solo');
+        function connectToHost(hostId) {
+            document.getElementById('net-status').textContent = `Joining room ${hostId}...`;
+            clientConn = peer.connect(hostId);
+            clientConn.on('open', () => {
+                showTeamSelectionModal(() => {
+                    clientConn.send({ type: 'JOIN', name: myName, team: myTeam });
+                    startMatchSession();
+                });
+            });
+            clientConn.on('data', data => handleNetworkData(data));
         }
 
-        function openTeamSelectionModal(mode) {
-            document.getElementById('lobby-box').style.display = 'none';
+        function showTeamSelectionModal(callback) {
             const modal = document.getElementById('modal-screen');
             const title = document.getElementById('modal-title');
             const opts = document.getElementById('modal-options');
+            title.textContent = 'Choose Your Team';
+            opts.innerHTML = `
+                <button class="btn-team-red" onclick="selectTeamAndStart('Red')">Red Team</button>
+                <button class="btn-team-blue" onclick="selectTeamAndStart('Blue')">Blue Team</button>
+                <button class="btn-team-green" onclick="selectTeamAndStart('Green')">Green Team</button>
+                <button class="btn-team-yellow" onclick="selectTeamAndStart('Yellow')">Yellow Team</button>
+                <button class="btn-team-ffa" onclick="selectTeamAndStart('FFA')">Free For All</button>
+            `;
             modal.style.display = 'flex';
-            title.textContent = mode === 'solo' ? 'Select Solo Team & Mode' : 'Configure Match & Team';
-
-            if (mode === 'solo') {
-                opts.innerHTML = `
-                    <button class="btn-team-red" onclick="startMatch('Red', 'FFA')">Red Team</button>
-                    <button class="btn-team-blue" onclick="startMatch('Blue', 'FFA')">Blue Team</button>
-                    <button class="btn-team-ffa" onclick="startMatch('FFA', 'FFA')">FFA Neutral</button>
-                `;
-            } else {
-                opts.innerHTML = `
-                    <p style="font-size:12px; color:#aaa; margin-bottom:8px;">Choose Game Mode:</p>
-                    <button class="btn-team-green" onclick="setGameModeAndTeam('2-Team', 'Red')">2-Team Match</button>
-                    <button class="btn-team-yellow" onclick="setGameModeAndTeam('4-Team', 'Red')">4-Team Match</button>
-                    <button class="btn-team-ffa" onclick="setGameModeAndTeam('FFA', 'FFA')">Free For All (FFA)</button>
-                `;
-            }
+            window.onTeamChosen = callback;
         }
 
-        function setGameModeAndTeam(gMode, defaultTeam) {
-            gameMode = gMode;
-            const opts = document.getElementById('modal-options');
-            if (gMode === 'FFA') {
-                startMatch('FFA', 'FFA');
-            } else {
-                let teamHtml = `<p style="font-size:12px; color:#aaa; margin-bottom:8px;">Select Your Team:</p>`;
-                teamHtml += `<button class="btn-team-red" onclick="startMatch('Red', '${gMode}')">Red Team</button>`;
-                teamHtml += `<button class="btn-team-blue" onclick="startMatch('Blue', '${gMode}')">Blue Team</button>`;
-                if (gMode === '4-Team') {
-                    teamHtml += `<button class="btn-team-green" onclick="startMatch('Green', '${gMode}')">Green Team</button>`;
-                    teamHtml += `<button class="btn-team-yellow" onclick="startMatch('Yellow', '${gMode}')">Yellow Team</button>`;
-                }
-                opts.innerHTML = teamHtml;
-            }
-        }
-
-        function startMatch(team, gMode) {
+        function selectTeamAndStart(team) {
             myTeam = team;
-            gameMode = gMode;
             document.getElementById('modal-screen').style.display = 'none';
+            if (window.onTeamChosen) window.onTeamChosen();
+        }
+
+        function startMatchSession() {
+            gameActive = document.getElementById('lobby-box').style.display = 'none';
+            document.getElementById('lobby-box').style.display = 'none';
             document.getElementById('stats-hud').style.display = 'flex';
             document.getElementById('wallet-badge').style.display = 'flex';
             document.getElementById('shop-toggle-btn').style.display = 'block';
@@ -485,142 +455,42 @@
             document.getElementById('tip-banner').style.display = 'block';
             document.getElementById('chat-text-input').style.display = 'block';
 
-            if (bases[team]) {
-                player.x = bases[team].x + bases[team].w / 2;
-                player.y = bases[team].y + bases[team].h / 2;
-            }
-
-            gameActive = true;
-            showNotification(`Match Started! Team: ${team}`);
-
-            if (isHost && connections.length === 0) {
-                spawnPracticeBots();
-            }
+            // Spawn player inside chosen base
+            const base = bases[myTeam] || bases['Red'];
+            player.x = base.x + base.w / 2;
+            player.y = base.y + base.h / 2;
 
             requestAnimationFrame(gameLoop);
         }
 
-        function setupPeerConnection(conn) {
-            conn.on('open', () => {
-                document.getElementById('net-status').textContent = 'Connected to Peer!';
-                if (!isHost) {
-                    document.getElementById('lobby-box').style.display = 'none';
-                    openTeamSelectionModal('client');
-                }
-            });
-            conn.on('data', data => handleNetworkData(data));
-            conn.on('close', () => {
-                showNotification('Peer disconnected.');
-            });
-        }
-
-        function broadcastData(data) {
-            if (isHost) {
-                connections.forEach(c => { if(c && c.open) c.send(data); });
-            } else if (clientConn && clientConn.open) {
-                clientConn.send(data);
-            }
-        }
-
-        function handleNetworkData(data) {
-            if (data.type === 'player_sync') {
-                remotePlayers[data.id] = data;
-            } else if (data.type === 'chat') {
-                appendChatFeed(data.sender, data.text, data.team);
-            } else if (data.type === 'spawn_block') {
-                blocks.push(data.block);
-            } else if (data.type === 'destroy_block') {
-                blocks = blocks.filter(b => !(b.x === data.x && b.y === data.y));
-            } else if (data.type === 'spawn_bullet') {
-                bullets.push(data.bullet);
-            }
-        }
-
         function spawnPracticeBots() {
-            for (let i = 1; i <= 3; i++) {
-                let bTeam = i === 1 ? 'Blue' : i === 2 ? 'Green' : 'Yellow';
-                if (bases[bTeam]) {
-                    bots.push({
-                        id: 'bot_' + i,
-                        name: 'Bot ' + i,
-                        team: bTeam,
-                        x: bases[bTeam].x + 100,
-                        y: bases[bTeam].y + 100,
-                        radius: 16,
-                        hp: 100,
-                        maxHp: 100,
-                        speed: 2.2,
-                        angle: 0
-                    });
-                }
+            for (let i = 0; i < 4; i++) {
+                bots.push({
+                    id: 'bot_' + i,
+                    name: 'Bot ' + (i + 1),
+                    x: Math.random() * WORLD_W,
+                    y: Math.random() * WORLD_H,
+                    hp: 100,
+                    team: i % 2 === 0 ? 'Blue' : 'Red',
+                    radius: 16,
+                    speed: 2.5
+                });
             }
-        }
-
-        function selectHotbarSlot(idx) {
-            selectedSlot = idx;
-            document.querySelectorAll('.hotbar-slot').forEach((el, i) => {
-                if (i === idx) el.classList.add('selected');
-                else el.classList.remove('selected');
-            });
-        }
-
-        function toggleInventoryPanel() {
-            const panel = document.getElementById('inventory-panel');
-            const isVisible = panel.style.display === 'block';
-            panel.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) renderInventoryGrid();
-        }
-
-        function renderInventoryGrid() {
-            const grid = document.getElementById('inv-grid');
-            grid.innerHTML = '';
-            inventory.forEach((item, idx) => {
-                const slot = document.createElement('div');
-                slot.className = 'inventory-slot';
-                slot.innerHTML = `<span>${idx+1}</span>${item ? item.icon : ''}`;
-                slot.onclick = () => transferInventoryToHotbar(idx);
-                grid.appendChild(slot);
-            });
-        }
-
-        function transferInventoryToHotbar(invIdx) {
-            let item = inventory[invIdx];
-            if (!item) return;
-            let emptyH = hotbar.findIndex(h => h.type === 'empty');
-            if (emptyH !== -1) {
-                hotbar[emptyH] = item;
-                inventory[invIdx] = null;
-            } else {
-                let temp = hotbar[selectedSlot];
-                hotbar[selectedSlot] = item;
-                inventory[invIdx] = temp;
-            }
-            updateHotbarUI();
-            renderInventoryGrid();
-        }
-
-        function updateHotbarUI() {
-            hotbar.forEach((item, idx) => {
-                const el = document.getElementById(`hslot-${idx}`);
-                if (el) {
-                    el.innerHTML = `<span>${idx+1}</span><div style="font-size:16px;">${item.icon || '⭕'}</div><b style="font-size:9px;">${item.name}</b>${item.count !== undefined ? `<span style="position:absolute; bottom:2px; right:4px; font-size:8px; color:#ffca28;">x${item.count}</span>` : ''}`;
-                }
-            });
         }
 
         function toggleShopPanel() {
-            const shop = document.getElementById('shop-panel');
-            shop.style.display = shop.style.display === 'block' ? 'none' : 'block';
+            const sp = document.getElementById('shop-panel');
+            sp.style.display = sp.style.display === 'block' ? 'none' : 'block';
         }
 
         function switchShopTab(tabName, btn) {
             document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById(`shop-tab-${tabName}`).classList.add('active');
+            document.getElementById('shop-tab-' + (tabName === 'gear' ? 'gear' : 'rides')).classList.add('active');
         }
 
-        function buyStoreItem(type, id, cost) {
+        function buyStoreItem(category, itemKey, cost) {
             if (coins < cost) {
                 showNotification('Not enough coins!');
                 return;
@@ -628,428 +498,199 @@
             coins -= cost;
             document.getElementById('coin-num').textContent = coins;
 
-            if (type === 'gun') {
-                let gunObj = { id: id, name: id.toUpperCase(), icon: '🔫', type: 'gun', damage: id === 'pistol' ? 25 : id === 'smg' ? 18 : id === 'shotgun' ? 45 : id === 'sniper' ? 80 : 120, ammo: 30 };
-                addToBackpackOrHotbar(gunObj);
-                showNotification(`Purchased ${id.toUpperCase()}!`);
-            } else if (type === 'vehicle') {
-                spawnVehicle(id);
-                showNotification(`Purchased Vehicle (${id.toUpperCase()})!`);
+            if (category === 'gun') {
+                for (let i = 3; i <= 5; i++) {
+                    if (hotbar[i].type === 'empty') {
+                        hotbar[i] = { id: itemKey, name: itemKey.toUpperCase(), icon: '🔫', type: 'weapon', damage: itemKey === 'sniper' ? 65 : 30 };
+                        updateHotbarUI();
+                        showNotification(`Purchased ${itemKey.toUpperCase()}!`);
+                        return;
+                    }
+                }
+                showNotification('Hotbar slots 4-6 full!');
+            } else if (category === 'vehicle') {
+                vehicles.push({
+                    id: 'veh_' + Date.now(),
+                    type: itemKey,
+                    x: player.x + 30,
+                    y: player.y,
+                    team: myTeam,
+                    passengers: []
+                });
+                showNotification(`Purchased vehicle: ${itemKey}!`);
             }
-            toggleShopPanel();
         }
 
-        function addToBackpackOrHotbar(item) {
-            let emptyH = hotbar.findIndex(h => h.type === 'empty');
-            if (emptyH !== -1) {
-                hotbar[emptyH] = item;
-            } else {
-                let emptyI = inventory.findIndex(i => i === null);
-                if (emptyI !== -1) {
-                    inventory[emptyI] = item;
-                } else {
-                    hotbar[selectedSlot] = item;
+        function toggleInventoryPanel() {
+            const ip = document.getElementById('inventory-panel');
+            ip.style.display = ip.style.display === 'block' ? 'none' : 'block';
+            if (ip.style.display === 'block') renderInventoryGrid();
+        }
+
+        function renderInventoryGrid() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 32; i++) {
+                const item = inventory[i];
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                slot.innerHTML = item ? `<div>${item.icon}</div><span>${item.name}</span>` : `<span>${i+1}</span>`;
+                slot.onclick = () => transferInventoryToHotbar(i);
+                grid.appendChild(slot);
+            }
+        }
+
+        function transferInventoryToHotbar(invIdx) {
+            const item = inventory[invIdx];
+            if (!item) return;
+            for (let i = 0; i < 8; i++) {
+                if (hotbar[i].type === 'empty') {
+                    hotbar[i] = item;
+                    inventory[invIdx] = null;
+                    updateHotbarUI();
+                    renderInventoryGrid();
+                    return;
                 }
             }
-            updateHotbarUI();
+            showNotification('Hotbar is full!');
         }
 
-        const vehicleSpecs = {
-            bike: { name: 'Bike', icon: '🚲', seats: 2, speedMult: 1.15, cost: 250 },
-            motorcycle: { name: 'Motorcycle', icon: '🏍️', seats: 3, speedMult: 1.25, cost: 350 },
-            car: { name: 'Car', icon: '🚗', seats: 5, speedMult: 1.50, cost: 500 },
-            truck: { name: 'Truck', icon: '🚚', seats: 7, speedMult: 1.20, cost: 650 },
-            tank: { name: 'Tank', icon: '🛡️', seats: 6, speedMult: 1.35, damageMult: 1.20, cost: 800 },
-            bomber: { name: 'Bomber Plane', icon: '✈️', seats: 10, speedMult: 2.00, damageMult: 1.40, cost: 1500 }
-        };
-
-        function spawnVehicle(type) {
-            let spec = vehicleSpecs[type];
-            if (!spec) return;
-            vehicles.push({
-                id: 'veh_' + Math.random().toString(36).substring(2),
-                type: type,
-                name: spec.name,
-                icon: spec.icon,
-                team: myTeam,
-                x: player.x + Math.cos(player.angle) * 50,
-                y: player.y + Math.sin(player.angle) * 50,
-                passengers: [myTeam],
-                maxSeats: spec.seats,
-                speedMult: spec.speedMult,
-                hp: 300, maxHp: 300
+        function selectHotbarSlot(idx) {
+            selectedSlot = idx;
+            document.querySelectorAll('.hotbar-slot').forEach((s, i) => {
+                s.classList.toggle('selected', i === idx);
             });
-            player.currentVehicleId = vehicles[vehicles.length - 1].id;
         }
 
-        function enterNearestVehicle() {
-            if (player.currentVehicleId) return;
-            let nearest = vehicles.find(v => v.team === myTeam && Math.hypot(v.x - player.x, v.y - player.y) < 60 && v.passengers.length < v.maxSeats);
-            if (nearest) {
-                nearest.passengers.push(myTeam);
-                player.currentVehicleId = nearest.id;
-                showNotification(`Entered ${nearest.name}!`);
-            }
-        }
-
-        function leaveVehicle() {
-            if (!player.currentVehicleId) return;
-            let veh = vehicles.find(v => v.id === player.currentVehicleId);
-            if (veh) {
-                veh.passengers = veh.passengers.filter(p => p !== myTeam);
-                player.x = veh.x + 40;
-                player.y = veh.y + 40;
-                player.currentVehicleId = null;
-                showNotification('Exited vehicle.');
+        function updateHotbarUI() {
+            for (let i = 0; i < 8; i++) {
+                const slotEl = document.getElementById('hslot-' + i);
+                const item = hotbar[i];
+                if (item.type === 'empty') {
+                    slotEl.innerHTML = `<span>${i+1}</span><b>Empty</b>`;
+                } else {
+                    slotEl.innerHTML = `<span>${i+1}</span><b>${item.icon} ${item.name}</b>`;
+                }
             }
         }
 
         function openCoinModal() {
             document.getElementById('coin-modal').style.display = 'block';
         }
+
         function closeCoinModal() {
             document.getElementById('coin-modal').style.display = 'none';
         }
+
         function executeCoinDrop() {
-            let amt = parseInt(document.getElementById('coin-drop-amt').value) || 10;
-            if (amt > coins) {
-                showNotification("You don't have enough coins!");
+            const amt = parseInt(document.getElementById('coin-drop-amt').value) || 10;
+            if (coins < amt) {
+                showNotification('Not enough coins to drop!');
                 closeCoinModal();
                 return;
             }
             coins -= amt;
             document.getElementById('coin-num').textContent = coins;
-            lootItems.push({ x: player.x, y: player.y, type: 'coins', amount: amt });
+            lootItems.push({
+                x: player.x,
+                y: player.y,
+                type: 'coins',
+                amount: amt
+            });
             closeCoinModal();
-            showNotification(`Dropped ${amt} 🪙 on ground!`);
+            showNotification(`Dropped ${amt} coins!`);
         }
 
         function closeDebugModal() {
             document.getElementById('debug-modal').style.display = 'none';
         }
+
         function verifyDebugPassword() {
-            let pw = document.getElementById('debug-pw-input').value;
+            const pw = document.getElementById('debug-pw-input').value;
             if (pw === '2dp2pa') {
                 coins += 1000;
                 document.getElementById('coin-num').textContent = coins;
-                showNotification('🔓 Debug Unlocked: +1000 Coins added!');
+                showNotification('Debug unlocked: +1000 Coins!');
                 closeDebugModal();
             } else {
-                showNotification('❌ Incorrect password!');
-            }
-            document.getElementById('debug-pw-input').value = '';
-        }
-
-        function toggleChatInput() {
-            const input = document.getElementById('chat-text-input');
-            if (document.activeElement === input) {
-                input.blur();
-            } else {
-                input.focus();
+                showNotification('Incorrect password!');
             }
         }
 
-        document.getElementById('chat-text-input').addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                let text = e.target.value.trim();
-                if (text) {
-                    appendChatFeed(myName, text, myTeam);
-                    broadcastData({ type: 'chat', sender: myName, text: text, team: myTeam });
+        function enterNearestVehicle() {
+            for (let v of vehicles) {
+                if (v.team === myTeam && Math.hypot(v.x - player.x, v.y - player.y) < 50) {
+                    player.currentVehicleId = v.id;
+                    v.passengers.push(myName);
+                    showNotification(`Entered ${v.type}!`);
+                    return;
                 }
-                e.target.value = '';
-                e.target.blur();
             }
-        });
+        }
 
-        function appendChatFeed(sender, text, team) {
-            chatMessages.push({ sender, text, team });
-            if (chatMessages.length > 30) chatMessages.shift();
-            const feed = document.getElementById('chat-feed');
-            feed.innerHTML = chatMessages.map(m => `<div class="chat-line"><b>[${m.team}] ${m.sender}:</b> ${m.text}</div>`).join('');
-            feed.scrollTop = feed.scrollHeight;
+        function leaveVehicle() {
+            if (!player.currentVehicleId) return;
+            for (let v of vehicles) {
+                if (v.id === player.currentVehicleId) {
+                    v.passengers = v.passengers.filter(p => p !== myName);
+                    player.x += 30;
+                    break;
+                }
+            }
+            player.currentVehicleId = null;
+            showNotification('Exited vehicle.');
         }
 
         function useSelectedHotbarItem() {
-            let item = hotbar[selectedSlot];
+            const item = hotbar[selectedSlot];
             if (!item || item.type === 'empty') return;
 
-            if (item.type === 'weapon' || item.type === 'gun') {
-                let damage = item.damage || 25;
-                if (player.currentVehicleId) {
-                    let veh = vehicles.find(v => v.id === player.currentVehicleId);
-                    if (veh && vehicleSpecs[veh.type]?.damageMult) damage *= vehicleSpecs[veh.type].damageMult;
-                }
-                let bullet = {
-                    x: player.x + Math.cos(player.angle) * 20,
-                    y: player.y + Math.sin(player.angle) * 20,
-                    vx: Math.cos(player.angle) * 14,
-                    vy: Math.sin(player.angle) * 14,
-                    damage: damage,
-                    team: myTeam,
-                    isRocket: item.id === 'rocket'
-                };
-                bullets.push(bullet);
-                broadcastData({ type: 'spawn_bullet', bullet });
-            } else if (item.type === 'tool') {
-                let targetX = player.x + Math.cos(player.angle) * 40;
-                let targetY = player.y + Math.sin(player.angle) * 40;
-                let hitB = blocks.find(b => targetX >= b.x && targetX <= b.x + b.w && targetY >= b.y && targetY <= b.y + b.h);
-                if (hitB) {
-                    hitB.hp -= 50;
-                    if (hitB.hp <= 0) {
-                        blocks = blocks.filter(b => b !== hitB);
-                        broadcastData({ type: 'destroy_block', x: hitB.x, y: hitB.y });
-                        showNotification('Block mined!');
-                    }
-                }
+            if (item.type === 'weapon') {
+                bullets.push({
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(player.angle) * 12,
+                    vy: Math.sin(player.angle) * 12,
+                    damage: item.damage || 25,
+                    team: myTeam
+                });
             } else if (item.type === 'block' && item.count > 0) {
                 item.count--;
-                updateHotbarUI();
-                let bx = Math.round((player.x + Math.cos(player.angle) * 50) / 40) * 40 - 20;
-                let by = Math.round((player.y + Math.sin(player.angle) * 50) / 40) * 40 - 20;
-                let newB = { x: bx, y: by, w: 40, h: 40, hp: 100, maxHp: 100, team: myTeam };
-                blocks.push(newB);
-                broadcastData({ type: 'spawn_block', block: newB });
+                blocks.push({
+                    x: player.x + Math.cos(player.angle) * 40,
+                    y: player.y + Math.sin(player.angle) * 40,
+                    w: 40,
+                    h: 40,
+                    hp: 100,
+                    maxHp: 100
+                });
             } else if (item.type === 'grenade' && item.count > 0) {
                 item.count--;
-                updateHotbarUI();
                 grenades.push({
-                    x: player.x, y: player.y,
+                    x: player.x,
+                    y: player.y,
                     vx: Math.cos(player.angle) * 8,
                     vy: Math.sin(player.angle) * 8,
-                    fuse: 90
+                    fuse: 120
                 });
-            } else if (item.type === 'heal' && item.count > 0 && player.hp < player.maxHp) {
+            } else if (item.type === 'heal' && item.count > 0) {
                 item.count--;
                 player.hp = Math.min(player.maxHp, player.hp + 40);
-                updateHotbarUI();
-                showNotification('Used Bandage (+40 HP)');
+                document.getElementById('hp-num').textContent = player.hp;
+                document.getElementById('hp-bar-fill').style.width = player.hp + '%';
             }
-        }
-
-        function gameLoop() {
-            if (!gameActive) return;
-
-            let dx = 0, dy = 0;
-            if (keys['w'] || keys['arrowup']) dy -= 1;
-            if (keys['s'] || keys['arrowdown']) dy += 1;
-            if (keys['a'] || keys['arrowleft']) dx -= 1;
-            if (keys['d'] || keys['arrowright']) dx += 1;
-
-            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
-
-            let currentSpeed = player.speed;
-            if (player.isSprinting && player.stamina > 0) {
-                currentSpeed *= 1.6;
-                player.stamina = Math.max(0, player.stamina - 0.5);
-            } else {
-                player.stamina = Math.min(player.maxStamina, player.stamina + 0.2);
-            }
-
-            if (player.currentVehicleId) {
-                let veh = vehicles.find(v => v.id === player.currentVehicleId);
-                if (veh) {
-                    currentSpeed *= (veh.speedMult || 1.2);
-                    veh.x += dx * currentSpeed;
-                    veh.y += dy * currentSpeed;
-                    player.x = veh.x;
-                    player.y = veh.y;
-                }
-            } else {
-                player.x += dx * currentSpeed;
-                player.y += dy * currentSpeed;
-            }
-
-            player.x = Math.max(20, Math.min(WORLD_W - 20, player.x));
-            player.y = Math.max(20, Math.min(WORLD_H - 20, player.y));
-
-            let inMyBase = false;
-            if (bases[myTeam]) {
-                let b = bases[myTeam];
-                if (player.x >= b.x && player.x <= b.x + b.w && player.y >= b.y && player.y <= b.y + b.h) {
-                    inMyBase = true;
-                }
-            }
-            player.inBase = inMyBase;
-
-            blocks.forEach(b => {
-                if (player.x + player.radius > b.x && player.x - player.radius < b.x + b.w &&
-                    player.y + player.radius > b.y && player.y - player.radius < b.y + b.h) {
-                    player.x -= dx * currentSpeed;
-                    player.y -= dy * currentSpeed;
-                }
-            });
-
-            bullets.forEach((b, idx) => {
-                b.x += b.vx;
-                b.y += b.vy;
-
-                blocks.forEach((block, blkIdx) => {
-                    if (b.x >= block.x && b.x <= block.x + block.w && b.y >= block.y && b.y <= block.y + block.h) {
-                        block.hp -= b.damage;
-                        if (block.hp <= 0) blocks.splice(blkIdx, 1);
-                        if (b.isRocket) triggerExplosion(b.x, b.y, 80, 100);
-                        bullets.splice(idx, 1);
-                    }
-                });
-            });
-
-            grenades.forEach((g, idx) => {
-                g.x += g.vx; g.y += g.vy;
-                g.vx *= 0.95; g.vy *= 0.95;
-                g.fuse--;
-                if (g.fuse <= 0) {
-                    triggerExplosion(g.x, g.y, 100, 120);
-                    grenades.splice(idx, 1);
-                }
-            });
-
-            document.getElementById('hp-num').textContent = Math.round(player.hp);
-            document.getElementById('hp-bar-fill').style.width = `${(player.hp / player.maxHp) * 100}%`;
-            document.getElementById('stamina-num').textContent = Math.round(player.stamina);
-            document.getElementById('stamina-bar-fill').style.width = `${(player.stamina / player.maxStamina) * 100}%`;
-
-            renderGameScene();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function triggerExplosion(x, y, radius, damage) {
-            if (Math.hypot(player.x - x, player.y - y) < radius + player.radius) {
-                player.hp -= damage;
-                if (player.hp <= 0) handlePlayerDeath();
-            }
-            bots.forEach(bot => {
-                if (Math.hypot(bot.x - x, bot.y - y) < radius + bot.radius) {
-                    bot.hp -= damage;
-                }
-            });
-            bots = bots.filter(b => b.hp > 0);
-        }
-
-        function handlePlayerDeath() {
-            player.deaths++;
-            player.hp = player.maxHp;
-            if (bases[myTeam]) {
-                player.x = bases[myTeam].x + bases[myTeam].w / 2;
-                player.y = bases[myTeam].y + bases[myTeam].h / 2;
-            }
-            showNotification('You were eliminated! Respawned in base.');
-        }
-
-        function renderGameScene() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.save();
-            let camX = mouse.scoping ? player.x + (mouse.x - window.innerWidth/2)*0.6 : player.x;
-            let camY = mouse.scoping ? player.y + (mouse.y - window.innerHeight/2)*0.6 : player.y;
-            ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
-
-            ctx.strokeStyle = '#274e3e';
-            ctx.lineWidth = 1;
-            const step = 80;
-            for (let x = 0; x <= WORLD_W; x += step) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke();
-            }
-            for (let y = 0; y <= WORLD_H; y += step) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke();
-            }
-
-            for (let k in bases) {
-                let b = bases[k];
-                ctx.fillStyle = b.color + '22';
-                ctx.fillRect(b.x, b.y, b.w, b.h);
-                ctx.strokeStyle = b.color;
-                ctx.lineWidth = 3;
-                ctx.strokeRect(b.x, b.y, b.w, b.h);
-                ctx.fillStyle = b.color;
-                ctx.font = 'bold 16px sans-serif';
-                ctx.fillText(`${k} Stronghold`, b.x + 20, b.y + 30);
-            }
-
-            vehicles.forEach(v => {
-                ctx.fillStyle = bases[v.team]?.color || '#888';
-                ctx.fillRect(v.x - 20, v.y - 15, 40, 30);
-                ctx.fillStyle = '#fff';
-                ctx.font = '14px sans-serif';
-                ctx.fillText(`${v.icon} (${v.passengers.length}/${v.maxSeats})`, v.x - 20, v.y - 20);
-            });
-
-            blocks.forEach(b => {
-                ctx.fillStyle = '#8d5524';
-                ctx.fillRect(b.x, b.y, b.w, b.h);
-                ctx.strokeStyle = '#d7ccc8';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(b.x, b.y, b.w, b.h);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(b.x, b.y - 6, b.w * (b.hp / b.maxHp), 4);
-            });
-
-            bullets.forEach(b => {
-                ctx.fillStyle = b.isRocket ? '#ff5722' : '#ffeb3b';
-                ctx.beginPath(); ctx.arc(b.x, b.y, b.isRocket ? 6 : 3, 0, Math.PI * 2); ctx.fill();
-            });
-
-            grenades.forEach(g => {
-                ctx.fillStyle = '#212121';
-                ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#ff9800'; ctx.stroke();
-            });
-
-            bots.forEach(bot => {
-                ctx.fillStyle = bases[bot.team]?.color || '#9c27b0';
-                ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
-                ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-                ctx.fillStyle = '#e53935';
-                ctx.fillRect(bot.x - 16, bot.y - 26, 32, 4);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(bot.x - 16, bot.y - 26, 32 * (bot.hp / bot.maxHp), 4);
-            });
-
-            let teamColor = bases[myTeam]?.color || '#ab47bc';
-            ctx.fillStyle = teamColor;
-            ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2); ctx.fill();
-            ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
-
-            ctx.fillStyle = '#e53935';
-            ctx.fillRect(player.x - 18, player.y - 28, 36, 5);
-            ctx.fillStyle = '#4caf50';
-            ctx.fillRect(player.x - 18, player.y - 28, 36 * (player.hp / player.maxHp), 5);
-
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${myName} (You)`, player.x, player.y - 36);
-
-            ctx.restore();
-            renderMinimap();
-        }
-
-        function renderMinimap() {
-            miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
-            miniCtx.fillStyle = '#0a0a0e';
-            miniCtx.fillRect(0, 0, miniCanvas.width, miniCanvas.height);
-
-            let scale = miniCanvas.width / WORLD_W;
-
-            for (let k in bases) {
-                let b = bases[k];
-                miniCtx.fillStyle = b.color;
-                miniCtx.fillRect(b.x * scale, b.y * scale, b.w * scale, b.h * scale);
-            }
-
-            miniCtx.fillStyle = '#fff';
-            miniCtx.beginPath();
-            miniCtx.arc(player.x * scale, player.y * scale, 3, 0, Math.PI * 2);
-            miniCtx.fill();
         }
 
         function updateScoreboard() {
             const list = document.getElementById('scoreboard-list');
-            list.innerHTML = `<div class="sb-row"><b>Name</b><b>Team</b><b>K / D</b></div>`;
-            list.innerHTML += `<div class="sb-row"><span>${myName} (You)</span><span>${myTeam}</span><span>${player.kills}/${player.deaths}</span></div>`;
-            bots.forEach(b => {
-                list.innerHTML += `<div class="sb-row"><span>${b.name}</span><span>${b.team}</span><span>0/0</span></div>`;
-            });
+            list.innerHTML = `<div class="sb-row"><b>${myName} (${myTeam})</b><span>K: ${player.kills} | D: ${player.deaths}</span></div>`;
+            for (let b of bots) {
+                list.innerHTML += `<div class="sb-row"><span>${b.name} (${b.team})</span><span>Bot</span></div>`;
+            }
+        }
+
+        function handleNetworkData(data) {
+            // P2P data handler
         }
 
         function exitToLobby() {
@@ -1065,6 +706,118 @@
             document.getElementById('chat-text-input').style.display = 'none';
             document.getElementById('lobby-box').style.display = 'block';
             if (peer) peer.destroy();
+        }
+
+        function showNotification(msg) {
+            const notif = document.getElementById('room-notification');
+            notif.textContent = msg;
+            setTimeout(() => {
+                if (notif.textContent === msg) notif.textContent = '';
+            }, 3000);
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Movement logic
+            let vx = 0, vy = 0;
+            if (keys['w'] || keys['arrowup']) vy -= player.speed;
+            if (keys['s'] || keys['arrowdown']) vy += player.speed;
+            if (keys['a'] || keys['arrowleft']) vx -= player.speed;
+            if (keys['d'] || keys['arrowright']) vx += player.speed;
+
+            if (keys['shift'] && player.stamina > 0 && (vx !== 0 || vy !== 0)) {
+                vx *= 1.6;
+                vy *= 1.6;
+                player.stamina = Math.max(0, player.stamina - 0.5);
+            } else {
+                player.stamina = Math.min(player.maxStamina, player.stamina + 0.3);
+            }
+
+            document.getElementById('stamina-num').textContent = Math.round(player.stamina);
+            document.getElementById('stamina-bar-fill').style.width = player.stamina + '%';
+
+            player.x = Math.max(20, Math.min(WORLD_W - 20, player.x + vx));
+            player.y = Math.max(20, Math.min(WORLD_H - 20, player.y + vy));
+
+            // Base check
+            let insideAnyBase = false;
+            for (let t in bases) {
+                let b = bases[t];
+                if (player.x >= b.x && player.x <= b.x + b.w && player.y >= b.y && player.y <= b.y + b.h) {
+                    insideAnyBase = true;
+                    break;
+                }
+            }
+            player.inBase = insideAnyBase;
+            if (!insideAnyBase && player.baseLockoutTimer <= 0) {
+                document.getElementById('self-destruct-banner').style.display = 'block';
+                player.baseLockoutTimer = 1800; // 30 sec at 60fps
+            }
+
+            if (player.baseLockoutTimer > 0) {
+                player.baseLockoutTimer--;
+                document.getElementById('sd-countdown').textContent = Math.ceil(player.baseLockoutTimer / 60) + 's';
+                if (player.baseLockoutTimer <= 0) {
+                    document.getElementById('self-destruct-banner').style.display = 'none';
+                }
+            }
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                if (b.x < 0 || b.x > WORLD_W || b.y < 0 || b.y > WORLD_H) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Render scene
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2 - player.x, canvas.height / 2 - player.y);
+
+            // Draw grid & bases
+            ctx.fillStyle = '#1e362c';
+            ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+            for (let t in bases) {
+                let b = bases[t];
+                ctx.fillStyle = b.color + '44';
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.strokeStyle = b.color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+            }
+
+            // Draw blocks
+            for (let blk of blocks) {
+                ctx.fillStyle = '#8d6e63';
+                ctx.fillRect(blk.x, blk.y, blk.w, blk.h);
+                ctx.strokeStyle = '#3e2723';
+                ctx.strokeRect(blk.x, blk.y, blk.w, blk.h);
+            }
+
+            // Draw player
+            ctx.fillStyle = bases[myTeam] ? bases[myTeam].color : '#e53935';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#fff';
+            ctx.stroke();
+
+            // Draw bullets
+            ctx.fillStyle = '#ffeb3b';
+            for (let b of bullets) {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+            requestAnimationFrame(gameLoop);
         }
     </script>
 </body>
