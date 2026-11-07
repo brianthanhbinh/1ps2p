@@ -69,6 +69,9 @@
         #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; }
         #airdrop-countdown { color: #ffca28; }
 
+        /* Self Destruct Banner HUD */
+        #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
+
         #leave-btn { position: absolute; top: 185px; right: 16px; background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; transition: background 0.2s; }
         #leave-btn:hover { background: #e53935; }
 
@@ -168,6 +171,7 @@
         </div>
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
+        <div id="self-destruct-banner">⏳ Base Lockout / Respawn: <span id="sd-countdown">30s</span></div>
         <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
         <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect</div>
@@ -242,7 +246,7 @@
         let myUsername = 'Combatant';
         let roomCode = 'alpha';
         let currentMode = 'ffa';
-        let hostGameMode = 'ffa'; // Synced mode from host
+        let hostGameMode = 'ffa';
         let playerTeam = 'FFA';
         let playerColor = '#8e24aa';
 
@@ -258,8 +262,10 @@
         let activeRide = null;
         let cameraScoped = false;
 
-        let invulnerableSpawn = true;
-        let spawnTimeMarker = 0;
+        let baseLockedOut = false;
+        let lastBaseExitTime = 0;
+        let selfDestructCountdown = 0;
+        let selfDestructTimerHandle = null;
 
         let activeHotbar = 0;
         let weaponBarSlots = [null, null, null];
@@ -301,6 +307,7 @@
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
             document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
+            if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
         }
 
         function switchShopTab(tabKey, btnElement) {
@@ -437,6 +444,17 @@
             return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
         }
 
+        // Check if an enemy is trying to enter another team's base
+        function isEnemyTryingToEnterBase(x, y, myTeam) {
+            const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
+            for (let t of teamNames) {
+                if (t !== myTeam) {
+                    if (checkInsideBase(x, y, t)) return true;
+                }
+            }
+            return false;
+        }
+
         // Host / Join Initialization
         function initHostRoom() {
             myUsername = document.getElementById('input-username').value.trim() || 'Host';
@@ -545,7 +563,6 @@
             playerColor = hexColor;
             document.getElementById('modal-screen').style.display = 'none';
 
-            // Spawn player at base or center
             const b = getTeamBaseRegion(playerTeam);
             if (b) {
                 posX = (b.x1 + b.x2) / 2;
@@ -557,10 +574,9 @@
 
             currentHp = 100;
             currentStamina = 100;
+            baseLockedOut = false;
             inGameActive = true;
             showUIInGame(true);
-            spawnTimeMarker = Date.now();
-            invulnerableSpawn = true;
 
             if (isPractice) {
                 spawnPracticeBots();
@@ -581,6 +597,43 @@
             airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
         }
 
+        function executeSelfDestruct() {
+            if (selfDestructCountdown > 0) return;
+            selfDestructCountdown = 30;
+            const banner = document.getElementById('self-destruct-banner');
+            const cdSpan = document.getElementById('sd-countdown');
+            if (banner) banner.style.display = 'block';
+            if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            selfDestructTimerHandle = setInterval(() => {
+                selfDestructCountdown--;
+                if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+                if (selfDestructCountdown <= 0) {
+                    clearInterval(selfDestructTimerHandle);
+                    if (banner) banner.style.display = 'none';
+                    currentHp = 100;
+                    baseLockedOut = false;
+                    const b = getTeamBaseRegion(playerTeam);
+                    if (b) {
+                        posX = (b.x1 + b.x2) / 2;
+                        posY = (b.y1 + b.y2) / 2;
+                    }
+                    showNotificationBox('Base Re-entry unlocked! Respawned in Base!');
+                }
+            }, 1000);
+        }
+
+        function onEnemyEliminated() {
+            baseLockedOut = false;
+            selfDestructCountdown = 0;
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            const banner = document.getElementById('self-destruct-banner');
+            if (banner) banner.style.display = 'none';
+            currentHp = Math.min(100, currentHp + 50);
+            showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
+        }
+
         function exitToLobby() {
             inGameActive = false;
             showUIInGame(false);
@@ -595,9 +648,15 @@
 
         function setupServerConnection(conn) {
             peerConnections[conn.peer] = conn;
-            // Send current game mode immediately to joining client
             conn.on('open', () => {
-                conn.send({ type: 'room_config', mode: currentMode });
+                // Send current game mode, world blocks, and loot state immediately to joining client
+                conn.send({ 
+                    type: 'room_config', 
+                    mode: currentMode,
+                    blocks: worldBlocks,
+                    loot: droppedLoot,
+                    crates: supplyCrates
+                });
             });
             conn.on('data', (data) => {
                 if (data.type === 'client_join') {
@@ -622,6 +681,18 @@
                         remotePlayers[conn.peer].color = data.color;
                     }
                     broadcastStateToClients();
+                } else if (data.type === 'place_block') {
+                    worldBlocks[data.key] = data.block;
+                    broadcastStateToClients();
+                } else if (data.type === 'spawn_loot') {
+                    droppedLoot[data.id] = data.item;
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_loot') {
+                    delete droppedLoot[data.id];
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_crate') {
+                    supplyCrates.splice(data.index, 1);
+                    broadcastStateToClients();
                 }
             });
             conn.on('close', () => {
@@ -638,6 +709,9 @@
             conn.on('data', (data) => {
                 if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
                     promptTeamSelection();
                 } else if (data.type === 'server_state') {
                     if (data.players) {
@@ -647,6 +721,9 @@
                             }
                         }
                     }
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
                 }
             });
             conn.on('close', () => {
@@ -662,7 +739,13 @@
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
             }
-            const packet = { type: 'server_state', players: allPlayersState };
+            const packet = { 
+                type: 'server_state', 
+                players: allPlayersState,
+                blocks: worldBlocks,
+                loot: droppedLoot,
+                crates: supplyCrates
+            };
             for (let pid in peerConnections) {
                 if (peerConnections[pid].open) {
                     peerConnections[pid].send(packet);
@@ -689,17 +772,24 @@
         }
 
         function triggerAirdropSpawn() {
-            supplyCrates.push({
+            const newCrate = {
                 x: Math.random() * (MAP_SIZE - 600) + 300,
                 y: Math.random() * (MAP_SIZE - 600) + 300,
                 loot: 'gold'
-            });
+            };
+            supplyCrates.push(newCrate);
             showNotificationBox('✈️ Supply Airdrop has landed on the map!');
         }
 
         function spawnWorldLoot(type, subtype, x, y, value) {
             const id = 'loot-' + Math.random().toString(36).substr(2, 9);
-            droppedLoot[id] = { type, subtype, x, y, value };
+            const item = { type, subtype, x, y, value };
+            droppedLoot[id] = item;
+            if (isHosting) {
+                broadcastStateToClients();
+            } else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'spawn_loot', id, item });
+            }
         }
 
         function executeSelfDestruct() {
@@ -830,6 +920,11 @@
                         refreshHotbarUI();
                     }
                     delete droppedLoot[lid];
+                    if (isHosting) {
+                        broadcastStateToClients();
+                    } else if (hostConnection && hostConnection.open) {
+                        hostConnection.send({ type: 'remove_loot', id: lid });
+                    }
                     showNotificationBox('Picked up item!');
                     break;
                 }
@@ -841,6 +936,11 @@
                     playerCoins += 100;
                     document.getElementById('coin-num').innerText = playerCoins;
                     supplyCrates.splice(idx, 1);
+                    if (isHosting) {
+                        broadcastStateToClients();
+                    } else if (hostConnection && hostConnection.open) {
+                        hostConnection.send({ type: 'remove_crate', index: idx });
+                    }
                     showNotificationBox('Opened Airdrop Crate (+100 🪙)!');
                 }
             });
@@ -852,24 +952,88 @@
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
 
-            // Attack or place block logic
-            if (activeHotbar === 2 && !actionCdBuild) {
-                // Place block
-                const bKey = `${Math.floor((posX + (clickX - canvas.width/2)) / 40)},${Math.floor((posY + (clickY - canvas.height/2)) / 40)}`;
-                worldBlocks[bKey] = { type: 'wood', hp: 100 };
+            // Base Safe Zone Rule: Shooting disabled inside bases
+            if (checkInsideBase(posX, posY, playerTeam)) {
+                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
+                return;
+            }
+
+            // Pickaxe Mining Logic (Slot 2)
+            if (activeHotbar === 1 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                for (let k in worldBlocks) {
+                    const blk = worldBlocks[k];
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+
+                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
+                        targetWorldY >= by && targetWorldY <= by + 40) {
+                        
+                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
+                        if (distToBlock <= 90) {
+                            blk.hp -= 35; // Damage block
+                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
+                            if (blk.hp <= 0) {
+                                delete worldBlocks[k];
+                                playerCoins += 15;
+                                document.getElementById('coin-num').innerText = playerCoins;
+                                showNotificationBox('Block destroyed (+15 🪙)!');
+                            }
+                            if (isHosting) broadcastStateToClients();
+                            else if (hostConnection && hostConnection.open) {
+                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
+                            }
+                        } else {
+                            showNotificationBox('Get closer to mine block!');
+                        }
+                        break;
+                    }
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 300);
+            }
+
+            // Building Logic (Slot 3)
+            else if (activeHotbar === 2 && !actionCdBuild) {
+                const targetX = posX + (clickX - canvas.width/2);
+                const targetY = posY + (clickY - canvas.height/2);
+                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+                const newBlock = { type: 'wood', hp: 100 };
+                worldBlocks[bKey] = newBlock;
+
+                if (isHosting) {
+                    broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
+                }
+
                 actionCdBuild = true;
                 setTimeout(() => { actionCdBuild = false; }, 300);
-            } else if (!actionCdAttack) {
-                // Shoot or attack
-                bulletsList.push({
-                    x: posX,
-                    y: posY,
-                    vx: Math.cos(aimAngle) * 14,
-                    vy: Math.sin(aimAngle) * 14,
-                    team: playerTeam
-                });
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 200);
+            }
+
+            // Shooting Logic (Only equipped guns in slots 4, 5, 6)
+            else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunEquipped = weaponBarSlots[activeHotbar - 3];
+                if (!gunEquipped) {
+                    showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
+                    return;
+                }
+                if (!actionCdAttack) {
+                    bulletsList.push({
+                        x: posX,
+                        y: posY,
+                        vx: Math.cos(aimAngle) * 16,
+                        vy: Math.sin(aimAngle) * 16,
+                        type: gunEquipped,
+                        team: playerTeam
+                    });
+                    actionCdAttack = true;
+                    const cdTime = gunEquipped === 'sniper' ? 800 : gunEquipped === 'smg' ? 100 : 250;
+                    setTimeout(() => { actionCdAttack = false; }, cdTime);
+                }
             }
         });
 
@@ -900,30 +1064,78 @@
                 dy *= 0.7071;
             }
 
-            posX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
-            posY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
+            let nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
+            let nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
 
-            // Base entry check & immunity
-            if (checkInsideBase(posX, posY, playerTeam)) {
-                currentHp = Math.min(100, currentHp + 0.2); // regenerate inside base
+            // Block Solid Hitbox Bounding Check
+            for (let k in worldBlocks) {
+                const parts = k.split(',');
+                const bx = parseInt(parts[0]) * 40;
+                const by = parseInt(parts[1]) * 40;
+
+                // Check collision between player circle and block AABB box
+                const closestX = Math.max(bx, Math.min(nextX, bx + 40));
+                const closestY = Math.max(by, Math.min(nextY, by + 40));
+                const distX = nextX - closestX;
+                const distY = nextY - closestY;
+                const distanceSq = (distX * distX) + (distY * distY);
+
+                if (distanceSq < (RADIUS_PLAYER * RADIUS_PLAYER)) {
+                    // Prevent movement inside block
+                    nextX = posX;
+                    nextY = posY;
+                    break;
+                }
             }
 
-            // Aim angle toward cursor
+            // Base re-entry lockout rule
+            const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
+            const wasInBase = checkInsideBase(posX, posY, playerTeam);
+
+            if (wasInBase && !currentlyInBase) {
+                baseLockedOut = true; // Left base, now locked out
+                executeSelfDestruct();
+            }
+
+            if (baseLockedOut && currentlyInBase) {
+                showNotificationBox('Base re-entry locked! Wait timer or kill an enemy.');
+            } else {
+                posX = nextX;
+                posY = nextY;
+            }
+
+            if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
+                currentHp = Math.min(100, currentHp + 0.2);
+            }
+
             const screenCenterX = canvas.width / 2;
             const screenCenterY = canvas.height / 2;
             aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
 
-            // Update bullets
             for (let i = bulletsList.length - 1; i >= 0; i--) {
                 const b = bulletsList[i];
                 b.x += b.vx;
                 b.y += b.vy;
+
+                // Bullet Block Collisions
+                for (let k in worldBlocks) {
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+
+                    if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
+                        worldBlocks[k].hp -= 25;
+                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+                        bulletsList.splice(i, 1);
+                        break;
+                    }
+                }
+
                 if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
                     bulletsList.splice(i, 1);
                 }
             }
 
-            // Update AI bots in practice mode
             if (isPractice) {
                 aiBots.forEach(bot => {
                     bot.x += (Math.random() - 0.5) * 2;
@@ -931,7 +1143,6 @@
                 });
             }
 
-            // Sync with Peer
             if (isHosting) {
                 broadcastStateToClients();
             } else if (hostConnection && hostConnection.open) {
@@ -947,7 +1158,6 @@
                 });
             }
 
-            // HUD Meters update
             document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
             document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
             document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
@@ -1000,7 +1210,7 @@
                 ctx.fillText(b.name, b.x + 20, b.y + 35);
             });
 
-            // Draw world blocks
+            // Draw world blocks with textures
             for (let k in worldBlocks) {
                 const blk = worldBlocks[k];
                 const parts = k.split(',');
@@ -1009,83 +1219,47 @@
                 ctx.fillStyle = '#795548';
                 ctx.fillRect(bx, by, 40, 40);
                 ctx.strokeStyle = '#3e2723';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2.5;
                 ctx.strokeRect(bx, by, 40, 40);
 
-                // Block Health Indicator on Head/Body
+                // Wood texture crosslines
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx+40, by+40); ctx.stroke();
+
+                // Block Health Indicator
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(bx + 2, by - 10, 36, 5);
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(bx + 2, by - 10, (blk.hp / 100) * 36, 5);
             }
 
-            // Draw Loot
-            for (let lid in droppedLoot) {
-                const item = droppedLoot[lid];
-                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ff9800';
-                ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-            }
-
-            // Draw Supply Crates
-            supplyCrates.forEach(crate => {
-                ctx.fillStyle = '#ff5722';
-                ctx.fillRect(crate.x - 14, crate.y - 14, 28, 28);
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-                ctx.strokeRect(crate.x - 14, crate.y - 14, 28, 28);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 9px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('CRATE', crate.x, crate.y - 18);
-            });
-
-            // Draw AI Bots
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    ctx.fillStyle = bot.color;
-                    ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
-
-                    // Bot Health Indicator
-                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                    ctx.fillRect(bot.x - 18, bot.y - 32, 36, 6);
-                    ctx.fillStyle = '#e53935';
-                    ctx.fillRect(bot.x - 18, bot.y - 32, (bot.hp / 100) * 36, 6);
-                });
-            }
-
-            // Draw Remote Players
-            for (let pid in remotePlayers) {
-                const rp = remotePlayers[pid];
-                ctx.fillStyle = rp.color || '#fff';
-                ctx.beginPath(); ctx.arc(rp.x, rp.y, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(rp.username || 'Player', rp.x, rp.y - 28);
-
-                // Remote Player Health Indicator
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(rp.x - 18, rp.y - 42, 36, 6);
-                ctx.fillStyle = '#e53935';
-                ctx.fillRect(rp.x - 18, rp.y - 42, ((rp.hp || 100) / 100) * 36, 6);
-            }
-
-            // Draw Local Player
+            // Draw Local Player with Gun / Tool Textures
             ctx.save();
             ctx.translate(posX, posY);
             ctx.rotate(aimAngle);
-            if (activeRide) {
-                ctx.fillStyle = activeRide === 'bike' ? '#ff9800' : activeRide === 'car' ? '#e53935' : '#43a047';
-                ctx.fillRect(-24, -15, 48, 30);
+
+            // Draw Weapon Texture in Hand
+            if (activeHotbar === 0) {
+                // Sword
+                ctx.fillStyle = '#b0bec5';
+                ctx.fillRect(10, 4, 18, 3);
+            } else if (activeHotbar === 1) {
+                // Pickaxe
+                ctx.fillStyle = '#8d6e63';
+                ctx.fillRect(10, 2, 14, 4);
+                ctx.fillStyle = '#424242';
+                ctx.fillRect(22, -4, 4, 16);
+            } else if (activeHotbar >= 3 && activeHotbar <= 5 && weaponBarSlots[activeHotbar - 3]) {
+                // Gun Barrel Texture
+                ctx.fillStyle = '#37474f';
+                ctx.fillRect(8, -3, 22, 6);
+                ctx.fillStyle = '#111';
+                ctx.fillRect(24, -2, 8, 4);
             }
+
             ctx.fillStyle = playerColor;
             ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0, -4, 20, 8);
             ctx.restore();
 
             ctx.fillStyle = '#fff';
@@ -1093,16 +1267,16 @@
             ctx.textAlign = 'center';
             ctx.fillText(myUsername + ' (You)', posX, posY - 28);
 
-            // Local Player Health Indicator
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(posX - 18, posY - 42, 36, 6);
-            ctx.fillStyle = '#e53935';
-            ctx.fillRect(posX - 18, posY - 42, (Math.max(0, currentHp) / 100) * 36, 6);
-
-            // Draw Bullets
-            ctx.fillStyle = '#ffca28';
+            // Draw Bullets with Tracer Effect
             bulletsList.forEach(b => {
+                ctx.fillStyle = '#ffca28';
                 ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,202,40,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y);
+                ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
+                ctx.stroke();
             });
 
             ctx.restore();
