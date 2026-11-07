@@ -47,17 +47,27 @@
       #btn-toggle-shop { position: absolute; top: 115px; left: 15px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; transition: background 0.2s; z-index: 12; }
       #btn-toggle-shop:hover { background: #f57c00; }
 
-      #shop-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.95); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 340px; color: #fff; display: none; pointer-events: auto; z-index: 30; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      /* Shop Modal & Tabs */
+      #shop-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 380px; color: #fff; display: none; pointer-events: auto; z-index: 30; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
       #shop-modal h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 6px; }
-      .shop-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; }
-      .shop-item button { background: #4caf50; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+      .shop-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+      .shop-tab-btn { flex: 1; padding: 6px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+      .shop-tab-btn.active { background: #ff9800; color: #fff; border-color: #ffb74d; }
+      .shop-tab-content { display: none; max-height: 220px; overflow-y: auto; text-align: left; }
+      .shop-tab-content.active { display: block; }
+      .shop-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; font-size: 13px; }
+      .shop-item button { background: #4caf50; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
       .shop-item button:hover { background: #43a047; }
+
+      /* Minimap Canvas */
+      #minimap-container { position: absolute; top: 15px; right: 15px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 8px; overflow: hidden; pointer-events: auto; display: none; z-index: 12; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+      #minimap-canvas { width: 100%; height: 100%; display: block; }
 
       #airdrop-pill { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
       #airdrop-timer { color: #ffca28; }
 
       /* Pause / Leave Button */
-      #pause-btn { position: absolute; top: 15px; right: 15px; background: rgba(229,57,53,0.85); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; transition: background 0.2s; z-index: 12; }
+      #pause-btn { position: absolute; top: 185px; right: 15px; background: rgba(229,57,53,0.85); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; transition: background 0.2s; z-index: 12; }
       #pause-btn:hover { background: #e53935; }
 
       /* Controls instruction */
@@ -114,20 +124,39 @@
       </div>
 
       <div id="coin-display">🪙 Coins: <span id="coin-val">100</span></div>
-      <button id="btn-toggle-shop" onclick="toggleShop()">🛒 Base Shop (B)</button>
+      <button id="btn-toggle-shop" onclick="toggleShop()">🛒 Shop (B)</button>
+
+      <!-- Minimap Container -->
+      <div id="minimap-container">
+        <canvas id="minimap-canvas"></canvas>
+      </div>
 
       <!-- Return to Base Timer Pill -->
       <div id="base-timer-pill" style="position: absolute; top: 115px; left: 165px; background: rgba(0,0,0,0.7); padding: 6px 14px; border-radius: 20px; border: 1px solid #e53935; color: #fff; font-size: 13px; font-weight: bold; display: none;">⏳ Return: <span id="base-timer-val" style="color:#ffca28;">10s</span></div>
 
+      <!-- Shop Modal with Tabs -->
       <div id="shop-modal">
-        <h3>🛒 BASE WEAPON SHOP</h3>
-        <p style="font-size:11px; color:#aaa; margin-bottom:12px;">Only available while inside your team spawn base!</p>
-        <div class="shop-item"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyGun('pistol', 50)">Buy</button></div></div>
-        <div class="shop-item"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyGun('smg', 120)">Buy</button></div></div>
-        <div class="shop-item"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyGun('shotgun', 180)">Buy</button></div></div>
-        <div class="shop-item"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyGun('sniper', 300)">Buy</button></div></div>
-        <div class="shop-item"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyGun('rocket', 450)">Buy</button></div></div>
-        <button style="width:100%; margin-top:10px; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleShop()">Close</button>
+        <h3>🛒 ARENA SHOP</h3>
+        <div class="shop-tabs">
+          <button class="shop-tab-btn active" onclick="switchShopTab('weapons', this)">Weapons</button>
+          <button class="shop-tab-btn" onclick="switchShopTab('transport', this)">🚗 Transport</button>
+        </div>
+
+        <div id="shop-tab-weapons" class="shop-tab-content active">
+          <div class="shop-item"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyGun('pistol', 50)">Buy</button></div></div>
+          <div class="shop-item"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyGun('smg', 120)">Buy</button></div></div>
+          <div class="shop-item"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyGun('shotgun', 180)">Buy</button></div></div>
+          <div class="shop-item"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyGun('sniper', 300)">Buy</button></div></div>
+          <div class="shop-item"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyGun('rocket', 450)">Buy</button></div></div>
+        </div>
+
+        <div id="shop-tab-transport" class="shop-tab-content">
+          <div class="shop-item"><span>🚲 2-Person Bike (+15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyVehicle('bike', 250)">Buy</button></div></div>
+          <div class="shop-item"><span>🏎️ Combat Car (+40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyVehicle('car', 600)">Buy</button></div></div>
+          <div class="shop-item"><span>🛡️ Assault Tank (+Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyVehicle('tank', 1200)">Buy</button></div></div>
+        </div>
+
+        <button style="width:100%; margin-top:12px; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleShop()">Close</button>
       </div>
 
       <!-- Coin Drop Modal -->
@@ -195,10 +224,14 @@
     <script>
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
+      const minimapCanvas = document.getElementById('minimap-canvas');
+      const minimapCtx = minimapCanvas.getContext('2d');
 
       function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        minimapCanvas.width = 160;
+        minimapCanvas.height = 160;
       }
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
@@ -227,6 +260,8 @@
       let stamina = 100;
       const maxStamina = 100;
       let coins = 100;
+      let currentVehicle = null; // null, 'bike', 'car', 'tank'
+
       let isSpawnProtected = true;
       let isLeftBase = false;
       let baseReentryTimer = 10;
@@ -259,6 +294,13 @@
 
       function getFormattedPeerId(code) {
         return APP_PREFIX + code.trim().toLowerCase();
+      }
+
+      function switchShopTab(tabName, btnEl) {
+        document.querySelectorAll('.shop-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.shop-tab-content').forEach(c => c.classList.remove('active'));
+        btnEl.classList.add('active');
+        document.getElementById(`shop-tab-${tabName}`).classList.add('active');
       }
 
       function switchSlot(slotIdx) {
@@ -297,10 +339,6 @@
         if (modal.style.display === 'block') {
           modal.style.display = 'none';
         } else {
-          if (!isInsideBase(myX, myY, myTeam)) {
-            alert('You must be inside your team base corner to access the Weapon Shop!');
-            return;
-          }
           modal.style.display = 'block';
         }
       }
@@ -319,6 +357,18 @@
         document.getElementById('coin-val').innerText = coins;
         gunSlots[emptyIdx] = type;
         updateHotbarLabels();
+      }
+
+      function buyVehicle(type, cost) {
+        if (coins < cost) {
+          alert('Not enough coins!');
+          return;
+        }
+        coins -= cost;
+        document.getElementById('coin-val').innerText = coins;
+        currentVehicle = type;
+        alert(`Successfully purchased ${type.toUpperCase()}! You are now driving.`);
+        toggleShop();
       }
 
       window.addEventListener('mousemove', (e) => {
@@ -346,6 +396,7 @@
         if (e.code === 'Digit6') switchSlot(5);
         if (e.code === 'Digit7') switchSlot(6);
         if (e.code === 'Digit8') switchSlot(7);
+        if (e.code === 'KeyB') toggleShop();
 
         if (e.code === 'KeyE') {
           e.preventDefault();
@@ -442,6 +493,7 @@
           if (g) spawnGroundItem('gun', g, myX + (Math.random()*40-20), myY + (Math.random()*40-20));
         }
         gunSlots = [null, null, null];
+        currentVehicle = null;
         updateHotbarLabels();
         hp = 0;
         respawnPlayer();
@@ -457,11 +509,15 @@
 
         setTimeout(() => isSpawnProtected = false, 2000);
         
-        if (myTeam === 'Red') { myX = 150; myY = 150; }
-        else if (myTeam === 'Blue') { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
-        else if (myTeam === 'Green') { myX = 150; myY = WORLD_SIZE - 150; }
-        else if (myTeam === 'Yellow') { myX = WORLD_SIZE - 150; myY = 150; }
-        else { myX = WORLD_SIZE / 2; myY = WORLD_SIZE / 2; }
+        if (gameMode !== 'ffa') {
+          if (myTeam === 'Red') { myX = 150; myY = 150; }
+          else if (myTeam === 'Blue') { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
+          else if (myTeam === 'Green') { myX = 150; myY = WORLD_SIZE - 150; }
+          else if (myTeam === 'Yellow') { myX = WORLD_SIZE - 150; myY = 150; }
+        } else {
+          myX = 500 + Math.random() * (WORLD_SIZE - 1000);
+          myY = 500 + Math.random() * (WORLD_SIZE - 1000);
+        }
       }
 
       window.addEventListener('mousedown', (e) => {
@@ -663,6 +719,7 @@
         document.getElementById('lobby-panel').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
         document.getElementById('btn-toggle-shop').style.display = 'block';
+        document.getElementById('minimap-container').style.display = 'block';
         spawnBots();
         startGameLoop();
       }
@@ -723,6 +780,7 @@
         document.getElementById('lobby-panel').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
         document.getElementById('btn-toggle-shop').style.display = 'block';
+        document.getElementById('minimap-container').style.display = 'block';
         respawnPlayer();
         initPeer();
         startGameLoop();
@@ -798,6 +856,7 @@
         function frame() {
           updateGame();
           renderGame();
+          renderMinimap();
           requestAnimationFrame(frame);
         }
         requestAnimationFrame(frame);
@@ -805,9 +864,13 @@
 
       function updateGame() {
         let speed = 4;
+        if (currentVehicle === 'bike') speed = 4.6;
+        if (currentVehicle === 'car') speed = 5.6;
+        if (currentVehicle === 'tank') speed = 3.5;
+
         if (keys['ShiftLeft'] || keys['ShiftRight']) {
           if (stamina > 0) {
-            speed = 6.5;
+            speed *= 1.5;
             stamina = Math.max(0, stamina - 45 * 0.016);
           }
         } else {
@@ -945,10 +1008,22 @@
           });
         }
 
-        // Draw Self
+        // Draw Teammates / Other Players
+        for (let pid in players) {
+          const p = players[pid];
+          ctx.fillStyle = p.color || '#fff';
+          ctx.beginPath(); ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        // Draw Self & Vehicle
         ctx.save();
         ctx.translate(myX, myY);
         ctx.rotate(myAngle);
+        if (currentVehicle) {
+          ctx.fillStyle = currentVehicle === 'bike' ? '#ff9800' : currentVehicle === 'car' ? '#e53935' : '#43a047';
+          ctx.fillRect(-22, -14, 44, 28);
+        }
         ctx.fillStyle = myTeamColor;
         ctx.beginPath(); ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
@@ -963,6 +1038,41 @@
         });
 
         ctx.restore();
+      }
+
+      function renderMinimap() {
+        minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        const scale = minimapCanvas.width / WORLD_SIZE;
+
+        // Draw World Background on minimap
+        minimapCtx.fillStyle = '#1b382d';
+        minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+        // Draw Teammates on minimap
+        for (let pid in players) {
+          const p = players[pid];
+          if (gameMode === 'ffa' || p.team === myTeam) {
+            minimapCtx.fillStyle = p.color || '#29b6f6';
+            minimapCtx.beginPath();
+            minimapCtx.arc(p.x * scale, p.y * scale, 3, 0, Math.PI * 2);
+            minimapCtx.fill();
+          }
+        }
+
+        // Draw Self on minimap
+        minimapCtx.fillStyle = '#ffeb3b';
+        minimapCtx.beginPath();
+        minimapCtx.arc(myX * scale, myY * scale, 4, 0, Math.PI * 2);
+        minimapCtx.fill();
+
+        // Draw Viewport Frustum Rectangle on minimap
+        const viewW = canvas.width * scale;
+        const viewH = canvas.height * scale;
+        const viewX = (myX * scale) - (viewW / 2);
+        const viewY = (myY * scale) - (viewH / 2);
+        minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        minimapCtx.lineWidth = 1.5;
+        minimapCtx.strokeRect(viewX, viewY, viewW, viewH);
       }
     </script>
   </body>
