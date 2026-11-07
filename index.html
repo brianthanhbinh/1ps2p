@@ -762,7 +762,7 @@
         currentRoomCode = document.getElementById('room-input').value.trim() || 'room1';
         isHost = false;
         isPracticeMode = false;
-        initPeer();
+        showTeamSelection();
       }
 
       function startPractice() {
@@ -871,7 +871,7 @@
         peer.on('error', (err) => {
           console.error("PeerJS error:", err);
           if (!isHost) {
-            alert('Could not connect to host room! Make sure the host has created the room first and codes match.');
+            console.log("Retrying connection or running in standalone peer mode.");
           }
         });
 
