@@ -14,10 +14,10 @@
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Lobby Menu */
-        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 420px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
+        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
         #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
         .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
         .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
         .lobby-content { display: none; text-align: left; }
         .lobby-content.active { display: block; }
@@ -28,9 +28,10 @@
         #btn-bot-mode { background: #ff9800; }
         #btn-bot-mode:hover { background: #fb8c00; }
         #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
-        .peer-list-box { max-height: 150px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
-        .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.04); margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
-        .peer-item button { width: auto; padding: 4px 10px; margin: 0; font-size: 11px; }
+        .peer-list-box { max-height: 180px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
+        .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(255,255,255,0.04); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
+        .peer-item button { width: auto; padding: 5px 12px; margin: 0; font-size: 12px; background: #2196f3; }
+        .peer-item button:hover { background: #1976d2; }
 
         /* Modal Overlay */
         #modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 40; }
@@ -58,6 +59,13 @@
         #shop-toggle-btn { position: absolute; top: 120px; left: 16px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
         #shop-toggle-btn:hover { background: #f57c00; }
 
+        /* Action Buttons Top Right */
+        #hud-actions-right { position: absolute; top: 185px; right: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; }
+        #share-link-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
+        #share-link-btn:hover { background: #1e88e5; }
+        #leave-btn { background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
+        #leave-btn:hover { background: #e53935; }
+
         /* Shop Panel */
         #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
         #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
@@ -78,9 +86,6 @@
         #airdrop-countdown { color: #ffca28; }
 
         #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
-
-        #leave-btn { position: absolute; top: 185px; right: 16px; background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; transition: background 0.2s; }
-        #leave-btn:hover { background: #e53935; }
 
         #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
@@ -185,7 +190,12 @@
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
         <div id="self-destruct-banner">⏳ Base Lockout / Respawn: <span id="sd-countdown">30s</span></div>
-        <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
+        
+        <div id="hud-actions-right">
+            <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Share Room Link</button>
+            <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
+        </div>
+
         <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
         <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | J: Hop In | H: Leave Vehicle</div>
 
@@ -208,7 +218,8 @@
             <h1>2D P2P Arena</h1>
             <div class="lobby-tabs">
                 <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
-                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Available Peers</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('globals', this)">Global Servers</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Custom Peer</button>
             </div>
 
             <div id="lobby-tab-main" class="lobby-content active">
@@ -217,6 +228,17 @@
                 <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
                 <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
                 <button id="btn-bot-mode" onclick="initPracticeMode()">🤖 Practice vs Bots</button>
+            </div>
+
+            <div id="lobby-tab-globals" class="lobby-content">
+                <input type="text" id="input-username-global" placeholder="Your Name" value="Combatant">
+                <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers (Auto-Host / Auto-Migrate):</p>
+                <div class="peer-list-box">
+                    <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>4global</b> (4 Teams)</span><button onclick="joinGlobalServer('4global', '4team')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>2global</b> (2 Teams)</span><button onclick="joinGlobalServer('2global', '2team')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>pvpglobal</b> (FFA PvP)</span><button onclick="joinGlobalServer('pvpglobal', 'ffa')">Join</button></div>
+                </div>
             </div>
 
             <div id="lobby-tab-peers" class="lobby-content">
@@ -274,6 +296,7 @@
         let myPeerId = '';
         let myUsername = 'Combatant';
         let roomCode = 'alpha';
+        let preselectedTeam = null; // Passed via URL hash e.g. #roomid%red
         let currentMode = 'ffa';
         let hostGameMode = 'ffa';
         let playerTeam = 'FFA';
@@ -323,9 +346,94 @@
         let airdropIntervalHandle = null;
 
         const PEER_PREFIX = 'arena-v5-net-';
+        const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
+        let globalHostingInstances = {};
 
         function formatPeerId(code) {
             return PEER_PREFIX + code.trim().toLowerCase();
+        }
+
+        // Handle URL Hash Direct Joining on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const parts = hash.split('%');
+                const room = parts[0] || 'alpha';
+                const teamReq = parts[1] ? parts[1].toLowerCase() : null;
+
+                document.getElementById('input-room').value = room;
+                
+                // Prompt user for their name before joining via direct link
+                const modal = document.getElementById('modal-screen');
+                const title = document.getElementById('modal-title');
+                const opts = document.getElementById('modal-options');
+                title.innerText = `Join Room: ${room.toUpperCase()}`;
+                opts.innerHTML = `
+                    <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Combatant" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
+                    <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
+                `;
+                modal.style.display = 'flex';
+            }
+        });
+
+        function executeDirectLinkJoin(room, teamReq) {
+            const nameInput = document.getElementById('direct-name-input');
+            if (nameInput) myUsername = nameInput.value.trim() || 'Combatant';
+            roomCode = room;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            isHosting = false;
+            isPractice = false;
+            document.getElementById('net-status').innerText = 'Connecting via Direct Link...';
+
+            if (peerInstance) peerInstance.destroy();
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connected = false;
+                conn.on('open', () => {
+                    connected = true;
+                    setupClientConnection(conn);
+                    if (teamReq) {
+                        setTimeout(() => {
+                            if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                            else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                            else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                            else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                            else assignTeamAndSpawn('FFA', '#8e24aa');
+                        }, 400);
+                    }
+                });
+
+                setTimeout(() => {
+                    if (!connected) {
+                        // Host unavailable, become host for this link room
+                        conn.close();
+                        peerInstance.destroy();
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            currentMode = '4team';
+                            document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                            if (teamReq) {
+                                if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                                else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                                else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                                else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                                else assignTeamAndSpawn('FFA', '#8e24aa');
+                            } else {
+                                promptTeamSelection();
+                            }
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
         }
 
         function switchLobbyTab(tabKey, btnElement) {
@@ -337,37 +445,100 @@
             if (tabKey === 'peers') scanAvailablePeers();
         }
 
+        function joinGlobalServer(serverCode, gameMode) {
+            myUsername = document.getElementById('input-username-global').value.trim() || 'Combatant';
+            roomCode = serverCode;
+            currentMode = gameMode;
+            hostGameMode = gameMode;
+
+            document.getElementById('net-status').innerText = `Connecting to ${serverCode}...`;
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(serverCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connectedToHost = false;
+                conn.on('open', () => {
+                    connectedToHost = true;
+                    isHosting = false;
+                    setupClientConnection(conn);
+                });
+
+                setTimeout(() => {
+                    if (!connectedToHost) {
+                        conn.close();
+                        peerInstance.destroy();
+                        
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            isPractice = false;
+                            document.getElementById('net-status').innerText = `Hosting Global Server: ${serverCode}`;
+                            promptTeamSelection();
+                        });
+                        peerInstance.on('error', () => {
+                            initJoinRoom();
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
+            peerInstance.on('error', () => {
+                initHostRoom();
+            });
+        }
+
         function scanAvailablePeers() {
             const container = document.getElementById('peer-list-container');
-            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">Checking active rooms...</div>`;
-            
-            const tempPeer = new Peer({ debug: 0 });
-            tempPeer.on('open', () => {
-                if (tempPeer.listAllPeers) {
-                    tempPeer.listAllPeers((peers) => {
-                        const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX));
-                        if (arenaPeers.length === 0) {
-                            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">No active public rooms found. Host your own!</div>`;
-                        } else {
-                            let html = '';
+            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Initializing Global Rooms...</div>`;
+
+            GLOBAL_ROOMS.forEach(gRoom => {
+                const gId = formatPeerId(gRoom);
+                if (!globalHostingInstances[gRoom]) {
+                    try {
+                        const p = new Peer(gId, { debug: 0 });
+                        p.on('open', () => {
+                            globalHostingInstances[gRoom] = p;
+                            p.on('connection', (conn) => {
+                                setupServerConnection(conn);
+                            });
+                        });
+                    } catch (e) {}
+                }
+            });
+
+            setTimeout(() => {
+                let html = '';
+                GLOBAL_ROOMS.forEach(code => {
+                    html += `<div class="peer-item"><span>🌐 Global: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                });
+
+                const tempPeer = new Peer({ debug: 0 });
+                tempPeer.on('open', () => {
+                    if (tempPeer.listAllPeers) {
+                        tempPeer.listAllPeers((peers) => {
+                            const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX) && !GLOBAL_ROOMS.some(g => formatPeerId(g) === p));
                             arenaPeers.forEach(pid => {
                                 const code = pid.replace(PEER_PREFIX, '');
                                 html += `<div class="peer-item"><span>Room: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
                             });
                             container.innerHTML = html;
-                        }
+                            tempPeer.destroy();
+                        });
+                    } else {
+                        container.innerHTML = html;
                         tempPeer.destroy();
-                    });
-                } else {
-                    setTimeout(() => {
-                        container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Enter exact room code in Match Setup tab to join.</div>`;
-                        tempPeer.destroy();
-                    }, 800);
-                }
-            });
-            tempPeer.on('error', () => {
-                container.innerHTML = `<div style="text-align:center; color:#e53935; font-size:11px; padding:15px;">Peer discovery unavailable.</div>`;
-            });
+                    }
+                });
+                tempPeer.on('error', () => {
+                    container.innerHTML = html;
+                });
+            }, 600);
         }
 
         function joinDiscoveredPeer(code) {
@@ -383,6 +554,7 @@
             document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
             document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
             document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
             document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
@@ -630,6 +802,13 @@
         }
 
         function promptTeamSelection() {
+            // Check if user came via a direct team link (e.g. #roomid%red)
+            if (preselectedTeam) {
+                assignTeamAndSpawn(preselectedTeam.name, preselectedTeam.color);
+                preselectedTeam = null;
+                return;
+            }
+
             const modal = document.getElementById('modal-screen');
             const title = document.getElementById('modal-title');
             const opts = document.getElementById('modal-options');
@@ -825,7 +1004,22 @@
                 }
             });
             conn.on('close', () => {
-                showNotificationBox('Lost connection to host.');
+                showNotificationBox('Host disconnected! Migrating server host...');
+                if (!isHosting && roomCode) {
+                    isHosting = true;
+                    if (peerInstance) peerInstance.destroy();
+                    peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+                    peerInstance.on('open', () => {
+                        showNotificationBox('You are now the new room Host!');
+                        document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                        promptTeamSelection();
+                    });
+                    peerInstance.on('connection', (c) => {
+                        setupServerConnection(c);
+                    });
+                } else {
+                    showNotificationBox('Lost connection to host.');
+                }
             });
         }
 
