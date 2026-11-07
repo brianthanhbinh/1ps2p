@@ -843,21 +843,38 @@
 
       function initPeer() {
         const pid = getFormattedPeerId(currentRoomCode);
-        peer = new Peer(isHost ? pid : undefined);
+        
+        // Clean up previous peer instance if any
+        if (peer) {
+          try { peer.destroy(); } catch(e) {}
+        }
+
+        peer = new Peer(isHost ? pid : undefined, {
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
+
         peer.on('open', (id) => {
           myId = id;
-          document.getElementById('peer-id-display').innerText = `Room: ${currentRoomCode}`;
+          document.getElementById('peer-id-display').innerText = `Room: ${currentRoomCode} (${isHost ? 'Host' : 'Joined'})`;
           if (!isHost) {
-            hostConn = peer.connect(pid);
+            console.log("Attempting to connect to host:", pid);
+            hostConn = peer.connect(pid, { reliable: true });
             setupHostConnection(hostConn);
           }
         });
+
         peer.on('error', (err) => {
           console.error("PeerJS error:", err);
-          if (!isHost && err.type === 'peer-unavailable') {
-            alert('Host room not found! Make sure the host has created the room first.');
+          if (!isHost) {
+            alert('Could not connect to host room! Make sure the host has created the room first and codes match.');
           }
         });
+
         peer.on('connection', (c) => {
           connections[c.peer] = c;
           setupClientConnection(c);
@@ -866,6 +883,7 @@
 
       function setupHostConnection(c) {
         c.on('open', () => {
+          console.log("Connected to host successfully!");
           c.send({ type: 'join', name: myName, team: myTeam, color: myTeamColor });
         });
         c.on('data', (data) => {
@@ -878,12 +896,20 @@
             if (hp <= 0) selfDestruct();
           }
         });
+        c.on('close', () => {
+          console.log("Disconnected from host.");
+        });
       }
 
       function setupClientConnection(c) {
+        c.on('open', () => {
+          console.log("New client connected:", c.peer);
+        });
         c.on('data', (data) => {
           if (data.type === 'join') {
             players[c.peer] = { name: data.name, team: data.team, color: data.color, x: 100, y: 100, hp: 100 };
+            // Broadcast state to all
+            broadcastState();
           } else if (data.type === 'update') {
             if (players[c.peer]) {
               players[c.peer].x = data.x;
@@ -892,12 +918,29 @@
               players[c.peer].name = data.name;
               players[c.peer].team = data.team;
             }
+            broadcastState();
           }
         });
         c.on('close', () => {
           delete players[c.peer];
           delete connections[c.peer];
+          broadcastState();
         });
+      }
+
+      function broadcastState() {
+        if (!isHost) return;
+        const statePayload = {
+          type: 'state',
+          players,
+          blocks: placedBlocks,
+          items: groundItems
+        };
+        for (let pid in connections) {
+          if (connections[pid].open) {
+            connections[pid].send(statePayload);
+          }
+        }
       }
 
       function leaveRoom() {
@@ -907,7 +950,8 @@
       function startGameLoop() {
         airdropTimerInterval = setInterval(() => {
           airdropCountdown--;
-          document.getElementById('airdrop-timer').innerText = `${airdropCountdown}s`;
+          const timerEl = document.getElementById('airdrop-timer');
+          if (timerEl) timerEl.innerText = `${airdropCountdown}s`;
           if (airdropCountdown <= 0) {
             airdropCountdown = 30;
             const rewardTypes = ['gun', 'gun', 'grenade', 'bandage', 'coins'];
@@ -958,9 +1002,12 @@
         } else {
           stamina = Math.min(maxStamina, stamina + 30 * 0.016);
         }
-        document.getElementById('stamina-fill').style.width = `${(stamina / maxStamina) * 100}%`;
-        document.getElementById('hp-fill').style.width = `${Math.max(0, hp)}%`;
-        document.getElementById('hp-val').innerText = Math.max(0, Math.floor(hp));
+        const staminaFill = document.getElementById('stamina-fill');
+        const hpFill = document.getElementById('hp-fill');
+        const hpVal = document.getElementById('hp-val');
+        if (staminaFill) staminaFill.style.width = `${(stamina / maxStamina) * 100}%`;
+        if (hpFill) hpFill.style.width = `${Math.max(0, hp)}%`;
+        if (hpVal) hpVal.innerText = Math.max(0, Math.floor(hp));
 
         let dx = 0, dy = 0;
         if (keys['KeyW']) dy -= 1;
@@ -974,47 +1021,19 @@
 
         const bx = Math.floor(nextX / 40);
         const by = Math.floor(nextY / 40);
-        if (placedBlocks[`${bx},${Math.floor(myY / 40)}`]) {
-          // Block horizontal
-        } else {
+        if (!placedBlocks[`${bx},${Math.floor(myY / 40)}`]) {
           myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
         }
-
-        if (placedBlocks[`${Math.floor(myX / 40)},${by}`]) {
-          // Block vertical
-        } else {
+        if (!placedBlocks[`${Math.floor(myX / 40)},${by}`]) {
           myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
         }
 
-        const inside = isInsideBase(myX, myY, myTeam);
-        if (gameMode !== 'ffa') {
-          if (inside && !isLeftBase) {
-            hp = Math.min(100, hp + 20 * 0.016);
-          } else if (!inside && !isLeftBase) {
-            isLeftBase = true;
-            canReturnToBase = false;
-            baseReentryTimer = 10;
-            document.getElementById('base-timer-pill').style.display = 'block';
-            if (baseTimerInterval) clearInterval(baseTimerInterval);
-            baseTimerInterval = setInterval(() => {
-              baseReentryTimer--;
-              document.getElementById('base-timer-val').innerText = `${baseReentryTimer}s`;
-              if (baseReentryTimer <= 0) {
-                clearInterval(baseTimerInterval);
-                canReturnToBase = true;
-                document.getElementById('base-timer-pill').style.display = 'none';
-              }
-            }, 1000);
-          }
-          if (inside && isLeftBase && !canReturnToBase) {
-            myX -= dx * speed * 1.5;
-            myY -= dy * speed * 1.5;
-          } else if (inside && isLeftBase && canReturnToBase) {
-            isLeftBase = false;
-          }
-        }
-
         myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
+
+        // Send position update if client
+        if (!isHost && hostConn && hostConn.open) {
+          hostConn.send({ type: 'update', x: myX, y: myY, hp, name: myName, team: myTeam });
+        }
 
         for (let i = projectiles.length - 1; i >= 0; i--) {
           const p = projectiles[i];
