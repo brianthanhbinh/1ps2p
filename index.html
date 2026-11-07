@@ -1,4 +1,9 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D P2P Arena</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
       body, html { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -63,12 +68,24 @@
       .slot { width: 52px; height: 52px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; overflow: hidden; cursor: pointer; }
       .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
       .slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; }
-      .slot-cooldown { position: absolute; bottom: 0; left: 0; height: 100%; background: rgba(229,57,53,0.5); width: 0%; transition: width 0.05s linear; }
+
+      /* Inventory Modal (32 Slots) */
+      #inventory-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 40; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      #inventory-modal h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 6px; }
+      .inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 15px; }
+      .inv-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; position: relative; }
+      .inv-slot:hover { border-color: #ffca28; }
+      .inv-slot span { font-size: 9px; color: #aaa; }
 
       /* Tab Overlay */
       #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 15; }
       #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
       .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
+
+      /* Coin Drop Popup Modal */
+      #coin-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.95); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 35; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      #coin-popup h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
+      #coin-popup input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; }
 
       /* Team Chat Box */
       #chat-container { position: absolute; bottom: 95px; left: 15px; width: 300px; pointer-events: auto; z-index: 14; display: flex; flex-direction: column; gap: 4px; }
@@ -88,16 +105,19 @@
       <div id="hud-container">
         <div class="bar-wrapper">
           <div class="bar-label"><span>HEALTH</span><span id="hp-val">100</span></div>
-          <div class="bar-bg"><div id="hp-fill" class="bar-fill"></div></div>
+          <div class="bar-bg"><div id="hp-fill" class="bar-fill" style="width: 100%;"></div></div>
         </div>
         <div class="bar-wrapper">
           <div class="bar-label"><span>STAMINA (SHIFT)</span><span id="stamina-val">100</span></div>
-          <div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div>
+          <div class="bar-bg"><div id="stamina-fill" class="bar-fill" style="width: 100%;"></div></div>
         </div>
       </div>
 
       <div id="coin-display">🪙 Coins: <span id="coin-val">100</span></div>
       <button id="btn-toggle-shop" onclick="toggleShop()">🛒 Base Shop (B)</button>
+
+      <!-- Return to Base Timer Pill -->
+      <div id="base-timer-pill" style="position: absolute; top: 115px; left: 165px; background: rgba(0,0,0,0.7); padding: 6px 14px; border-radius: 20px; border: 1px solid #e53935; color: #fff; font-size: 13px; font-weight: bold; display: none;">⏳ Return: <span id="base-timer-val" style="color:#ffca28;">10s</span></div>
 
       <div id="shop-modal">
         <h3>🛒 BASE WEAPON SHOP</h3>
@@ -110,10 +130,27 @@
         <button style="width:100%; margin-top:10px; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleShop()">Close</button>
       </div>
 
-      <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">--s</span></div>
+      <!-- Coin Drop Modal -->
+      <div id="coin-popup">
+        <h3>🪙 Drop Coins</h3>
+        <p style="font-size:12px; color:#aaa;">Enter amount to drop:</p>
+        <input type="number" id="coin-drop-input" min="1" value="10">
+        <button style="background:#4caf50; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="confirmDropCoins()">Drop</button>
+        <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinPopup()">Cancel</button>
+      </div>
+
+      <div id="airdrop-pill">✈️ Airdrop: <span id="airdrop-timer">30s</span></div>
       <button id="pause-btn" onclick="leaveRoom()">⏸️ Leave Room (ESC)</button>
-      <div id="status-msg">Click Host or Join to Start (Hold TAB for Peers)</div>
-      <div id="controls-tip">WASD: Move | Shift: Sprint | Left-Click: Use Item | Q: Drop | F: Pick Up | R: Self-Destruct | ` (Backtick): Zoom Aim | Enter: Chat</div>
+      <div id="status-msg">Click Host, Join or Practice to Start (Hold TAB for Scoreboard)</div>
+      <div id="controls-tip">WASD: Move | Shift: Sprint | Left-Click: Use | `: Zoom | E: Inventory | Q: Drop | F/X: Collect | Z: Drop Coins | R: Self-Destruct</div>
+
+      <!-- Inventory Modal -->
+      <div id="inventory-modal">
+        <h3>🎒 INVENTORY (32 SLOTS)</h3>
+        <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click slot to select item.</p>
+        <div class="inventory-grid" id="inventory-grid"></div>
+        <button style="width:100%; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleInventory()">Close (E)</button>
+      </div>
 
       <!-- Team Chat UI -->
       <div id="chat-container">
@@ -124,10 +161,10 @@
       <div id="lobby-panel">
         <h2>2D P2P Arena</h2>
         <input type="text" id="player-name-input" placeholder="Your Display Name" value="Player">
-        <input type="text" id="room-input" placeholder="Custom Room Code (e.g. room123)" value="room1">
-        <button id="btn-host">Host Room</button>
-        <button id="btn-join">Join Room</button>
-        <button id="btn-practice">🤖 Practice vs Bots</button>
+        <input type="text" id="room-input" placeholder="Custom Room Code" value="room1">
+        <button id="btn-host" onclick="startHosting()">Host Room</button>
+        <button id="btn-join" onclick="startJoining()">Join Room</button>
+        <button id="btn-practice" onclick="startPractice()">🤖 Practice vs Bots</button>
         <div id="peer-id-display">Cloud Ready</div>
       </div>
 
@@ -146,12 +183,12 @@
       <div id="hotbar">
         <div class="slot active" id="slot-0" onclick="switchSlot(0)"><span>1</span><b>Sword</b></div>
         <div class="slot" id="slot-1" onclick="switchSlot(1)"><span>2</span><b>Pickaxe</b></div>
-        <div class="slot" id="slot-2" onclick="switchSlot(2)"><span>3</span><b>Block</b><div class="slot-cooldown" id="block-cd"></div></div>
+        <div class="slot" id="slot-2" onclick="switchSlot(2)"><span>3</span><b>Block</b></div>
         <div class="slot" id="slot-3" onclick="switchSlot(3)"><span>4</span><b id="gun-slot-0-label">Empty</b></div>
         <div class="slot" id="slot-4" onclick="switchSlot(4)"><span>5</span><b id="gun-slot-1-label">Empty</b></div>
         <div class="slot" id="slot-5" onclick="switchSlot(5)"><span>6</span><b id="gun-slot-2-label">Empty</b></div>
-        <div class="slot" id="slot-6" onclick="switchSlot(6)"><span>7</span><b id="grenade-label">Grenade x3</b></div>
-        <div class="slot" id="slot-7" onclick="switchSlot(7)"><span>8</span><b id="bandage-label">Bandage x2</b></div>
+        <div class="slot" id="slot-6" onclick="switchSlot(6)"><span>7</span><b id="grenade-label">Grenade</b></div>
+        <div class="slot" id="slot-7" onclick="switchSlot(7)"><span>8</span><b id="bandage-label">Bandage</b></div>
       </div>
     </div>
 
@@ -168,7 +205,7 @@
 
       const WORLD_SIZE = 2500;
       const PLAYER_RADIUS = 16;
-      const BASE_SIZE = 400; // 200% expanded square spawn bases in corners
+      const BASE_SIZE = 600; // 200% expanded square spawn bases in corners
       
       let isHost = false;
       let isPracticeMode = false;
@@ -178,7 +215,7 @@
       let currentRoomCode = '';
       let gameMode = 'ffa';
       let myTeam = 'FFA';
-      let myTeamColor = '#2196f3';
+      let myTeamColor = '#9c27b0';
 
       let connections = {};
       let hostConn = null;
@@ -191,12 +228,17 @@
       const maxStamina = 100;
       let coins = 100;
       let isSpawnProtected = true;
-      let isLeftBase = false; // Tracking one-way base exit
+      let isLeftBase = false;
+      let baseReentryTimer = 10;
+      let baseTimerInterval = null;
+      let canReturnToBase = false;
 
       let activeSlot = 0;
       let gunSlots = [null, null, null];
       let grenadeCount = 3;
       let bandageCount = 2;
+      let inventory = new Array(32).fill(null);
+
       let blockCooldown = false;
       let attackCooldown = false;
 
@@ -204,21 +246,16 @@
       let mouseX = 0;
       let mouseY = 0;
 
-      let cameraOffsetX = 0;
-      let cameraOffsetY = 0;
-
       let players = {};
       let placedBlocks = {};
       let groundItems = {};
       let projectiles = [];
-      let explosions = [];
-      let headshotPopups = []; // Floating text popups
+      let headshotPopups = [];
 
       let airdropCountdown = 30;
       let airdropTimerInterval = null;
-      let activeSupplyPlane = null;
 
-      const APP_PREFIX = "brian-2d-arena-v2-";
+      const APP_PREFIX = "brian-2d-arena-v3-";
 
       function getFormattedPeerId(code) {
         return APP_PREFIX + code.trim().toLowerCase();
@@ -240,17 +277,18 @@
         document.getElementById('bandage-label').innerText = `Bandage x${bandageCount}`;
       }
 
-      function isInsideOwnBase(px, py, team) {
-        if (gameMode === '2team') {
-          if (team === 'Red') return px >= 0 && px <= BASE_SIZE && py >= 0 && py <= BASE_SIZE;
-          if (team === 'Blue') return px >= WORLD_SIZE - BASE_SIZE && px <= WORLD_SIZE && py >= WORLD_SIZE - BASE_SIZE && py <= WORLD_SIZE;
-        } else if (gameMode === '4team') {
-          if (team === 'Red') return px >= 0 && px <= BASE_SIZE && py >= 0 && py <= BASE_SIZE;
-          if (team === 'Blue') return px >= WORLD_SIZE - BASE_SIZE && px <= WORLD_SIZE && py >= WORLD_SIZE - BASE_SIZE && py <= WORLD_SIZE;
-          if (team === 'Green') return px >= 0 && px <= BASE_SIZE && py >= WORLD_SIZE - BASE_SIZE && py <= WORLD_SIZE;
-          if (team === 'Yellow') return px >= WORLD_SIZE - BASE_SIZE && px <= WORLD_SIZE && py >= 0 && py <= BASE_SIZE;
-        }
-        return false;
+      function getBaseForTeam(team) {
+        if (team === 'Red') return { x1: 0, y1: 0, x2: BASE_SIZE, y2: BASE_SIZE };
+        if (team === 'Blue') return { x1: WORLD_SIZE - BASE_SIZE, y1: WORLD_SIZE - BASE_SIZE, x2: WORLD_SIZE, y2: WORLD_SIZE };
+        if (team === 'Green') return { x1: 0, y1: WORLD_SIZE - BASE_SIZE, x2: BASE_SIZE, y2: WORLD_SIZE };
+        if (team === 'Yellow') return { x1: WORLD_SIZE - BASE_SIZE, y1: 0, x2: WORLD_SIZE, y2: BASE_SIZE };
+        return null;
+      }
+
+      function isInsideBase(px, py, team) {
+        const b = getBaseForTeam(team);
+        if (!b) return false;
+        return px >= b.x1 && px <= b.x2 && py >= b.y1 && py <= b.y2;
       }
 
       function toggleShop() {
@@ -259,7 +297,7 @@
         if (modal.style.display === 'block') {
           modal.style.display = 'none';
         } else {
-          if (!isInsideOwnBase(myX, myY, myTeam)) {
+          if (!isInsideBase(myX, myY, myTeam)) {
             alert('You must be inside your team base corner to access the Weapon Shop!');
             return;
           }
@@ -309,31 +347,122 @@
         if (e.code === 'Digit7') switchSlot(6);
         if (e.code === 'Digit8') switchSlot(7);
 
+        if (e.code === 'KeyE') {
+          e.preventDefault();
+          toggleInventory();
+        }
         if (e.code === 'KeyQ') dropEquippedItem();
-        if (e.code === 'KeyF') tryPickupItem();
+        if (e.code === 'KeyZ') openCoinPopup();
+        if (e.code === 'KeyX' || e.code === 'KeyF') collectGroundItems();
         if (e.code === 'KeyR') selfDestruct();
-        if (e.code === 'KeyB') toggleShop();
-        if (e.code === 'Escape') leaveRoom();
-        if (e.code === 'Enter') {
+        if (e.code === 'KeyT') {
           e.preventDefault();
           const chatInput = document.getElementById('chat-input');
           chatInput.style.display = 'block';
           chatInput.focus();
         }
-
         if (e.code === 'Tab') {
           e.preventDefault();
-          document.getElementById('tab-overlay').style.display = 'block';
-          updateTabOverlay();
+          toggleScoreboard(true);
         }
       });
 
       window.addEventListener('keyup', (e) => {
         keys[e.code] = false;
         if (e.code === 'Tab') {
-          document.getElementById('tab-overlay').style.display = 'none';
+          toggleScoreboard(false);
         }
       });
+
+      function toggleScoreboard(show) {
+        const overlay = document.getElementById('tab-overlay');
+        if (!overlay) return;
+        overlay.style.display = show ? 'block' : 'none';
+        if (show) {
+          let html = `<div class="player-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
+          html += `<div class="player-row"><span>${myName} (You)</span><span>${myTeam}</span><span>${Math.max(0, Math.floor(hp))}</span><span>${coins}</span></div>`;
+          for (let id in players) {
+            const p = players[id];
+            html += `<div class="player-row"><span>${p.name}</span><span>${p.team}</span><span>${Math.max(0, Math.floor(p.hp))}</span><span>${p.coins || 0}</span></div>`;
+          }
+          document.getElementById('peer-list-container').innerHTML = html;
+        }
+      }
+
+      function openCoinPopup() {
+        if (coins <= 0) return;
+        document.getElementById('coin-popup').style.display = 'block';
+        document.getElementById('coin-drop-input').max = coins;
+        document.getElementById('coin-drop-input').value = Math.min(10, coins);
+      }
+
+      function closeCoinPopup() {
+        document.getElementById('coin-popup').style.display = 'none';
+      }
+
+      function confirmDropCoins() {
+        const val = parseInt(document.getElementById('coin-drop-input').value) || 0;
+        if (val > 0 && val <= coins) {
+          coins -= val;
+          document.getElementById('coin-val').innerText = coins;
+          spawnGroundItem('coin', null, myX + 25, myY + 25, val);
+        }
+        closeCoinPopup();
+      }
+
+      function collectGroundItems() {
+        for (let id in groundItems) {
+          const item = groundItems[id];
+          if (Math.hypot(item.x - myX, item.y - myY) < 45) {
+            if (item.type === 'coin') {
+              coins += item.amount;
+              document.getElementById('coin-val').innerText = coins;
+            } else if (item.type === 'gun') {
+              addItemToInventory({ type: 'gun', subtype: item.subtype });
+            } else if (item.type === 'grenade') {
+              grenadeCount++;
+              updateHotbarLabels();
+            } else if (item.type === 'bandage') {
+              bandageCount++;
+              updateHotbarLabels();
+            }
+            delete groundItems[id];
+            break;
+          }
+        }
+      }
+
+      function spawnGroundItem(type, subtype, x, y, amount = 1) {
+        const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+        groundItems[itemId] = { id: itemId, type, subtype, x, y, amount };
+      }
+
+      function selfDestruct() {
+        for (let g of gunSlots) {
+          if (g) spawnGroundItem('gun', g, myX + (Math.random()*40-20), myY + (Math.random()*40-20));
+        }
+        gunSlots = [null, null, null];
+        updateHotbarLabels();
+        hp = 0;
+        respawnPlayer();
+      }
+
+      function respawnPlayer() {
+        hp = 100;
+        isSpawnProtected = true;
+        isLeftBase = false;
+        canReturnToBase = false;
+        if (baseTimerInterval) clearInterval(baseTimerInterval);
+        document.getElementById('base-timer-pill').style.display = 'none';
+
+        setTimeout(() => isSpawnProtected = false, 2000);
+        
+        if (myTeam === 'Red') { myX = 150; myY = 150; }
+        else if (myTeam === 'Blue') { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
+        else if (myTeam === 'Green') { myX = 150; myY = WORLD_SIZE - 150; }
+        else if (myTeam === 'Yellow') { myX = WORLD_SIZE - 150; myY = 150; }
+        else { myX = WORLD_SIZE / 2; myY = WORLD_SIZE / 2; }
+      }
 
       window.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || document.getElementById('lobby-panel').style.display !== 'none') return;
@@ -343,8 +472,7 @@
 
       function handleMouseAction() {
         if (attackCooldown) return;
-        // Bullets disallow shooting while safe in base
-        if (isInsideOwnBase(myX, myY, myTeam)) return;
+        if (isInsideBase(myX, myY, myTeam)) return; // Can't attack while inside own base
 
         const worldTargetX = myX + (mouseX - canvas.width / 2);
         const worldTargetY = myY + (mouseY - canvas.height / 2);
@@ -357,10 +485,10 @@
         if (activeSlot === 0) { // Sword
           attackCooldown = true;
           setTimeout(() => attackCooldown = false, 300);
-          checkMeleeHit(normX, normY, 45, 30);
+          checkMeleeHit(normX, normY, 45, 35);
         } else if (activeSlot === 1) { // Pickaxe
           attackCooldown = true;
-          setTimeout(() => attackCooldown = false, 1000);
+          setTimeout(() => attackCooldown = false, 600);
           checkMiningHit(worldTargetX, worldTargetY);
         } else if (activeSlot === 2) { // Block
           if (blockCooldown) return;
@@ -368,17 +496,20 @@
           const bx = Math.floor(worldTargetX / 40);
           const by = Math.floor(worldTargetY / 40);
           const key = `${bx},${by}`;
-          dispatchNetworkAction({ type: 'PLACE_BLOCK', key, bx, by, color: myTeamColor });
-          setTimeout(() => blockCooldown = false, 500);
+          if (!placedBlocks[key]) {
+            placedBlocks[key] = { bx, by, color: myTeamColor, hp: 100 };
+          }
+          setTimeout(() => blockCooldown = false, 400);
         } else if (activeSlot >= 3 && activeSlot <= 5) { // Guns
           const gunType = gunSlots[activeSlot - 3];
           if (!gunType) return;
+
           attackCooldown = true;
-          let cooldown = 300; let speed = 12;
-          if (gunType === 'shotgun') { cooldown = 750; speed = 10; }
-          if (gunType === 'sniper') { cooldown = 1100; speed = 22; }
-          if (gunType === 'smg') { cooldown = 100; speed = 14; }
-          if (gunType === 'rocket') { cooldown = 1200; speed = 7; }
+          let cooldown = 350; let speed = 14; let damage = 25;
+          if (gunType === 'shotgun') { cooldown = 750; speed = 11; damage = 18; }
+          if (gunType === 'sniper') { cooldown = 1100; speed = 25; damage = 65; }
+          if (gunType === 'smg') { cooldown = 120; speed = 16; damage = 14; }
+          if (gunType === 'rocket') { cooldown = 1200; speed = 8; damage = 80; }
 
           setTimeout(() => attackCooldown = false, cooldown);
 
@@ -387,45 +518,11 @@
               const cos = Math.cos(angleOff); const sin = Math.sin(angleOff);
               const vx = (normX * cos - normY * sin) * speed;
               const vy = (normX * sin + normY * cos) * speed;
-              dispatchNetworkAction({
-                type: 'FIRE_BULLET',
-                x: myX + normX * 22,
-                y: myY + normY * 22,
-                vx, vy, gunType, ownerId: myId
-              });
+              projectiles.push({ x: myX + normX * 22, y: myY + normY * 22, vx, vy, gunType, ownerId: myId, ownerTeam: myTeam, damage });
             }
           } else {
-            dispatchNetworkAction({
-              type: 'FIRE_BULLET',
-              x: myX + normX * 22,
-              y: myY + normY * 22,
-              vx: normX * speed,
-              vy: normY * speed,
-              gunType,
-              ownerId: myId
-            });
+            projectiles.push({ x: myX + normX * 22, y: myY + normY * 22, vx: normX * speed, vy: normY * speed, gunType, ownerId: myId, ownerTeam: myTeam, damage });
           }
-        } else if (activeSlot === 6) { // Grenade
-          if (grenadeCount <= 0) return;
-          grenadeCount--;
-          updateHotbarLabels();
-          attackCooldown = true;
-          setTimeout(() => attackCooldown = false, 800);
-          dispatchNetworkAction({
-            type: 'THROW_GRENADE',
-            x: myX + normX * 20,
-            y: myY + normY * 20,
-            targetX: worldTargetX,
-            targetY: worldTargetY,
-            ownerId: myId
-          });
-        } else if (activeSlot === 7) { // Bandage
-          if (bandageCount <= 0 || hp >= 100) return;
-          bandageCount--;
-          hp = Math.min(100, hp + 40);
-          updateHotbarLabels();
-          attackCooldown = true;
-          setTimeout(() => attackCooldown = false, 500);
         }
       }
 
@@ -435,21 +532,8 @@
         input.value = '';
         input.blur();
         input.style.display = 'none';
-
         if (!text) return;
-
-        const chatPacket = {
-          type: 'TEAM_CHAT',
-          senderName: myName,
-          team: myTeam,
-          text,
-          gameMode
-        };
-
-        if (isHost || isPracticeMode) {
-          appendChatMessage(myName, gameMode === 'ffa' ? 'GLOBAL' : myTeam, text);
-        }
-        dispatchNetworkAction(chatPacket);
+        appendChatMessage(myName, gameMode === 'ffa' ? 'GLOBAL' : myTeam, text);
       }
 
       function appendChatMessage(sender, badge, text) {
@@ -469,14 +553,13 @@
       function checkMeleeHit(nx, ny, range, damage) {
         const hitX = myX + nx * range;
         const hitY = myY + ny * range;
-        
-        Object.keys(players).forEach(pid => {
+        for (let pid in players) {
           const pl = players[pid];
-          if (gameMode !== 'ffa' && pl.team === myTeam) return;
-          if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 20) {
-            dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, attackerId: myId, damage, isHeadshot: false });
+          if (gameMode !== 'ffa' && pl.team === myTeam) continue;
+          if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 25) {
+            applyDamageToPlayer(pid, damage, false, myName);
           }
-        });
+        }
       }
 
       function checkMiningHit(targetX, targetY) {
@@ -484,1045 +567,488 @@
         const by = Math.floor(targetY / 40);
         const key = `${bx},${by}`;
         if (placedBlocks[key]) {
-          dispatchNetworkAction({ type: 'DAMAGE_BLOCK', key, damage: 25 });
+          placedBlocks[key].hp -= 25;
+          if (placedBlocks[key].hp <= 0) {
+            delete placedBlocks[key];
+          }
         }
       }
 
       function dropEquippedItem() {
-        let droppedType = null;
-        let droppedSubtype = null;
-
         if (activeSlot >= 3 && activeSlot <= 5) {
           const gunIdx = activeSlot - 3;
           if (gunSlots[gunIdx]) {
-            droppedType = 'gun';
-            droppedSubtype = gunSlots[gunIdx];
+            spawnGroundItem('gun', gunSlots[gunIdx], myX + 25, myY + 25);
             gunSlots[gunIdx] = null;
             updateHotbarLabels();
           }
-        } else if (activeSlot === 6 && grenadeCount > 0) {
-          grenadeCount--;
-          droppedType = 'grenade';
-          updateHotbarLabels();
-        } else if (activeSlot === 7 && bandageCount > 0) {
-          bandageCount--;
-          droppedType = 'bandage';
-          updateHotbarLabels();
+        }
+      }
+
+      function toggleInventory() {
+        const modal = document.getElementById('inventory-modal');
+        if (!modal) return;
+        if (modal.style.display === 'block') {
+          modal.style.display = 'none';
+        } else {
+          modal.style.display = 'block';
+          renderInventoryGrid();
+        }
+      }
+
+      function renderInventoryGrid() {
+        const grid = document.getElementById('inventory-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        for (let i = 0; i < 32; i++) {
+          const item = inventory[i];
+          const div = document.createElement('div');
+          div.className = 'inv-slot';
+          div.innerHTML = `<span>${i+1}</span><b>${item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : ''}</b>`;
+          grid.appendChild(div);
+        }
+      }
+
+      function addItemToInventory(item) {
+        const emptyIdx = inventory.findIndex(slot => slot === null);
+        if (emptyIdx !== -1) {
+          inventory[emptyIdx] = item;
+          return true;
+        }
+        return false;
+      }
+
+      function startHosting() {
+        myName = document.getElementById('player-name-input').value.trim() || 'HostPlayer';
+        currentRoomCode = document.getElementById('room-input').value.trim() || 'room1';
+        isHost = true;
+        isPracticeMode = false;
+        showModeSelection();
+      }
+
+      function startJoining() {
+        myName = document.getElementById('player-name-input').value.trim() || 'ClientPlayer';
+        currentRoomCode = document.getElementById('room-input').value.trim() || 'room1';
+        isHost = false;
+        isPracticeMode = false;
+        connectToHostPeer();
+      }
+
+      function startPractice() {
+        myName = document.getElementById('player-name-input').value.trim() || 'PracticePlayer';
+        isHost = true;
+        isPracticeMode = true;
+        showModeSelection();
+      }
+
+      function showModeSelection() {
+        const overlay = document.getElementById('modal-overlay');
+        const title = document.getElementById('modal-title');
+        const buttons = document.getElementById('modal-buttons');
+        title.innerText = 'Select Game Mode';
+        buttons.innerHTML = `
+          <button class="team-btn-blue" onclick="selectGameMode('2team')">2 Teams (Red vs Blue)</button>
+          <button class="team-btn-green" onclick="selectGameMode('4team')">4 Teams (Red, Blue, Green, Yellow)</button>
+          <button class="team-btn-ffa" onclick="selectGameMode('ffa')">Free For All (FFA)</button>
+        `;
+        overlay.style.display = 'flex';
+      }
+
+      function selectGameMode(mode) {
+        gameMode = mode;
+        showTeamSelection();
+      }
+
+      function showTeamSelection() {
+        const title = document.getElementById('modal-title');
+        const buttons = document.getElementById('modal-buttons');
+        title.innerText = 'Select Your Team';
+        if (gameMode === 'ffa') {
+          myTeam = 'FFA';
+          myTeamColor = '#9c27b0';
+          finalizeLobbyStart();
+          return;
+        }
+        let html = '<button class="team-btn-red" onclick="selectTeam(\'Red\', \'#e53935\')">Red Team</button>';
+        html += '<button class="team-btn-blue" onclick="selectTeam(\'Blue\', \'#1e88e5\')">Blue Team</button>';
+        if (gameMode === '4team') {
+          html += '<button class="team-btn-green" onclick="selectTeam(\'Green\', \'#43a047\')">Green Team</button>';
+          html += '<button class="team-btn-yellow" onclick="selectTeam(\'Yellow\', \'#fbc02d\')">Yellow Team</button>';
+        }
+        buttons.innerHTML = html;
+      }
+
+      function selectTeam(team, color) {
+        myTeam = team;
+        myTeamColor = color;
+        finalizeLobbyStart();
+      }
+
+      function finalizeLobbyStart() {
+        document.getElementById('modal-overlay').style.display = 'none';
+        document.getElementById('lobby-panel').style.display = 'none';
+        document.getElementById('pause-btn').style.display = 'block';
+        document.getElementById('btn-toggle-shop').style.display = 'block';
+
+        myId = 'player_' + Math.random().toString(36).substr(2, 9);
+        if (gameMode === 'ffa') {
+          myTeam = 'FFA';
+          // Random distinct vibrant color for FFA
+          const ffaColors = ['#e53935', '#1e88e5', '#43a047', '#fbc02d', '#9c27b0', '#00bcd4', '#ff5722'];
+          myTeamColor = ffaColors[Math.floor(Math.random() * ffaColors.length)];
+        }
+        hp = 100;
+        document.getElementById('hp-val').innerText = '100';
+        document.getElementById('hp-fill').style.width = '100%';
+        respawnPlayer();
+
+        if (isPracticeMode) {
+          setupPracticeBots();
         }
 
-        if (droppedType) {
-          const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
-          dispatchNetworkAction({
-            type: 'SPAWN_ITEM',
-            id: itemId,
-            x: myX + 25,
-            y: myY + 25,
-            itemType: droppedType,
-            subtype: droppedSubtype
+        if (isHost && !isPracticeMode) {
+          const peerId = getFormattedPeerId(currentRoomCode);
+          peer = new Peer(peerId);
+          peer.on('open', (id) => {
+            document.getElementById('peer-id-display').innerText = `Hosting Room: ${currentRoomCode}`;
+          });
+          peer.on('connection', (conn) => {
+            connections[conn.peer] = conn;
           });
         }
+
+        startAirdropTimer(30);
       }
 
-      function tryPickupItem() {
-        Object.keys(groundItems).forEach(id => {
-          const item = groundItems[id];
-          if (Math.hypot(item.x - myX, item.y - myY) < 55) {
-            let acType = item.type;
-            let acSubtype = item.subtype;
-            
-            if (item.type === 'mystery_crate') {
-              const roll = Math.random();
-              if (roll < 0.25) { acType = 'bandage'; }
-              else if (roll < 0.5) { acType = 'grenade'; }
-              else {
-                acType = 'gun';
-                const guns = ['pistol', 'shotgun', 'sniper', 'smg', 'rocket'];
-                acSubtype = guns[Math.floor(Math.random() * guns.length)];
-              }
-            }
-
-            if (acType === 'gun') {
-              const emptyIdx = gunSlots.findIndex(g => g === null);
-              if (emptyIdx !== -1) {
-                gunSlots[emptyIdx] = acSubtype;
-                updateHotbarLabels();
-                dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
-                delete groundItems[id];
-              }
-            } else if (acType === 'bandage') {
-              bandageCount++;
-              updateHotbarLabels();
-              dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
-              delete groundItems[id];
-            } else if (acType === 'grenade') {
-              grenadeCount++;
-              updateHotbarLabels();
-              dispatchNetworkAction({ type: 'REMOVE_ITEM', id });
-              delete groundItems[id];
-            }
-          }
-        });
-      }
-
-      function selfDestruct() {
-        // Self destruct retains coins
-        hp = 0;
-        alert('You Self-Destructed! (Coins Retained)');
-        respawnPlayer(false);
-      }
-
-      function triggerExplosion(x, y, radius) {
-        explosions.push({ x, y, radius, life: 15 });
-        Object.keys(players).forEach(pid => {
-          const pl = players[pid];
-          if (Math.hypot(pl.x - x, pl.y - y) < radius + PLAYER_RADIUS) {
-            if (isHost || isPracticeMode || pid === myId) {
-              dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, attackerId: myId, damage: 75, isHeadshot: false });
-            }
-          }
-        });
-
-        Object.keys(placedBlocks).forEach(key => {
-          const b = placedBlocks[key];
-          const cx = b.bx * 40 + 20;
-          const cy = b.by * 40 + 20;
-          if (Math.hypot(cx - x, cy - y) < radius + 20) {
-            dispatchNetworkAction({ type: 'DAMAGE_BLOCK', key, damage: 60 });
-          }
-        });
-
-        if (Math.hypot(myX - x, myY - y) < radius + PLAYER_RADIUS) {
-          if (!isSpawnProtected && !isInsideOwnBase(myX, myY, myTeam)) {
-            hp = Math.max(0, hp - 75);
-            if (hp <= 0) {
-              alert('Eliminated by Explosion!');
-              respawnPlayer(true);
-            }
-          }
+      function setupPracticeBots() {
+        players = {};
+        const botCount = 3;
+        const ffaColors = ['#e53935', '#1e88e5', '#43a047', '#fbc02d', '#00bcd4', '#ff5722'];
+        for (let i = 0; i < botCount; i++) {
+          const botId = 'bot_' + i;
+          let team = gameMode === 'ffa' ? 'FFA' : (i % 2 === 0 ? 'Red' : 'Blue');
+          let tColor = gameMode === 'ffa' ? ffaColors[i % ffaColors.length] : (team === 'Red' ? '#e53935' : '#1e88e5');
+          players[botId] = {
+            id: botId,
+            name: `Bot ${i + 1}`,
+            team: team,
+            color: tColor,
+            x: Math.random() * (WORLD_SIZE - 600) + 300,
+            y: Math.random() * (WORLD_SIZE - 600) + 300,
+            hp: 100,
+            coins: 100,
+            equippedGun: 'smg'
+          };
         }
       }
 
-      function processAction(action) {
-        if (action.type === 'PLACE_BLOCK') {
-          placedBlocks[action.key] = { color: action.color, bx: action.bx, by: action.by, hp: 100, maxHp: 100 };
-        } else if (action.type === 'DAMAGE_BLOCK') {
-          if (placedBlocks[action.key]) {
-            placedBlocks[action.key].hp -= action.damage;
-            if (placedBlocks[action.key].hp <= 0) {
-              delete placedBlocks[action.key];
-            }
-          }
-        } else if (action.type === 'BREAK_BLOCK') {
-          delete placedBlocks[action.key];
-        } else if (action.type === 'SPAWN_ITEM') {
-          groundItems[action.id] = { x: action.x, y: action.y, type: action.itemType, subtype: action.subtype };
-        } else if (action.type === 'REMOVE_ITEM') {
-          delete groundItems[action.id];
-        } else if (action.type === 'TEAM_CHAT') {
-          if (action.gameMode === 'ffa' || gameMode === 'ffa' || action.team === myTeam) {
-            appendChatMessage(action.senderName, action.gameMode === 'ffa' ? 'GLOBAL' : action.team, action.text);
-          }
-        } else if (action.type === 'FIRE_BULLET') {
-          projectiles.push({ x: action.x, y: action.y, vx: action.vx, vy: action.vy, gunType: action.gunType, ownerId: action.ownerId });
-        } else if (action.type === 'THROW_GRENADE') {
-          projectiles.push({ x: action.x, y: action.y, vx: (action.targetX - action.x) * 0.05, vy: (action.targetY - action.y) * 0.05, gunType: 'grenade', ownerId: action.ownerId });
-        } else if (action.type === 'HEADSHOT_POPUP') {
-          headshotPopups.push({ x: action.x, y: action.y, life: 40, text: 'HEADSHOT!' });
-        } else if (action.type === 'PLAYER_HIT') {
-          if (action.isHeadshot) {
-            headshotPopups.push({ x: players[action.targetId]?.x || myX, y: (players[action.targetId]?.y || myY) - 30, life: 40, text: 'HEADSHOT!' });
-          }
-
-          if (action.targetId === myId) {
-            if (isSpawnProtected || isInsideOwnBase(myX, myY, myTeam)) return;
-            hp = Math.max(0, hp - action.damage);
-            if (hp <= 0) {
-              alert('You Were Eliminated!');
-              respawnPlayer(true); // Lost coins on kill
-            }
-          } else if (players[action.targetId]) {
-            players[action.targetId].hp = Math.max(0, (players[action.targetId].hp || 100) - action.damage);
-          }
-
-          // Steal enemy coins + 5% bonus (rounded up)
-          if (action.attackerId === myId && action.targetId !== myId) {
-            const targetCoins = players[action.targetId]?.coins || 30;
-            const stolen = Math.ceil(targetCoins * 0.2 + targetCoins * 0.05);
-            coins += stolen;
-            document.getElementById('coin-val').innerText = coins;
-          }
-        }
-      }
-
-      function respawnPlayer(lostCoinsOnKill = false) {
-        hp = 100;
-        isSpawnProtected = true;
-        isLeftBase = false; // Reset one-way base state
-        if (lostCoinsOnKill) coins = 0; // Lost coins on death
-        document.getElementById('coin-val').innerText = coins;
-
-        if (gameMode === '2team') {
-          if (myTeam === 'Red') { myX = 150; myY = 150; }
-          else { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
-        } else if (gameMode === '4team') {
-          if (myTeam === 'Red') { myX = 150; myY = 150; }
-          else if (myTeam === 'Blue') { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
-          else if (myTeam === 'Green') { myX = 150; myY = WORLD_SIZE - 150; }
-          else { myX = WORLD_SIZE - 150; myY = 150; }
-        } else {
-          myX = Math.random() * (WORLD_SIZE - 400) + 200;
-          myY = Math.random() * (WORLD_SIZE - 400) + 200;
-        }
-      }
-
-      function scheduleNextAirdropHost() {
-        if (!isHost) return;
-        const seconds = Math.floor(Math.random() * 15) + 15;
-        broadcastState({ type: 'AIRDROP_TIMER', seconds });
-        startAirdropTimer(seconds);
-
-        setTimeout(() => {
-          const dropX = Math.random() * (WORLD_SIZE - 200) + 100;
-          const dropY = Math.random() * (WORLD_SIZE - 200) + 100;
-          spawnSupplyDrop(dropX, dropY);
-          scheduleNextAirdropHost();
-        }, seconds * 1000);
-      }
-
-      function spawnSupplyDrop(targetX, targetY) {
-        activeSupplyPlane = { x: 0, y: 0, targetX, targetY, progress: 0 };
+      function connectToHostPeer() {
+        const peerId = getFormattedPeerId(currentRoomCode);
+        peer = new Peer();
+        peer.on('open', (id) => {
+          myId = id;
+          hostConn = peer.connect(peerId);
+          hostConn.on('open', () => {
+            document.getElementById('lobby-panel').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'block';
+            showTeamSelection();
+          });
+        });
       }
 
       function startAirdropTimer(seconds) {
         airdropCountdown = seconds;
-        clearInterval(airdropTimerInterval);
+        if (airdropTimerInterval) clearInterval(airdropTimerInterval);
         airdropTimerInterval = setInterval(() => {
           airdropCountdown--;
           const timerEl = document.getElementById('airdrop-timer');
-          if (timerEl) timerEl.innerText = `${Math.max(0, airdropCountdown)}s`;
-          if (airdropCountdown <= 0) clearInterval(airdropTimerInterval);
+          if (timerEl) timerEl.innerText = `${airdropCountdown}s`;
+          if (airdropCountdown <= 0) {
+            spawnGroundItem('gun', 'sniper', WORLD_SIZE / 2 + (Math.random() * 400 - 200), WORLD_SIZE / 2 + (Math.random() * 400 - 200));
+            startAirdropTimer(45);
+          }
         }, 1000);
       }
 
-      function showGamemodePicker(onChosen) {
-        const overlay = document.getElementById('modal-overlay');
-        const title = document.getElementById('modal-title');
-        const buttons = document.getElementById('modal-buttons');
-        
-        title.innerText = "Select Game Mode";
-        buttons.innerHTML = `
-          <button class="team-btn-blue" id="mode-2t">2 Teams (Red vs Blue)</button>
-          <button class="team-btn-green" id="mode-4t">4 Teams (Red, Blue, Green, Yellow)</button>
-          <button class="team-btn-ffa" id="mode-ffa">Free For All (FFA)</button>
-        `;
-        overlay.style.display = 'flex';
-
-        document.getElementById('mode-2t').onclick = () => { overlay.style.display = 'none'; onChosen('2team'); };
-        document.getElementById('mode-4t').onclick = () => { overlay.style.display = 'none'; onChosen('4team'); };
-        document.getElementById('mode-ffa').onclick = () => { overlay.style.display = 'none'; onChosen('ffa'); };
-      }
-
-      function showTeamPicker(mode, onTeamChosen) {
-        const overlay = document.getElementById('modal-overlay');
-        const title = document.getElementById('modal-title');
-        const buttons = document.getElementById('modal-buttons');
-
-        title.innerText = "Choose Your Team";
-        let html = '';
-        if (mode === '2team') {
-          html = `
-            <button class="team-btn-red" id="t-red">Red Team</button>
-            <button class="team-btn-blue" id="t-blue">Blue Team</button>
-          `;
-        } else if (mode === '4team') {
-          html = `
-            <button class="team-btn-red" id="t-red">Red Team</button>
-            <button class="team-btn-blue" id="t-blue">Blue Team</button>
-            <button class="team-btn-green" id="t-green">Green Team</button>
-            <button class="team-btn-yellow" id="t-yellow">Yellow Team</button>
-          `;
-        } else {
-          html = `<button class="team-btn-ffa" id="t-ffa">Enter Free For All</button>`;
-        }
-
-        buttons.innerHTML = html;
-        overlay.style.display = 'flex';
-
-        if (document.getElementById('t-red')) document.getElementById('t-red').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Red', '#e53935'); };
-        if (document.getElementById('t-blue')) document.getElementById('t-blue').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Blue', '#1e88e5'); };
-        if (document.getElementById('t-green')) document.getElementById('t-green').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Green', '#43a047'); };
-        if (document.getElementById('t-yellow')) document.getElementById('t-yellow').onclick = () => { overlay.style.display = 'none'; onTeamChosen('Yellow', '#fbc02d'); };
-        if (document.getElementById('t-ffa')) document.getElementById('t-ffa').onclick = () => { overlay.style.display = 'none'; onTeamChosen('FFA', '#7b1fa2'); };
-      }
-
-      function initPeer(customId, callback) {
-        if (peer) peer.destroy();
-        peer = new Peer(customId);
-
-        peer.on('open', (id) => {
-          myId = id;
-          document.getElementById('peer-id-display').innerText = `Online ✅ (${currentRoomCode.toUpperCase()})`;
-          if (callback) callback();
-        });
-
-        peer.on('error', (err) => {
-          document.getElementById('peer-id-display').innerText = `Error: ${err.type}`;
-        });
-
-        peer.on('connection', (conn) => {
-          if (!isHost) return;
-          conn.on('open', () => {
-            connections[conn.peer] = { conn, lastPing: Date.now(), name: 'Peer', team: 'FFA', color: '#2196f3', weapon: 'Sword', angle: 0 };
-            conn.send({ type: 'SETUP_INFO', gameMode });
-            updateTabOverlay();
-          });
-
-          conn.on('data', (data) => handleHostReceiveData(conn.peer, data));
-          conn.on('close', () => removePeer(conn.peer));
-        });
-      }
-
-      function removePeer(peerId) {
-        delete players[peerId];
-        delete connections[peerId];
-        updateTabOverlay();
-      }
-
-      setInterval(() => {
-        const now = Date.now();
-        if (isHost) {
-          Object.keys(connections).forEach(id => {
-            connections[id].conn.send({ type: 'PING' });
-            if (now - connections[id].lastPing > 15000) {
-              connections[id].conn.close();
-              removePeer(id);
-            }
-          });
-        } else if (hostConn && hostConn.open) {
-          hostConn.send({ type: 'PING' });
-        }
-        updateTabOverlay();
-      }, 2500);
-
-      function handleHostReceiveData(senderId, data) {
-        if (connections[senderId]) connections[senderId].lastPing = Date.now();
-        if (data.type === 'PING') return;
-
-        if (data.type === 'PLAYER_SYNC') {
-          if (connections[senderId]) {
-            connections[senderId].name = data.name;
-            connections[senderId].team = data.team;
-            connections[senderId].color = data.color;
-            connections[senderId].weapon = data.weapon;
-            connections[senderId].angle = data.angle;
+      function applyDamageToPlayer(targetId, dmg, isHeadshot, attackerName) {
+        if (targetId === myId) {
+          if (isSpawnProtected || isInsideBase(myX, myY, myTeam)) return;
+          hp -= dmg;
+          document.getElementById('hp-val').innerText = Math.max(0, Math.floor(hp));
+          document.getElementById('hp-fill').style.width = `${Math.max(0, hp)}%`;
+          if (hp <= 0) {
+            coins = Math.floor(coins / 2);
+            document.getElementById('coin-val').innerText = coins;
+            respawnPlayer();
           }
-          players[senderId] = { x: data.x, y: data.y, hp: data.hp, name: data.name, team: data.team, color: data.color, weapon: data.weapon, angle: data.angle, coins: data.coins };
-          broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
-        } else if (data.type === 'ACTION') {
-          processAction(data.action);
-          broadcastState({ type: 'ACTION', action: data.action });
-          broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
+        } else if (players[targetId]) {
+          players[targetId].hp -= dmg;
+          if (players[targetId].hp <= 0) {
+            coins += Math.ceil((players[targetId].coins || 50) * 1.05);
+            document.getElementById('coin-val').innerText = coins;
+            players[targetId].hp = 100;
+            players[targetId].x = Math.random() * (WORLD_SIZE - 600) + 300;
+            players[targetId].y = Math.random() * (WORLD_SIZE - 600) + 300;
+          }
         }
       }
-
-      function broadcastState(msg) {
-        Object.values(connections).forEach(c => c.conn.send(msg));
-      }
-
-      function dispatchNetworkAction(action) {
-        if (isHost) {
-          processAction(action);
-          broadcastState({ type: 'ACTION', action });
-          broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
-        } else if (hostConn && hostConn.open) {
-          hostConn.send({ type: 'ACTION', action });
-        }
-      }
-
-      function serializePlayers() {
-        const state = {};
-        Object.keys(players).forEach(id => {
-          state[id] = players[id];
-        });
-        const currentWeaponLabel = activeSlot === 0 ? 'Sword' : (activeSlot === 1 ? 'Pickaxe' : (activeSlot === 2 ? 'Block' : (activeSlot === 6 ? 'Grenade' : (activeSlot === 7 ? 'Bandage' : (gunSlots[activeSlot - 3] || 'Empty')))));
-        state[myId] = { x: myX, y: myY, hp, name: myName, team: myTeam, color: myTeamColor, weapon: currentWeaponLabel, angle: myAngle, coins };
-        return state;
-      }
-
-      function updateTabOverlay() {
-        const container = document.getElementById('peer-list-container');
-        if (!container) return;
-        container.innerHTML = '';
-
-        const localRow = document.createElement('div');
-        localRow.className = 'player-row';
-        localRow.innerHTML = `<span><b>${myName} (You)</b> [${myTeam}]</span><span style="color:#4caf50;">${isHost ? 'HOST' : 'CLIENT'} [HP: ${hp} | 🪙 ${coins}]</span>`;
-        container.appendChild(localRow);
-
-        if (isHost) {
-          Object.keys(connections).forEach(id => {
-            const row = document.createElement('div');
-            row.className = 'player-row';
-            row.innerHTML = `<span>${connections[id].name || 'Peer'} [${connections[id].team}]</span><span style="color:#29b6f6;">CONNECTED</span>`;
-            container.appendChild(row);
-          });
-        } else {
-          Object.keys(players).forEach(id => {
-            if (id === myId) return;
-            const row = document.createElement('div');
-            row.className = 'player-row';
-            row.innerHTML = `<span>${players[id].name || 'Peer'} [${players[id].team || 'FFA'}]</span><span style="color:#29b6f6;">ONLINE [HP: ${players[id].hp || 100}]</span>`;
-            container.appendChild(row);
-          });
-        }
-      }
-
-      function leaveRoom() {
-        if (hostConn) {
-          try { hostConn.close(); } catch(e){}
-          hostConn = null;
-        }
-        Object.keys(connections).forEach(id => {
-          try { connections[id].conn.close(); } catch(e){}
-        });
-        connections = {};
-        if (peer) {
-          try { peer.destroy(); } catch(e){}
-          peer = null;
-        }
-        isHost = false;
-        isPracticeMode = false;
-        players = {};
-        placedBlocks = {};
-        groundItems = {};
-        projectiles = [];
-        explosions = [];
-        document.getElementById('chat-messages').innerHTML = '';
-
-        document.getElementById('lobby-panel').style.display = 'block';
-        document.getElementById('pause-btn').style.display = 'none';
-        document.getElementById('btn-toggle-shop').style.display = 'none';
-        const msg = document.getElementById('status-msg');
-        if (msg) msg.innerText = 'Click Host or Join to Start (Hold TAB for Peers)';
-        const el = document.getElementById('peer-id-display');
-        if (el) el.innerText = 'Cloud Ready';
-      }
-
-      document.getElementById('btn-practice').addEventListener('click', () => {
-        myName = document.getElementById('player-name-input').value.trim() || 'Player';
-        showGamemodePicker((selectedMode) => {
-          gameMode = selectedMode;
-          showTeamPicker(gameMode, (teamName, teamColor) => {
-            myTeam = teamName;
-            myTeamColor = teamColor;
-            isPracticeMode = true;
-            respawnPlayer(false);
-
-            players = {};
-            const botTeams = gameMode === '2team' ? ['Red', 'Blue'] : (gameMode === '4team' ? ['Red', 'Blue', 'Green', 'Yellow'] : ['FFA']);
-            const botColors = { 'Red': '#e53935', 'Blue': '#1e88e5', 'Green': '#43a047', 'Yellow': '#fbc02d', 'FFA': '#9c27b0' };
-
-            for (let i = 1; i <= 6; i++) {
-              const bTeam = botTeams[(i - 1) % botTeams.length];
-              const bId = 'bot_' + i;
-              players[bId] = {
-                x: Math.random() * (WORLD_SIZE - 600) + 300,
-                y: Math.random() * (WORLD_SIZE - 600) + 300,
-                hp: 100,
-                name: `Bot ${i}`,
-                team: bTeam,
-                color: botColors[bTeam],
-                weapon: 'pistol',
-                angle: 0,
-                coins: 50,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                timer: 0
-              };
-            }
-
-            document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('pause-btn').style.display = 'block';
-            document.getElementById('btn-toggle-shop').style.display = 'block';
-            const msg = document.getElementById('status-msg');
-            if (msg) msg.innerText = `Practice Mode [${gameMode.toUpperCase()}] vs Bots`;
-            startAirdropTimer(20);
-            updateTabOverlay();
-          });
-        });
-      });
-
-      document.getElementById('btn-host').addEventListener('click', () => {
-        myName = document.getElementById('player-name-input').value.trim() || 'Host';
-        const rawRoom = document.getElementById('room-input').value.trim();
-        currentRoomCode = rawRoom || 'room1';
-        
-        showGamemodePicker((selectedMode) => {
-          gameMode = selectedMode;
-          showTeamPicker(gameMode, (teamName, teamColor) => {
-            myTeam = teamName;
-            myTeamColor = teamColor;
-            isHost = true;
-            respawnPlayer(false);
-
-            initPeer(getFormattedPeerId(currentRoomCode), () => {
-              document.getElementById('lobby-panel').style.display = 'none';
-              document.getElementById('pause-btn').style.display = 'block';
-              document.getElementById('btn-toggle-shop').style.display = 'block';
-              const msg = document.getElementById('status-msg');
-              if (msg) msg.innerText = `Hosting Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
-              scheduleNextAirdropHost();
-              updateTabOverlay();
-            });
-          });
-        });
-      });
-
-      document.getElementById('btn-join').addEventListener('click', () => {
-        myName = document.getElementById('player-name-input').value.trim() || 'Client';
-        const rawRoom = document.getElementById('room-input').value.trim();
-        currentRoomCode = rawRoom || 'room1';
-        
-        isHost = false;
-        const idDisplay = document.getElementById('peer-id-display');
-        if (idDisplay) idDisplay.innerText = "Connecting to host...";
-
-        initPeer(null, () => {
-          const targetHostId = getFormattedPeerId(currentRoomCode);
-          hostConn = peer.connect(targetHostId, { reliable: true });
-
-          hostConn.on('open', () => {
-            if (idDisplay) idDisplay.innerText = "Connected! Awaiting Mode...";
-          });
-
-          hostConn.on('error', () => {
-            alert('Failed to connect to host. Make sure someone is hosting "' + currentRoomCode.toUpperCase() + '" first!');
-          });
-
-          hostConn.on('data', (data) => {
-            if (data.type === 'PING') return;
-            if (data.type === 'SETUP_INFO') {
-              gameMode = data.gameMode;
-              showTeamPicker(gameMode, (teamName, teamColor) => {
-                myTeam = teamName;
-                myTeamColor = teamColor;
-                respawnPlayer(false);
-
-                document.getElementById('lobby-panel').style.display = 'none';
-                document.getElementById('pause-btn').style.display = 'block';
-                document.getElementById('btn-toggle-shop').style.display = 'block';
-                const msg = document.getElementById('status-msg');
-                if (msg) msg.innerText = `Joined Room: "${currentRoomCode.toUpperCase()}" [${gameMode.toUpperCase()}]`;
-                updateTabOverlay();
-              });
-            } else if (data.type === 'WORLD_STATE') {
-              Object.keys(data.players).forEach(id => {
-                if (id === myId) return;
-                players[id] = data.players[id];
-              });
-              updateTabOverlay();
-            } else if (data.type === 'ACTION') {
-              processAction(data.action);
-            } else if (data.type === 'SPAWN_DROP') {
-              spawnSupplyDrop(data.x, data.y);
-            } else if (data.type === 'AIRDROP_TIMER') {
-              startAirdropTimer(data.seconds);
-            }
-          });
-        });
-      });
 
       function gameLoop() {
-        requestAnimationFrame(gameLoop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Background world grid or color
+        ctx.fillStyle = '#2b4c3f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const now = performance.now();
-        const delta = 0.016;
+        // Movement handling & base restriction checks
+        let speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 6 : 3.5;
+        let nextX = myX;
+        let nextY = myY;
+        if (keys['KeyW'] || keys['ArrowUp']) nextY -= speed;
+        if (keys['KeyS'] || keys['ArrowDown']) nextY += speed;
+        if (keys['KeyA'] || keys['ArrowLeft']) nextX -= speed;
+        if (keys['KeyD'] || keys['ArrowRight']) nextX += speed;
 
-        myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
-
-        const speed = (keys['ShiftLeft'] || keys['ShiftRight']) && stamina > 0 ? 5.5 : 3.5;
-        if ((keys['ShiftLeft'] || keys['ShiftRight']) && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']) && stamina > 0) {
-          stamina = Math.max(0, stamina - delta * 30);
-        } else {
-          stamina = Math.min(maxStamina, stamina + delta * 20);
-        }
-
-        const staminaFill = document.getElementById('stamina-fill');
-        const staminaVal = document.getElementById('stamina-val');
-        if (staminaFill) staminaFill.style.width = `${stamina}%`;
-        if (staminaVal) staminaVal.innerText = Math.round(stamina);
-
-        const hpFill = document.getElementById('hp-fill');
-        const hpVal = document.getElementById('hp-val');
-        if (hpFill) hpFill.style.width = `${hp}%`;
-        if (hpVal) hpVal.innerText = hp;
-
-        let dx = 0, dy = 0;
-        if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
-        if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
-        if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
-        if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
-
-        if (dx !== 0 || dy !== 0) {
-          const len = Math.hypot(dx, dy);
-          let nextX = myX + (dx / len) * speed;
-          let nextY = myY + (dy / len) * speed;
-
-          nextX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
-          nextY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
-
-          // One-way base logic: once you step out, you cannot re-enter unless self-destructing
-          const insideBaseNow = isInsideOwnBase(nextX, nextY, myTeam);
-          if (!isLeftBase && !insideBaseNow) {
-            isLeftBase = true; // Mark as permanently stepped out
-          }
-
-          let canMoveX = true;
-          let canMoveY = true;
-
-          if (isLeftBase && insideBaseNow) {
-            canMoveX = false;
-            canMoveY = false;
-          }
-
-          Object.keys(placedBlocks).forEach(key => {
-            const b = placedBlocks[key];
-            const blockLeft = b.bx * 40;
-            const blockTop = b.by * 40;
-            const blockRight = blockLeft + 40;
-            const blockBottom = blockTop + 40;
-
-            if (nextX + PLAYER_RADIUS > blockLeft && nextX - PLAYER_RADIUS < blockRight &&
-                myY + PLAYER_RADIUS > blockTop && myY - PLAYER_RADIUS < blockBottom) {
-              canMoveX = false;
+        // Prevent entering enemy bases or own base if 10s return cooldown active
+        let canMoveHere = true;
+        if (gameMode !== 'ffa') {
+          const allTeams = ['Red', 'Blue', 'Green', 'Yellow'];
+          for (let t of allTeams) {
+            if (isInsideBase(nextX, nextY, t)) {
+              if (t !== myTeam) {
+                canMoveHere = false;
+              } else if (isLeftBase && !canReturnToBase) {
+                canMoveHere = false;
+              }
             }
-            if (myX + PLAYER_RADIUS > blockLeft && myX - PLAYER_RADIUS < blockRight &&
-                nextY + PLAYER_RADIUS > blockTop && nextY - PLAYER_RADIUS < blockBottom) {
-              canMoveY = false;
+          }
+        }
+
+        if (canMoveHere) {
+          myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
+          myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
+        }
+
+        const currentlyInBase = gameMode === 'ffa' ? false : isInsideBase(myX, myY, myTeam);
+        if (!currentlyInBase && !isLeftBase && !isSpawnProtected && gameMode !== 'ffa') {
+          isLeftBase = true;
+          canReturnToBase = false;
+          baseReentryTimer = 10;
+          document.getElementById('base-timer-pill').style.display = 'block';
+          if (baseTimerInterval) clearInterval(baseTimerInterval);
+          baseTimerInterval = setInterval(() => {
+            baseReentryTimer--;
+            const valEl = document.getElementById('base-timer-val');
+            if (valEl) valEl.innerText = `${baseReentryTimer}s`;
+            if (baseReentryTimer <= 0) {
+              clearInterval(baseTimerInterval);
+              canReturnToBase = true;
+              document.getElementById('base-timer-pill').style.display = 'none';
             }
-          });
-
-          if (canMoveX) myX = nextX;
-          if (canMoveY) myY = nextY;
+          }, 1000);
+        } else if (currentlyInBase && isLeftBase && canReturnToBase) {
+          isLeftBase = false;
+          document.getElementById('base-timer-pill').style.display = 'none';
         }
 
-        const activeEquipped = activeSlot >= 3 && activeSlot <= 5 ? gunSlots[activeSlot - 3] : null;
-        const isSniperActive = activeEquipped === 'sniper';
-        const isZoomKeyPressed = !!keys['Backquote'];
+        // Draw bases in corners (only in team modes)
+        if (gameMode !== 'ffa') {
+          ctx.fillStyle = 'rgba(229, 57, 53, 0.12)';
+          ctx.strokeStyle = '#e53935';
+          ctx.lineWidth = 2;
+          ctx.fillRect(0, 0, BASE_SIZE, BASE_SIZE);
+          ctx.strokeRect(0, 0, BASE_SIZE, BASE_SIZE);
 
-        let targetCamOffsetX = 0;
-        let targetCamOffsetY = 0;
+          ctx.fillStyle = 'rgba(30, 136, 229, 0.12)';
+          ctx.strokeStyle = '#1e88e5';
+          ctx.fillRect(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
+          ctx.strokeRect(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
 
-        if (isZoomKeyPressed || isSniperActive) {
-          const screenCenterX = canvas.width / 2;
-          const screenCenterY = canvas.height / 2;
-          const lookMult = isZoomKeyPressed ? (isSniperActive ? 0.65 : 0.45) : 0.35;
-          targetCamOffsetX = (mouseX - screenCenterX) * lookMult;
-          targetCamOffsetY = (mouseY - screenCenterY) * lookMult;
+          if (gameMode === '4team') {
+            ctx.fillStyle = 'rgba(67, 160, 71, 0.12)';
+            ctx.strokeStyle = '#43a047';
+            ctx.fillRect(0, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
+            ctx.strokeRect(0, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
+
+            ctx.fillStyle = 'rgba(251, 192, 45, 0.12)';
+            ctx.strokeStyle = '#fbc02d';
+            ctx.fillRect(WORLD_SIZE - BASE_SIZE, 0, BASE_SIZE, BASE_SIZE);
+            ctx.strokeRect(WORLD_SIZE - BASE_SIZE, 0, BASE_SIZE, BASE_SIZE);
+          }
         }
 
-        cameraOffsetX += (targetCamOffsetX - cameraOffsetX) * 0.1;
-        cameraOffsetY += (targetCamOffsetY - cameraOffsetY) * 0.1;
+        // Camera offset calculations so map correctly follows player movement
+        const camX = myX - canvas.width / 2;
+        const camY = myY - canvas.height / 2;
 
-        // Projectiles, Wall Collisions & Base Disappear Shield
+        // Draw world border grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= WORLD_SIZE; x += 200) {
+          ctx.beginPath();
+          ctx.moveTo(x - camX, 0 - camY);
+          ctx.lineTo(x - camX, WORLD_SIZE - camY);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= WORLD_SIZE; y += 200) {
+          ctx.beginPath();
+          ctx.moveTo(0 - camX, y - camY);
+          ctx.lineTo(WORLD_SIZE - camX, y - camY);
+          ctx.stroke();
+        }
+
+        // Draw placed blocks
+        for (let key in placedBlocks) {
+          const b = placedBlocks[key];
+          ctx.fillStyle = b.color || '#666';
+          ctx.fillRect(b.bx * 40 - camX, b.by * 40 - camY, 40, 40);
+          if (b.hp < 100) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${b.hp}%`, b.bx * 40 - camX + 8, b.by * 40 - camY + 24);
+          }
+        }
+
+        // Draw ground items
+        for (let id in groundItems) {
+          const item = groundItems[id];
+          ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ff9800';
+          ctx.beginPath();
+          ctx.arc(item.x - camX, item.y - camY, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.stroke();
+        }
+
+        // Update & Draw Bots in Practice mode
+        if (isPracticeMode) {
+          for (let pid in players) {
+            const bot = players[pid];
+            let shouldAttack = (gameMode === 'ffa' || bot.team !== myTeam);
+
+            if (shouldAttack) {
+              const angle = Math.atan2(myY - bot.y, myX - bot.x);
+              bot.x += Math.cos(angle) * 1.2;
+              bot.y += Math.sin(angle) * 1.2;
+
+              if (Math.random() < 0.015 && Math.hypot(myX - bot.x, myY - bot.y) < 450) {
+                projectiles.push({
+                  x: bot.x, y: bot.y,
+                  vx: Math.cos(angle) * 12,
+                  vy: Math.sin(angle) * 12,
+                  gunType: 'smg',
+                  ownerId: bot.id,
+                  ownerTeam: bot.team,
+                  damage: 15
+                });
+              }
+            }
+
+            ctx.save();
+            ctx.translate(bot.x - camX, bot.y - camY);
+            ctx.fillStyle = bot.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(bot.name, -18, -22);
+            ctx.restore();
+          }
+        }
+
+        // Update Projectiles & Collisions
         for (let i = projectiles.length - 1; i >= 0; i--) {
           const p = projectiles[i];
           p.x += p.vx;
           p.y += p.vy;
 
-          if (p.gunType === 'grenade') {
-            if (Math.hypot(p.vx, p.vy) < 0.2 || Math.random() < 0.03) {
-              triggerExplosion(p.x, p.y, 70);
+          if (gameMode !== 'ffa') {
+            let inAnyBase = false;
+            const allTeams = ['Red', 'Blue', 'Green', 'Yellow'];
+            for (let t of allTeams) {
+              if (isInsideBase(p.x, p.y, t)) {
+                inAnyBase = true;
+                break;
+              }
+            }
+            if (inAnyBase) {
               projectiles.splice(i, 1);
               continue;
             }
           }
 
-          // Bullets disappear when hitting any base region
-          if (isInsideOwnBase(p.x, p.y, 'Red') || isInsideOwnBase(p.x, p.y, 'Blue') || isInsideOwnBase(p.x, p.y, 'Green') || isInsideOwnBase(p.x, p.y, 'Yellow')) {
+          const bx = Math.floor(p.x / 40);
+          const by = Math.floor(p.y / 40);
+          const key = `${bx},${by}`;
+          if (placedBlocks[key]) {
+            placedBlocks[key].hp -= p.damage;
+            if (placedBlocks[key].hp <= 0) delete placedBlocks[key];
             projectiles.splice(i, 1);
             continue;
           }
 
-          let hitWallKey = null;
-          Object.keys(placedBlocks).forEach(key => {
-            const b = placedBlocks[key];
-            const bl = b.bx * 40; const bt = b.by * 40; const br = bl + 40; const bb = bt + 40;
-            if (p.x >= bl && p.x <= br && p.y >= bt && p.y <= bb) hitWallKey = key;
-          });
-
-          if (hitWallKey) {
-            let wallDmg = 15;
-            if (p.gunType === 'shotgun') wallDmg = 10;
-            if (p.gunType === 'sniper') wallDmg = 50;
-            if (p.gunType === 'smg') wallDmg = 8;
-
-            if (p.gunType === 'rocket') {
-              triggerExplosion(p.x, p.y, 80);
-            } else {
-              dispatchNetworkAction({ type: 'DAMAGE_BLOCK', key: hitWallKey, damage: wallDmg });
-            }
-            projectiles.splice(i, 1);
-            continue;
-          }
-
-          Object.keys(players).forEach(pid => {
-            const pl = players[pid];
-            if (gameMode !== 'ffa' && pl.team === myTeam) return;
-            if (Math.hypot(pl.x - p.x, pl.y - p.y) < PLAYER_RADIUS + 5) {
-              if (isHost || isPracticeMode || p.ownerId === myId) {
-                let baseDmg = 25;
-                if (p.gunType === 'shotgun') baseDmg = 25;
-                if (p.gunType === 'sniper') baseDmg = 85;
-                if (p.gunType === 'smg') baseDmg = 15;
-                if (p.gunType === 'rocket') {
-                  triggerExplosion(p.x, p.y, 90);
-                  projectiles.splice(i, 1);
-                  return;
-                }
-
-                // Headshot Calculation: 20% for Sniper (+15% dmg), 5% for others
-                const headshotChance = p.gunType === 'sniper' ? 0.20 : 0.05;
-                const isHeadshot = Math.random() < headshotChance;
-                const finalDmg = isHeadshot ? Math.round(baseDmg * 1.15) : baseDmg;
-
-                dispatchNetworkAction({ type: 'PLAYER_HIT', targetId: pid, attackerId: p.ownerId, damage: finalDmg, isHeadshot });
-              }
+          if (p.ownerId !== myId && (gameMode === 'ffa' || p.ownerTeam !== myTeam)) {
+            if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS + 5) {
+              applyDamageToPlayer(myId, p.damage, false, p.ownerId);
               projectiles.splice(i, 1);
+              continue;
             }
-          });
-        }
+          }
 
-        if (isPracticeMode) {
-          Object.keys(players).forEach(botId => {
-            const b = players[botId];
-            if (b.hp <= 0) {
-              b.hp = 100;
-              b.x = Math.random() * (WORLD_SIZE - 600) + 300;
-              b.y = Math.random() * (WORLD_SIZE - 600) + 300;
-              return;
-            }
-
-            b.timer++;
-            if (b.timer > 60) {
-              b.timer = 0;
-              b.vx = (Math.random() - 0.5) * 3;
-              b.vy = (Math.random() - 0.5) * 3;
-
-              let nearestDist = 99999;
-              let targetX = myX, targetY = myY;
-
-              if (gameMode === 'ffa' && Math.hypot(myX - b.x, myY - b.y) < nearestDist) {
-                nearestDist = Math.hypot(myX - b.x, myY - b.y);
-                targetX = myX; targetY = myY;
-              }
-
-              Object.keys(players).forEach(otherId => {
-                if (otherId === botId) return;
-                const op = players[otherId];
-                if (gameMode !== 'ffa' && op.team === b.team) return;
-                const d = Math.hypot(op.x - b.x, op.y - b.y);
-                if (d < nearestDist) {
-                  nearestDist = d;
-                  targetX = op.x; targetY = op.y;
-                }
-              });
-
-              if (nearestDist < 400 && Math.random() < 0.6) {
-                const dx = targetX - b.x;
-                const dy = targetY - b.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 0) {
-                  b.angle = Math.atan2(dy, dx);
-                  projectiles.push({
-                    x: b.x,
-                    y: b.y,
-                    vx: (dx / dist) * 10,
-                    vy: (dy / dist) * 10,
-                    gunType: 'pistol',
-                    ownerId: botId
-                  });
+          if (isPracticeMode) {
+            for (let pid in players) {
+              const bot = players[pid];
+              if (p.ownerId === myId && (gameMode === 'ffa' || bot.team !== myTeam)) {
+                if (Math.hypot(p.x - bot.x, p.y - bot.y) < PLAYER_RADIUS + 5) {
+                  applyDamageToPlayer(pid, p.damage, false, myId);
+                  projectiles.splice(i, 1);
+                  break;
                 }
               }
             }
-
-            b.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, b.x + b.vx));
-            b.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, b.y + b.vy));
-          });
-        }
-
-        if (activeSupplyPlane) {
-          activeSupplyPlane.progress += delta * 0.5;
-          activeSupplyPlane.x += (activeSupplyPlane.targetX - activeSupplyPlane.x) * 0.05;
-          activeSupplyPlane.y += (activeSupplyPlane.targetY - activeSupplyPlane.y) * 0.05;
-
-          if (activeSupplyPlane.progress >= 1) {
-            const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
-            const dropItem = {
-              x: activeSupplyPlane.targetX,
-              y: activeSupplyPlane.targetY,
-              type: 'mystery_crate'
-            };
-            groundItems[itemId] = dropItem;
-            if (isHost) {
-              broadcastState({ type: 'SPAWN_ITEM', id: itemId, x: dropItem.x, y: dropItem.y, itemType: dropItem.type });
-            }
-            activeSupplyPlane = null;
           }
+
+          ctx.fillStyle = '#ffca28';
+          ctx.beginPath();
+          ctx.arc(p.x - camX, p.y - camY, 4, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        if (now % 50 < 16) {
-          const currentWeaponLabel = activeSlot === 0 ? 'Sword' : (activeSlot === 1 ? 'Pickaxe' : (activeSlot === 2 ? 'Block' : (activeSlot === 6 ? 'Grenade' : (activeSlot === 7 ? 'Bandage' : (gunSlots[activeSlot - 3] || 'Empty')))));
-          const payload = {
-            type: 'PLAYER_SYNC',
-            name: myName,
-            x: myX,
-            y: myY,
-            team: myTeam,
-            color: myTeamColor,
-            hp,
-            coins,
-            weapon: currentWeaponLabel,
-            angle: myAngle
-          };
-          if (isHost) {
-            broadcastState({ type: 'WORLD_STATE', players: serializePlayers() });
-          } else if (hostConn && hostConn.open) {
-            hostConn.send(payload);
-          }
-        }
+        // Draw player self at center of screen with gun pointing towards mouse
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        const aimAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
+        ctx.rotate(aimAngle);
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#777';
+        ctx.fillRect(PLAYER_RADIUS - 2, -4, 18, 8);
+
+        ctx.restore();
 
         ctx.save();
-        ctx.translate(canvas.width / 2 - (myX + cameraOffsetX), canvas.height / 2 - (myY + cameraOffsetY));
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= WORLD_SIZE; x += 100) {
-          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_SIZE); ctx.stroke();
-        }
-        for (let y = 0; y <= WORLD_SIZE; y += 100) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
-        }
-
-        // Render Square 200% Expanded Base Corners & Shield Arras.io Outer Lines
-        const drawSquareBase = (bx, by, size, color, teamLabel) => {
-          ctx.save();
-          ctx.fillStyle = color === '#e53935' ? 'rgba(229,57,53,0.18)' : (color === '#1e88e5' ? 'rgba(30,136,229,0.18)' : (color === '#43a047' ? 'rgba(67,160,71,0.18)' : 'rgba(251,192,45,0.18)'));
-          ctx.fillRect(bx, by, size, size);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 6;
-          ctx.strokeRect(bx, by, size, size);
-
-          ctx.fillStyle = color;
-          ctx.font = 'bold 20px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(`🛡️ ${teamLabel.toUpperCase()} BASE`, bx + size / 2, by + size / 2);
-          ctx.font = '12px sans-serif';
-          ctx.fillText(`(Safe Zone & Shop)`, bx + size / 2, by + size / 2 + 20);
-          ctx.restore();
-        };
-
-        if (gameMode === '2team') {
-          drawSquareBase(0, 0, BASE_SIZE, '#e53935', 'Red');
-          drawSquareBase(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, '#1e88e5', 'Blue');
-        } else if (gameMode === '4team') {
-          drawSquareBase(0, 0, BASE_SIZE, '#e53935', 'Red');
-          drawSquareBase(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, '#1e88e5', 'Blue');
-          drawSquareBase(0, WORLD_SIZE - BASE_SIZE, BASE_SIZE, '#43a047', 'Green');
-          drawSquareBase(WORLD_SIZE - BASE_SIZE, 0, BASE_SIZE, '#fbc02d', 'Yellow');
-        }
-
-        // Render Blocks
-        Object.keys(placedBlocks).forEach(key => {
-          const b = placedBlocks[key];
-          const bx = b.bx * 40;
-          const by = b.by * 40;
-          ctx.fillStyle = b.color;
-          ctx.fillRect(bx, by, 40, 40);
-          ctx.strokeStyle = '#333';
-          ctx.strokeRect(bx, by, 40, 40);
-
-          const blockHp = b.hp !== undefined ? b.hp : 100;
-          if (blockHp < 100) {
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(bx + 2, by + 32, 36, 5);
-            ctx.fillStyle = blockHp > 50 ? '#4caf50' : (blockHp > 25 ? '#ff9800' : '#f44336');
-            ctx.fillRect(bx + 2, by + 32, (blockHp / 100) * 36, 5);
-          }
-        });
-
-        // Ground Items
-        Object.keys(groundItems).forEach(id => {
-          const item = groundItems[id];
-          if (item.type === 'mystery_crate') {
-            ctx.fillStyle = '#607d8b';
-            ctx.fillRect(item.x - 14, item.y - 14, 28, 28);
-            ctx.strokeStyle = '#ffca28';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(item.x - 14, item.y - 14, 28, 28);
-            ctx.fillStyle = '#ffca28';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('?', item.x, item.y + 4);
-            ctx.fillStyle = '#fff';
-            ctx.font = '10px sans-serif';
-            ctx.fillText('Mystery Crate', item.x, item.y - 18);
-          } else {
-            ctx.fillStyle = item.type === 'bandage' ? '#e91e63' : (item.type === 'grenade' ? '#333' : '#ffca28');
-            ctx.beginPath(); ctx.arc(item.x, item.y, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(item.type === 'bandage' ? 'Bandage' : (item.type === 'grenade' ? 'Grenade' : (item.subtype || item.type)), item.x, item.y - 14);
-          }
-        });
-
-        // Unique Projectile Graphics
-        projectiles.forEach(p => {
-          ctx.save();
-          if (p.gunType === 'grenade') {
-            ctx.fillStyle = '#333';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#e53935'; ctx.lineWidth = 1; ctx.stroke();
-          } else if (p.gunType === 'sniper') {
-            ctx.strokeStyle = '#ff1744';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x - p.vx * 1.5, p.y - p.vy * 1.5);
-            ctx.stroke();
-          } else if (p.gunType === 'shotgun') {
-            ctx.fillStyle = '#ff9800';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
-          } else if (p.gunType === 'smg') {
-            ctx.fillStyle = '#ffee58';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill();
-          } else if (p.gunType === 'rocket') {
-            ctx.fillStyle = '#d32f2f';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#ff9800';
-            ctx.beginPath(); ctx.arc(p.x - p.vx * 0.5, p.y - p.vy * 0.5, 4, 0, Math.PI * 2); ctx.fill();
-          } else {
-            ctx.fillStyle = '#ffff00';
-            ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
-          }
-          ctx.restore();
-        });
-
-        explosions.forEach((ex, idx) => {
-          ctx.fillStyle = `rgba(255, 100, 0, ${ex.life / 15})`;
-          ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2); ctx.fill();
-          ex.life--;
-          if (ex.life <= 0) explosions.splice(idx, 1);
-        });
-
-        // Headshot Floating Text Popups
-        headshotPopups.forEach((hp, idx) => {
-          ctx.fillStyle = `rgba(255, 235, 59, ${hp.life / 40})`;
-          ctx.font = 'bold 16px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(hp.text, hp.x, hp.y - (40 - hp.life));
-          hp.life--;
-          if (hp.life <= 0) headshotPopups.splice(idx, 1);
-        });
-
-        if (activeSupplyPlane) {
-          ctx.fillStyle = '#444';
-          ctx.fillRect(activeSupplyPlane.x - 25, activeSupplyPlane.y - 10, 50, 20);
-          ctx.fillStyle = '#ffca28';
-          ctx.font = '12px sans-serif';
-          ctx.fillText('✈️ AIRDROP INCOMING', activeSupplyPlane.x - 60, activeSupplyPlane.y - 18);
-        }
-
-        const drawEquippedWeaponGraphic = (px, py, angle, weaponName) => {
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.rotate(angle || 0);
-
-          if (weaponName === 'Sword') {
-            ctx.fillStyle = '#e0e0e0';
-            ctx.fillRect(10, -2, 22, 4);
-            ctx.fillStyle = '#795548';
-            ctx.fillRect(8, -4, 4, 8);
-          } else if (weaponName === 'Pickaxe') {
-            ctx.fillStyle = '#8d6e63';
-            ctx.fillRect(10, -2, 18, 4);
-            ctx.fillStyle = '#9e9e9e';
-            ctx.beginPath();
-            ctx.arc(28, 0, 8, -Math.PI / 2, Math.PI / 2);
-            ctx.fill();
-          } else if (weaponName === 'Block') {
-            ctx.fillStyle = '#78909c';
-            ctx.fillRect(12, -6, 12, 12);
-          } else if (weaponName === 'Bandage') {
-            ctx.fillStyle = '#e91e63';
-            ctx.fillRect(10, -5, 10, 10);
-          } else if (weaponName === 'Grenade') {
-            ctx.fillStyle = '#37474f';
-            ctx.beginPath(); ctx.arc(15, 0, 5, 0, Math.PI * 2); ctx.fill();
-          } else if (weaponName === 'sniper') {
-            ctx.fillStyle = '#212121';
-            ctx.fillRect(8, -2, 28, 4);
-            ctx.fillStyle = '#00e676';
-            ctx.fillRect(14, -4, 6, 2);
-          } else if (weaponName === 'shotgun') {
-            ctx.fillStyle = '#5d4037';
-            ctx.fillRect(8, -3, 22, 6);
-            ctx.fillStyle = '#212121';
-            ctx.fillRect(20, -2, 8, 4);
-          } else if (weaponName === 'smg') {
-            ctx.fillStyle = '#424242';
-            ctx.fillRect(8, -3, 16, 6);
-          } else if (weaponName === 'rocket') {
-            ctx.fillStyle = '#d32f2f';
-            ctx.fillRect(6, -5, 24, 10);
-          } else {
-            ctx.fillStyle = '#212121';
-            ctx.fillRect(8, -2, 14, 4);
-          }
-          ctx.restore();
-        };
-
-        // Render Enemies and Teammates
-        Object.keys(players).forEach(id => {
-          const p = players[id];
-          ctx.save();
-          ctx.fillStyle = p.color || '#2196f3';
-          ctx.beginPath(); ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-
-          drawEquippedWeaponGraphic(p.x, p.y, p.angle, p.weapon || 'Sword');
-
-          ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText(`${p.name} [${p.hp}HP] 🪙${p.coins || 0}`, p.x, p.y - 28);
-          ctx.fillStyle = '#ffca28';
-          ctx.font = '10px sans-serif';
-          ctx.fillText(`Holding: ${p.weapon || 'Sword'}`, p.x, p.y - 16);
-          ctx.restore();
-        });
-
-        // Render Local Player
-        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.fillStyle = myTeamColor;
-        ctx.beginPath(); ctx.arc(myX, myY, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = isInsideOwnBase(myX, myY, myTeam) ? '#00ffff' : '#fff';
-        ctx.lineWidth = isInsideOwnBase(myX, myY, myTeam) ? 4 : 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
         ctx.stroke();
-
-        const myWeaponLabel = activeSlot === 0 ? 'Sword' : (activeSlot === 1 ? 'Pickaxe' : (activeSlot === 2 ? 'Block' : (activeSlot === 6 ? 'Grenade' : (activeSlot === 7 ? 'Bandage' : (gunSlots[activeSlot - 3] || 'Empty')))));
-        drawEquippedWeaponGraphic(myX, myY, myAngle, myWeaponLabel);
-
-        ctx.fillStyle = '#ffca28'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(`${myName} (You) [${hp}HP] 🪙${coins}`, myX, myY - 28);
-        ctx.font = '10px sans-serif';
-        ctx.fillText(`Holding: ${myWeaponLabel}`, myX, myY - 16);
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(myName, -18, -24);
         ctx.restore();
 
-        ctx.restore();
+        requestAnimationFrame(gameLoop);
       }
 
-      gameLoop();
+      window.onload = function() {
+        gameLoop();
+      };
     </script>
   </body>
-  </html>
+</html>
