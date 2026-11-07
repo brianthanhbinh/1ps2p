@@ -205,7 +205,7 @@
 
       const WORLD_SIZE = 2500;
       const PLAYER_RADIUS = 16;
-      const BASE_SIZE = 600; // 200% expanded square spawn bases in corners
+      const BASE_SIZE = 600;
       
       let isHost = false;
       let isPracticeMode = false;
@@ -247,10 +247,10 @@
       let mouseY = 0;
 
       let players = {};
+      let bots = [];
       let placedBlocks = {};
       let groundItems = {};
       let projectiles = [];
-      let headshotPopups = [];
 
       let airdropCountdown = 30;
       let airdropTimerInterval = null;
@@ -472,7 +472,7 @@
 
       function handleMouseAction() {
         if (attackCooldown) return;
-        if (isInsideBase(myX, myY, myTeam)) return; // Can't attack while inside own base
+        if (gameMode !== 'ffa' && isInsideBase(myX, myY, myTeam)) return;
 
         const worldTargetX = myX + (mouseX - canvas.width / 2);
         const worldTargetY = myY + (mouseY - canvas.height / 2);
@@ -482,15 +482,15 @@
         const normX = dist > 0 ? dirX / dist : 1;
         const normY = dist > 0 ? dirY / dist : 0;
 
-        if (activeSlot === 0) { // Sword
+        if (activeSlot === 0) {
           attackCooldown = true;
           setTimeout(() => attackCooldown = false, 300);
-          checkMeleeHit(normX, normY, 45, 35);
-        } else if (activeSlot === 1) { // Pickaxe
+          checkMeleeHit(normX, normY, 45, 25);
+        } else if (activeSlot === 1) {
           attackCooldown = true;
           setTimeout(() => attackCooldown = false, 600);
           checkMiningHit(worldTargetX, worldTargetY);
-        } else if (activeSlot === 2) { // Block
+        } else if (activeSlot === 2) {
           if (blockCooldown) return;
           blockCooldown = true;
           const bx = Math.floor(worldTargetX / 40);
@@ -500,7 +500,7 @@
             placedBlocks[key] = { bx, by, color: myTeamColor, hp: 100 };
           }
           setTimeout(() => blockCooldown = false, 400);
-        } else if (activeSlot >= 3 && activeSlot <= 5) { // Guns
+        } else if (activeSlot >= 3 && activeSlot <= 5) {
           const gunType = gunSlots[activeSlot - 3];
           if (!gunType) return;
 
@@ -557,8 +557,28 @@
           const pl = players[pid];
           if (gameMode !== 'ffa' && pl.team === myTeam) continue;
           if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 25) {
-            applyDamageToPlayer(pid, damage, false, myName);
+            applyDamageToPlayer(pid, damage);
           }
+        }
+        if (isPracticeMode) {
+          bots.forEach(bot => {
+            if (Math.hypot(bot.x - hitX, bot.y - hitY) < PLAYER_RADIUS + 25) {
+              bot.hp -= damage;
+              if (bot.hp <= 0) {
+                bot.hp = 100;
+                bot.x = 1000 + Math.random() * 500;
+                bot.y = 1000 + Math.random() * 500;
+                coins += 25;
+                document.getElementById('coin-val').innerText = coins;
+              }
+            }
+          });
+        }
+      }
+
+      function applyDamageToPlayer(pid, dmg) {
+        if (isHost && connections[pid]) {
+          connections[pid].send({ type: 'damage', dmg });
         }
       }
 
@@ -631,424 +651,319 @@
         currentRoomCode = document.getElementById('room-input').value.trim() || 'room1';
         isHost = false;
         isPracticeMode = false;
-        connectToHostPeer();
+        initPeer();
       }
 
       function startPractice() {
-        myName = document.getElementById('player-name-input').value.trim() || 'PracticePlayer';
-        isHost = true;
+        myName = document.getElementById('player-name-input').value.trim() || 'Player';
         isPracticeMode = true;
-        showModeSelection();
+        gameMode = 'ffa';
+        myTeam = 'FFA';
+        myTeamColor = '#9c27b0';
+        document.getElementById('lobby-panel').style.display = 'none';
+        document.getElementById('pause-btn').style.display = 'block';
+        document.getElementById('btn-toggle-shop').style.display = 'block';
+        spawnBots();
+        startGameLoop();
+      }
+
+      function spawnBots() {
+        bots = [
+          { x: 1200, y: 1200, hp: 100, radius: 14, color: '#e53935', angle: 0 },
+          { x: 1400, y: 1300, hp: 100, radius: 14, color: '#1e88e5', angle: 0 },
+          { x: 1300, y: 1100, hp: 100, radius: 14, color: '#43a047', angle: 0 }
+        ];
       }
 
       function showModeSelection() {
         const overlay = document.getElementById('modal-overlay');
-        const title = document.getElementById('modal-title');
-        const buttons = document.getElementById('modal-buttons');
-        title.innerText = 'Select Game Mode';
-        buttons.innerHTML = `
-          <button class="team-btn-blue" onclick="selectGameMode('2team')">2 Teams (Red vs Blue)</button>
-          <button class="team-btn-green" onclick="selectGameMode('4team')">4 Teams (Red, Blue, Green, Yellow)</button>
+        document.getElementById('modal-title').innerText = 'Select Game Mode';
+        let html = `
           <button class="team-btn-ffa" onclick="selectGameMode('ffa')">Free For All (FFA)</button>
+          <button class="team-btn-red" onclick="selectGameMode('2team')">2 Teams (Red vs Blue)</button>
+          <button class="team-btn-blue" onclick="selectGameMode('4team')">4 Teams (4 Corners)</button>
         `;
+        document.getElementById('modal-buttons').innerHTML = html;
         overlay.style.display = 'flex';
       }
 
       function selectGameMode(mode) {
         gameMode = mode;
+        document.getElementById('modal-overlay').style.display = 'none';
         showTeamSelection();
       }
 
       function showTeamSelection() {
-        const title = document.getElementById('modal-title');
-        const buttons = document.getElementById('modal-buttons');
-        title.innerText = 'Select Your Team';
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('modal-title').innerText = 'Select Your Team';
+        let html = '';
         if (gameMode === 'ffa') {
-          myTeam = 'FFA';
-          myTeamColor = '#9c27b0';
-          finalizeLobbyStart();
-          return;
+          html = `<button class="team-btn-ffa" onclick="confirmTeam('FFA', '#9c27b0')">FFA Neutral</button>`;
+        } else if (gameMode === '2team') {
+          html = `
+            <button class="team-btn-red" onclick="confirmTeam('Red', '#e53935')">Red Team</button>
+            <button class="team-btn-blue" onclick="confirmTeam('Blue', '#1e88e5')">Blue Team</button>
+          `;
+        } else {
+          html = `
+            <button class="team-btn-red" onclick="confirmTeam('Red', '#e53935')">Red Base</button>
+            <button class="team-btn-blue" onclick="confirmTeam('Blue', '#1e88e5')">Blue Base</button>
+            <button class="team-btn-green" onclick="confirmTeam('Green', '#43a047')">Green Base</button>
+            <button class="team-btn-yellow" onclick="confirmTeam('Yellow', '#fbc02d')">Yellow Base</button>
+          `;
         }
-        let html = '<button class="team-btn-red" onclick="selectTeam(\'Red\', \'#e53935\')">Red Team</button>';
-        html += '<button class="team-btn-blue" onclick="selectTeam(\'Blue\', \'#1e88e5\')">Blue Team</button>';
-        if (gameMode === '4team') {
-          html += '<button class="team-btn-green" onclick="selectTeam(\'Green\', \'#43a047\')">Green Team</button>';
-          html += '<button class="team-btn-yellow" onclick="selectTeam(\'Yellow\', \'#fbc02d\')">Yellow Team</button>';
-        }
-        buttons.innerHTML = html;
+        document.getElementById('modal-buttons').innerHTML = html;
+        overlay.style.display = 'flex';
       }
 
-      function selectTeam(team, color) {
+      function confirmTeam(team, color) {
         myTeam = team;
         myTeamColor = color;
-        finalizeLobbyStart();
-      }
-
-      function finalizeLobbyStart() {
         document.getElementById('modal-overlay').style.display = 'none';
         document.getElementById('lobby-panel').style.display = 'none';
         document.getElementById('pause-btn').style.display = 'block';
         document.getElementById('btn-toggle-shop').style.display = 'block';
-
-        myId = 'player_' + Math.random().toString(36).substr(2, 9);
-        if (gameMode === 'ffa') {
-          myTeam = 'FFA';
-          // Random distinct vibrant color for FFA
-          const ffaColors = ['#e53935', '#1e88e5', '#43a047', '#fbc02d', '#9c27b0', '#00bcd4', '#ff5722'];
-          myTeamColor = ffaColors[Math.floor(Math.random() * ffaColors.length)];
-        }
-        hp = 100;
-        document.getElementById('hp-val').innerText = '100';
-        document.getElementById('hp-fill').style.width = '100%';
         respawnPlayer();
-
-        if (isPracticeMode) {
-          setupPracticeBots();
-        }
-
-        if (isHost && !isPracticeMode) {
-          const peerId = getFormattedPeerId(currentRoomCode);
-          peer = new Peer(peerId);
-          peer.on('open', (id) => {
-            document.getElementById('peer-id-display').innerText = `Hosting Room: ${currentRoomCode}`;
-          });
-          peer.on('connection', (conn) => {
-            connections[conn.peer] = conn;
-          });
-        }
-
-        startAirdropTimer(30);
+        initPeer();
+        startGameLoop();
       }
 
-      function setupPracticeBots() {
-        players = {};
-        const botCount = 3;
-        const ffaColors = ['#e53935', '#1e88e5', '#43a047', '#fbc02d', '#00bcd4', '#ff5722'];
-        for (let i = 0; i < botCount; i++) {
-          const botId = 'bot_' + i;
-          let team = gameMode === 'ffa' ? 'FFA' : (i % 2 === 0 ? 'Red' : 'Blue');
-          let tColor = gameMode === 'ffa' ? ffaColors[i % ffaColors.length] : (team === 'Red' ? '#e53935' : '#1e88e5');
-          players[botId] = {
-            id: botId,
-            name: `Bot ${i + 1}`,
-            team: team,
-            color: tColor,
-            x: Math.random() * (WORLD_SIZE - 600) + 300,
-            y: Math.random() * (WORLD_SIZE - 600) + 300,
-            hp: 100,
-            coins: 100,
-            equippedGun: 'smg'
-          };
-        }
-      }
-
-      function connectToHostPeer() {
-        const peerId = getFormattedPeerId(currentRoomCode);
-        peer = new Peer();
+      function initPeer() {
+        const pid = getFormattedPeerId(currentRoomCode);
+        peer = new Peer(isHost ? pid : undefined);
         peer.on('open', (id) => {
           myId = id;
-          hostConn = peer.connect(peerId);
-          hostConn.on('open', () => {
-            document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('pause-btn').style.display = 'block';
-            showTeamSelection();
-          });
+          document.getElementById('peer-id-display').innerText = `Room: ${currentRoomCode}`;
+          if (!isHost) {
+            hostConn = peer.connect(pid);
+            setupHostConnection(hostConn);
+          }
+        });
+        peer.on('connection', (c) => {
+          connections[c.peer] = c;
+          setupClientConnection(c);
         });
       }
 
-      function startAirdropTimer(seconds) {
-        airdropCountdown = seconds;
-        if (airdropTimerInterval) clearInterval(airdropTimerInterval);
+      function setupHostConnection(c) {
+        c.on('open', () => {
+          c.send({ type: 'join', name: myName, team: myTeam, color: myTeamColor });
+        });
+        c.on('data', (data) => {
+          if (data.type === 'state') {
+            players = data.players || {};
+            placedBlocks = data.blocks || {};
+            groundItems = data.items || {};
+          } else if (data.type === 'damage') {
+            hp -= data.dmg;
+            if (hp <= 0) selfDestruct();
+          }
+        });
+      }
+
+      function setupClientConnection(c) {
+        c.on('data', (data) => {
+          if (data.type === 'join') {
+            players[c.peer] = { name: data.name, team: data.team, color: data.color, x: 100, y: 100, hp: 100 };
+          } else if (data.type === 'update') {
+            if (players[c.peer]) {
+              players[c.peer].x = data.x;
+              players[c.peer].y = data.y;
+              players[c.peer].hp = data.hp;
+              players[c.peer].name = data.name;
+              players[c.peer].team = data.team;
+            }
+          }
+        });
+        c.on('close', () => {
+          delete players[c.peer];
+          delete connections[c.peer];
+        });
+      }
+
+      function leaveRoom() {
+        location.reload();
+      }
+
+      function startGameLoop() {
         airdropTimerInterval = setInterval(() => {
           airdropCountdown--;
-          const timerEl = document.getElementById('airdrop-timer');
-          if (timerEl) timerEl.innerText = `${airdropCountdown}s`;
+          document.getElementById('airdrop-timer').innerText = `${airdropCountdown}s`;
           if (airdropCountdown <= 0) {
-            spawnGroundItem('gun', 'sniper', WORLD_SIZE / 2 + (Math.random() * 400 - 200), WORLD_SIZE / 2 + (Math.random() * 400 - 200));
-            startAirdropTimer(45);
+            airdropCountdown = 30;
+            spawnGroundItem('gun', 'rocket', WORLD_SIZE / 2 + (Math.random() * 400 - 200), WORLD_SIZE / 2 + (Math.random() * 400 - 200));
           }
         }, 1000);
+
+        function frame() {
+          updateGame();
+          renderGame();
+          requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
       }
 
-      function applyDamageToPlayer(targetId, dmg, isHeadshot, attackerName) {
-        if (targetId === myId) {
-          if (isSpawnProtected || isInsideBase(myX, myY, myTeam)) return;
-          hp -= dmg;
-          document.getElementById('hp-val').innerText = Math.max(0, Math.floor(hp));
-          document.getElementById('hp-fill').style.width = `${Math.max(0, hp)}%`;
-          if (hp <= 0) {
-            coins = Math.floor(coins / 2);
-            document.getElementById('coin-val').innerText = coins;
-            respawnPlayer();
+      function updateGame() {
+        let speed = 4;
+        if (keys['ShiftLeft'] || keys['ShiftRight']) {
+          if (stamina > 0) {
+            speed = 6.5;
+            stamina = Math.max(0, stamina - 45 * 0.016);
           }
-        } else if (players[targetId]) {
-          players[targetId].hp -= dmg;
-          if (players[targetId].hp <= 0) {
-            coins += Math.ceil((players[targetId].coins || 50) * 1.05);
-            document.getElementById('coin-val').innerText = coins;
-            players[targetId].hp = 100;
-            players[targetId].x = Math.random() * (WORLD_SIZE - 600) + 300;
-            players[targetId].y = Math.random() * (WORLD_SIZE - 600) + 300;
-          }
+        } else {
+          stamina = Math.min(maxStamina, stamina + 30 * 0.016);
         }
-      }
+        document.getElementById('stamina-fill').style.width = `${(stamina / maxStamina) * 100}%`;
+        document.getElementById('hp-fill').style.width = `${Math.max(0, hp)}%`;
+        document.getElementById('hp-val').innerText = Math.max(0, Math.floor(hp));
 
-      function gameLoop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Background world grid or color
-        ctx.fillStyle = '#2b4c3f';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        let dx = 0, dy = 0;
+        if (keys['KeyW']) dy -= 1;
+        if (keys['KeyS']) dy += 1;
+        if (keys['KeyA']) dx -= 1;
+        if (keys['KeyD']) dx += 1;
+        if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
 
-        // Movement handling & base restriction checks
-        let speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 6 : 3.5;
-        let nextX = myX;
-        let nextY = myY;
-        if (keys['KeyW'] || keys['ArrowUp']) nextY -= speed;
-        if (keys['KeyS'] || keys['ArrowDown']) nextY += speed;
-        if (keys['KeyA'] || keys['ArrowLeft']) nextX -= speed;
-        if (keys['KeyD'] || keys['ArrowRight']) nextX += speed;
+        myX += dx * speed;
+        myY += dy * speed;
+        myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myX));
+        myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, myY));
 
-        // Prevent entering enemy bases or own base if 10s return cooldown active
-        let canMoveHere = true;
+        const inside = isInsideBase(myX, myY, myTeam);
         if (gameMode !== 'ffa') {
-          const allTeams = ['Red', 'Blue', 'Green', 'Yellow'];
-          for (let t of allTeams) {
-            if (isInsideBase(nextX, nextY, t)) {
-              if (t !== myTeam) {
-                canMoveHere = false;
-              } else if (isLeftBase && !canReturnToBase) {
-                canMoveHere = false;
+          if (inside && !isLeftBase) {
+            hp = Math.min(100, hp + 20 * 0.016);
+          } else if (!inside && !isLeftBase) {
+            isLeftBase = true;
+            canReturnToBase = false;
+            baseReentryTimer = 10;
+            document.getElementById('base-timer-pill').style.display = 'block';
+            if (baseTimerInterval) clearInterval(baseTimerInterval);
+            baseTimerInterval = setInterval(() => {
+              baseReentryTimer--;
+              document.getElementById('base-timer-val').innerText = `${baseReentryTimer}s`;
+              if (baseReentryTimer <= 0) {
+                clearInterval(baseTimerInterval);
+                canReturnToBase = true;
+                document.getElementById('base-timer-pill').style.display = 'none';
               }
-            }
+            }, 1000);
+          }
+          if (inside && isLeftBase && !canReturnToBase) {
+            myX -= dx * speed * 1.5;
+            myY -= dy * speed * 1.5;
+          } else if (inside && isLeftBase && canReturnToBase) {
+            isLeftBase = false;
           }
         }
 
-        if (canMoveHere) {
-          myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
-          myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
-        }
+        myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
 
-        const currentlyInBase = gameMode === 'ffa' ? false : isInsideBase(myX, myY, myTeam);
-        if (!currentlyInBase && !isLeftBase && !isSpawnProtected && gameMode !== 'ffa') {
-          isLeftBase = true;
-          canReturnToBase = false;
-          baseReentryTimer = 10;
-          document.getElementById('base-timer-pill').style.display = 'block';
-          if (baseTimerInterval) clearInterval(baseTimerInterval);
-          baseTimerInterval = setInterval(() => {
-            baseReentryTimer--;
-            const valEl = document.getElementById('base-timer-val');
-            if (valEl) valEl.innerText = `${baseReentryTimer}s`;
-            if (baseReentryTimer <= 0) {
-              clearInterval(baseTimerInterval);
-              canReturnToBase = true;
-              document.getElementById('base-timer-pill').style.display = 'none';
-            }
-          }, 1000);
-        } else if (currentlyInBase && isLeftBase && canReturnToBase) {
-          isLeftBase = false;
-          document.getElementById('base-timer-pill').style.display = 'none';
-        }
-
-        // Draw bases in corners (only in team modes)
-        if (gameMode !== 'ffa') {
-          ctx.fillStyle = 'rgba(229, 57, 53, 0.12)';
-          ctx.strokeStyle = '#e53935';
-          ctx.lineWidth = 2;
-          ctx.fillRect(0, 0, BASE_SIZE, BASE_SIZE);
-          ctx.strokeRect(0, 0, BASE_SIZE, BASE_SIZE);
-
-          ctx.fillStyle = 'rgba(30, 136, 229, 0.12)';
-          ctx.strokeStyle = '#1e88e5';
-          ctx.fillRect(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
-          ctx.strokeRect(WORLD_SIZE - BASE_SIZE, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
-
-          if (gameMode === '4team') {
-            ctx.fillStyle = 'rgba(67, 160, 71, 0.12)';
-            ctx.strokeStyle = '#43a047';
-            ctx.fillRect(0, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
-            ctx.strokeRect(0, WORLD_SIZE - BASE_SIZE, BASE_SIZE, BASE_SIZE);
-
-            ctx.fillStyle = 'rgba(251, 192, 45, 0.12)';
-            ctx.strokeStyle = '#fbc02d';
-            ctx.fillRect(WORLD_SIZE - BASE_SIZE, 0, BASE_SIZE, BASE_SIZE);
-            ctx.strokeRect(WORLD_SIZE - BASE_SIZE, 0, BASE_SIZE, BASE_SIZE);
-          }
-        }
-
-        // Camera offset calculations so map correctly follows player movement
-        const camX = myX - canvas.width / 2;
-        const camY = myY - canvas.height / 2;
-
-        // Draw world border grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= WORLD_SIZE; x += 200) {
-          ctx.beginPath();
-          ctx.moveTo(x - camX, 0 - camY);
-          ctx.lineTo(x - camX, WORLD_SIZE - camY);
-          ctx.stroke();
-        }
-        for (let y = 0; y <= WORLD_SIZE; y += 200) {
-          ctx.beginPath();
-          ctx.moveTo(0 - camX, y - camY);
-          ctx.lineTo(WORLD_SIZE - camX, y - camY);
-          ctx.stroke();
-        }
-
-        // Draw placed blocks
-        for (let key in placedBlocks) {
-          const b = placedBlocks[key];
-          ctx.fillStyle = b.color || '#666';
-          ctx.fillRect(b.bx * 40 - camX, b.by * 40 - camY, 40, 40);
-          if (b.hp < 100) {
-            ctx.fillStyle = '#fff';
-            ctx.font = '10px sans-serif';
-            ctx.fillText(`${b.hp}%`, b.bx * 40 - camX + 8, b.by * 40 - camY + 24);
-          }
-        }
-
-        // Draw ground items
-        for (let id in groundItems) {
-          const item = groundItems[id];
-          ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ff9800';
-          ctx.beginPath();
-          ctx.arc(item.x - camX, item.y - camY, 10, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#fff';
-          ctx.stroke();
-        }
-
-        // Update & Draw Bots in Practice mode
-        if (isPracticeMode) {
-          for (let pid in players) {
-            const bot = players[pid];
-            let shouldAttack = (gameMode === 'ffa' || bot.team !== myTeam);
-
-            if (shouldAttack) {
-              const angle = Math.atan2(myY - bot.y, myX - bot.x);
-              bot.x += Math.cos(angle) * 1.2;
-              bot.y += Math.sin(angle) * 1.2;
-
-              if (Math.random() < 0.015 && Math.hypot(myX - bot.x, myY - bot.y) < 450) {
-                projectiles.push({
-                  x: bot.x, y: bot.y,
-                  vx: Math.cos(angle) * 12,
-                  vy: Math.sin(angle) * 12,
-                  gunType: 'smg',
-                  ownerId: bot.id,
-                  ownerTeam: bot.team,
-                  damage: 15
-                });
-              }
-            }
-
-            ctx.save();
-            ctx.translate(bot.x - camX, bot.y - camY);
-            ctx.fillStyle = bot.color;
-            ctx.beginPath();
-            ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.fillStyle = '#fff';
-            ctx.font = '11px sans-serif';
-            ctx.fillText(bot.name, -18, -22);
-            ctx.restore();
-          }
-        }
-
-        // Update Projectiles & Collisions
+        // Update Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
           const p = projectiles[i];
           p.x += p.vx;
           p.y += p.vy;
-
-          if (gameMode !== 'ffa') {
-            let inAnyBase = false;
-            const allTeams = ['Red', 'Blue', 'Green', 'Yellow'];
-            for (let t of allTeams) {
-              if (isInsideBase(p.x, p.y, t)) {
-                inAnyBase = true;
-                break;
-              }
-            }
-            if (inAnyBase) {
-              projectiles.splice(i, 1);
-              continue;
-            }
-          }
-
-          const bx = Math.floor(p.x / 40);
-          const by = Math.floor(p.y / 40);
-          const key = `${bx},${by}`;
-          if (placedBlocks[key]) {
-            placedBlocks[key].hp -= p.damage;
-            if (placedBlocks[key].hp <= 0) delete placedBlocks[key];
+          if (p.x < 0 || p.x > WORLD_SIZE || p.y < 0 || p.y > WORLD_SIZE) {
             projectiles.splice(i, 1);
             continue;
           }
-
-          if (p.ownerId !== myId && (gameMode === 'ffa' || p.ownerTeam !== myTeam)) {
-            if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS + 5) {
-              applyDamageToPlayer(myId, p.damage, false, p.ownerId);
+          if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS && p.ownerId !== myId) {
+            if (gameMode === 'ffa' || p.ownerTeam !== myTeam) {
+              hp -= p.damage;
               projectiles.splice(i, 1);
+              if (hp <= 0) selfDestruct();
               continue;
             }
           }
-
-          if (isPracticeMode) {
-            for (let pid in players) {
-              const bot = players[pid];
-              if (p.ownerId === myId && (gameMode === 'ffa' || bot.team !== myTeam)) {
-                if (Math.hypot(p.x - bot.x, p.y - bot.y) < PLAYER_RADIUS + 5) {
-                  applyDamageToPlayer(pid, p.damage, false, myId);
-                  projectiles.splice(i, 1);
-                  break;
-                }
-              }
-            }
-          }
-
-          ctx.fillStyle = '#ffca28';
-          ctx.beginPath();
-          ctx.arc(p.x - camX, p.y - camY, 4, 0, Math.PI * 2);
-          ctx.fill();
         }
 
-        // Draw player self at center of screen with gun pointing towards mouse
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        const aimAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
-        ctx.rotate(aimAngle);
-
-        ctx.fillStyle = '#777';
-        ctx.fillRect(PLAYER_RADIUS - 2, -4, 18, 8);
-
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.fillStyle = myTeamColor;
-        ctx.beginPath();
-        ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(myName, -18, -24);
-        ctx.restore();
-
-        requestAnimationFrame(gameLoop);
+        // Update Bots in Practice Mode
+        if (isPracticeMode) {
+          bots.forEach(bot => {
+            const angle = Math.atan2(myY - bot.y, myX - bot.x);
+            bot.x += Math.cos(angle) * 2;
+            bot.y += Math.sin(angle) * 2;
+          });
+        }
       }
 
-      window.onload = function() {
-        gameLoop();
-      };
+      function renderGame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2 - myX, canvas.height / 2 - myY);
+
+        // Draw World Background Grid
+        ctx.fillStyle = '#2b4c3f';
+        ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= WORLD_SIZE; x += 100) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_SIZE); ctx.stroke();
+        }
+        for (let y = 0; y <= WORLD_SIZE; y += 100) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
+        }
+
+        // Draw Bases
+        if (gameMode !== 'ffa') {
+          ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
+            const b = getBaseForTeam(team);
+            if (!b) return;
+            ctx.fillStyle = team === 'Red' ? 'rgba(229,57,53,0.15)' : team === 'Blue' ? 'rgba(30,136,229,0.15)' : team === 'Green' ? 'rgba(67,160,71,0.15)' : 'rgba(251,192,45,0.15)';
+            ctx.fillRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
+            ctx.strokeStyle = team === 'Red' ? '#e53935' : team === 'Blue' ? '#1e88e5' : team === 'Green' ? '#43a047' : '#fbc02d';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
+          });
+        }
+
+        // Draw Placed Blocks
+        for (let key in placedBlocks) {
+          const blk = placedBlocks[key];
+          ctx.fillStyle = blk.color;
+          ctx.fillRect(blk.bx * 40, blk.by * 40, 40, 40);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(blk.bx * 40, blk.by * 40, 40, 40);
+        }
+
+        // Draw Ground Items
+        for (let id in groundItems) {
+          const item = groundItems[id];
+          ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#fff';
+          ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Draw Bots
+        if (isPracticeMode) {
+          bots.forEach(bot => {
+            ctx.fillStyle = bot.color;
+            ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+          });
+        }
+
+        // Draw Self
+        ctx.save();
+        ctx.translate(myX, myY);
+        ctx.rotate(myAngle);
+        ctx.fillStyle = myTeamColor;
+        ctx.beginPath(); ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, -4, 20, 8);
+        ctx.restore();
+
+        // Draw Projectiles
+        ctx.fillStyle = '#ffca28';
+        projectiles.forEach(p => {
+          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+        });
+
+        ctx.restore();
+      }
     </script>
   </body>
 </html>
