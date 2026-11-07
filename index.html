@@ -898,7 +898,11 @@
             hp -= data.dmg;
             if (hp <= 0) selfDestruct();
           } else if (data.type === 'sync_mode') {
-            gameMode = data.gameMode;
+            if (gameMode !== data.gameMode) {
+              gameMode = data.gameMode;
+              // Re-render team selection to match host's game mode
+              showTeamSelection();
+            }
           }
         });
         c.on('close', () => {
