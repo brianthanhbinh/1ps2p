@@ -7,13 +7,11 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-      body, html { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
       #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
-      #game-canvas { width: 1200px; height: 800px; display: block; background: #2b4c3f; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-      
-      #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-      
-      /* Lobby Panel */
+      #game-canvas { width: 1200px; height: 800px; display: block; background: #2b4c3f; box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); }
+      #ui { position: absolute; inset: 0; pointer-events: none; }
+
       #lobby-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.95); color: #fff; padding: 24px; border-radius: 12px; text-align: center; pointer-events: auto; width: 380px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 20; }
       #lobby-panel h2 { margin-bottom: 15px; color: #4caf50; font-size: 22px; }
       #lobby-panel input, #lobby-panel button, #lobby-panel select { width: 100%; margin: 6px 0; padding: 10px 12px; border: none; border-radius: 6px; font-family: inherit; font-size: 14px; }
@@ -24,8 +22,7 @@
       #btn-practice:hover { background: #fb8c00; }
       #peer-id-display { font-size: 12px; color: #ffca28; margin-top: 8px; font-weight: bold; word-break: break-all; }
 
-      /* Modal */
-      #modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 25; }
+      #modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 25; }
       .modal-window { background: #1a1a24; color: #fff; border: 2px solid #444; border-radius: 12px; width: 360px; padding: 24px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
       .modal-window h3 { margin-bottom: 15px; color: #ffca28; font-size: 20px; }
       .modal-window button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
@@ -35,7 +32,6 @@
       .team-btn-yellow { background: #fbc02d; color: #000; }
       .team-btn-ffa { background: #7b1fa2; color: #fff; }
 
-      /* HUD */
       #hud-container { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; width: 220px; display: none; }
       .bar-wrapper { background: rgba(0,0,0,0.6); padding: 4px; border-radius: 6px; border: 1px solid #444; }
       .bar-label { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 2px; display: flex; justify-content: space-between; }
@@ -44,13 +40,11 @@
       #hp-fill { background: #e53935; width: 100%; }
       #stamina-fill { background: #29b6f6; width: 100%; }
 
-      /* Coins & Shop UI */
-      #coin-display { position: absolute; top: 75px; left: 15px; background: rgba(0,0,0,0.7); color: #ffd700; padding: 6px 14px; border-radius: 20px; border: 1px solid #ffca28; font-weight: bold; font-size: 14px; display: none; align-items: center; gap: 6px; pointer-events: auto; }
-      #btn-toggle-shop { position: absolute; top: 115px; left: 15px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; transition: background 0.2s; z-index: 12; }
+      #coin-display { position: absolute; top: 75px; left: 15px; background: rgba(0,0,0,0.7); color: #ffd700; padding: 6px 14px; border-radius: 20px; border: 1px solid #ffca28; font-weight: bold; font-size: 14px; display: none; align-items: center; gap: 6px; }
+      #btn-toggle-shop { position: absolute; top: 115px; left: 15px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; }
       #btn-toggle-shop:hover { background: #f57c00; }
 
-      /* Shop Modal & Tabs */
-      #shop-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 380px; color: #fff; display: none; pointer-events: auto; z-index: 30; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      #shop-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 380px; color: #fff; display: none; pointer-events: auto; z-index: 30; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
       #shop-modal h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 6px; }
       .shop-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
       .shop-tab-btn { flex: 1; padding: 6px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
@@ -61,45 +55,37 @@
       .shop-item button { background: #4caf50; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
       .shop-item button:hover { background: #43a047; }
 
-      /* Minimap Container */
       #minimap-container { position: absolute; top: 15px; right: 15px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 8px; overflow: hidden; pointer-events: auto; display: none; z-index: 12; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
       #minimap-canvas { width: 100%; height: 100%; display: block; }
 
       #airdrop-pill { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 6px 16px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; }
       #airdrop-timer { color: #ffca28; }
 
-      /* Pause / Leave Button */
-      #pause-btn { position: absolute; top: 185px; right: 15px; background: rgba(229,57,53,0.85); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; transition: background 0.2s; z-index: 12; }
+      #pause-btn { position: absolute; top: 185px; right: 15px; background: rgba(229,57,53,0.85); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 12; }
       #pause-btn:hover { background: #e53935; }
 
-      /* Controls instruction */
       #controls-tip { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 12px; pointer-events: none; text-align: center; }
 
-      /* Hotbar */
-      #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 10px; border: 1px solid #555; pointer-events: auto; }
+      #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 10px; border: 1px solid #555; pointer-events: auto; z-index: 14; }
       .slot { width: 52px; height: 52px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; overflow: hidden; cursor: pointer; }
       .slot.active { border-color: #ffca28; background: #333; box-shadow: 0 0 10px rgba(255,202,40,0.4); }
       .slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; }
 
-      /* Inventory Modal (32 Slots) */
-      #inventory-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 40; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      #inventory-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.96); border: 2px solid #ffca28; border-radius: 12px; padding: 20px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 40; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
       #inventory-modal h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 6px; }
       .inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 15px; }
       .inv-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; position: relative; }
       .inv-slot:hover { border-color: #ffca28; }
       .inv-slot span { font-size: 9px; color: #aaa; }
 
-      /* Tab Overlay */
-      #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 15; }
+      #tab-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,15,20,0.92); border: 1px solid #444; border-radius: 12px; width: 360px; padding: 20px; color: #fff; display: none; pointer-events: auto; z-index: 15; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
       #tab-overlay h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
       .player-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.06); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
-      /* Coin Drop Popup Modal */
-      #coin-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.95); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 35; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+      #coin-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,20,30,0.95); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 35; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
       #coin-popup h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
       #coin-popup input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; }
 
-      /* Team Chat Box */
       #chat-container { position: absolute; bottom: 95px; left: 15px; width: 300px; pointer-events: auto; z-index: 14; display: flex; flex-direction: column; gap: 4px; }
       #chat-messages { background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
       .chat-msg { word-break: break-all; }
@@ -110,7 +96,6 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   </head>
   <body>
-
     <div id="game-container">
       <canvas id="game-canvas" width="1200" height="800"></canvas>
     </div>
@@ -130,12 +115,10 @@
       <div id="coin-display">🪙 Coins: <span id="coin-val">100</span></div>
       <button id="btn-toggle-shop" onclick="toggleShop()">🛒 Shop (B)</button>
 
-      <!-- Minimap Container -->
       <div id="minimap-container">
         <canvas id="minimap-canvas" width="160" height="160"></canvas>
       </div>
 
-      <!-- Shop Modal with Tabs -->
       <div id="shop-modal">
         <h3>🛒 ARENA SHOP</h3>
         <div class="shop-tabs">
@@ -160,7 +143,6 @@
         <button style="width:100%; margin-top:12px; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleShop()">Close</button>
       </div>
 
-      <!-- Coin Drop Modal -->
       <div id="coin-popup">
         <h3>🪙 Drop Coins</h3>
         <p style="font-size:12px; color:#aaa;">Enter amount to drop:</p>
@@ -174,7 +156,6 @@
       <div id="status-msg">Click Host, Join or Practice to Start (Hold TAB for Scoreboard)</div>
       <div id="controls-tip">WASD: Move | Shift: Sprint | Left-Click: Use | `: Scope toward cursor | E: Inventory | Q: Drop | F/X: Collect | Z: Drop Coins</div>
 
-      <!-- Inventory Modal -->
       <div id="inventory-modal">
         <h3>🎒 INVENTORY (32 SLOTS)</h3>
         <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click item to send to hotbar (if space) or click hotbar slot.</p>
@@ -182,7 +163,6 @@
         <button style="width:100%; background:#e53935; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="toggleInventory()">Close (E)</button>
       </div>
 
-      <!-- Team Chat UI -->
       <div id="chat-container">
         <div id="chat-messages"></div>
         <input type="text" id="chat-input" placeholder="Type message & press Enter..." maxlength="120" />
@@ -231,7 +211,7 @@
       const WORLD_SIZE = 2500;
       const PLAYER_RADIUS = 16;
       const BASE_SIZE = 500;
-      
+
       let isHost = false;
       let isPracticeMode = false;
       let peer = null;
@@ -242,21 +222,19 @@
       let myTeam = 'FFA';
       let myTeamColor = '#9c27b0';
 
-      let connections = {};
+      const connections = {};
       let hostConn = null;
 
       let myX = WORLD_SIZE / 2;
       let myY = WORLD_SIZE / 2;
-      let myAngle = 0;
       let hp = 100;
       let stamina = 100;
       const maxStamina = 100;
       let coins = 100;
       let currentVehicle = null;
       let isScoping = false;
-
-      let isSpawnProtected = true;
       let spawnTimestamp = 0;
+      let isSpawnProtected = true;
 
       let activeSlot = 0;
       let gunSlots = [null, null, null];
@@ -266,7 +244,6 @@
 
       let blockCooldown = false;
       let attackCooldown = false;
-
       let keys = {};
       let mouseX = 0;
       let mouseY = 0;
@@ -277,19 +254,28 @@
       let groundItems = {};
       let airdropCrates = [];
       let projectiles = [];
-
       let airdropCountdown = 30;
       let airdropTimerInterval = null;
 
-      const APP_PREFIX = "brian-2d-arena-v3-";
+      const APP_PREFIX = 'brian-2d-arena-v3-';
+
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function setDisplay(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = value;
+      }
 
       function getFormattedPeerId(code) {
         return APP_PREFIX + code.trim().toLowerCase();
       }
 
       function switchShopTab(tabName, btnEl) {
-        document.querySelectorAll('.shop-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.shop-tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.shop-tab-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.shop-tab-content').forEach((c) => c.classList.remove('active'));
         btnEl.classList.add('active');
         const tabEl = document.getElementById(`shop-tab-${tabName}`);
         if (tabEl) tabEl.classList.add('active');
@@ -304,11 +290,11 @@
       }
 
       function updateHotbarLabels() {
-        document.getElementById('gun-slot-0-label').innerText = gunSlots[0] ? gunSlots[0].toUpperCase() : 'Empty';
-        document.getElementById('gun-slot-1-label').innerText = gunSlots[1] ? gunSlots[1].toUpperCase() : 'Empty';
-        document.getElementById('gun-slot-2-label').innerText = gunSlots[2] ? gunSlots[2].toUpperCase() : 'Empty';
-        document.getElementById('grenade-label').innerText = `Grenade x${grenadeCount}`;
-        document.getElementById('bandage-label').innerText = `Bandage x${bandageCount}`;
+        setText('gun-slot-0-label', gunSlots[0] ? gunSlots[0].toUpperCase() : 'Empty');
+        setText('gun-slot-1-label', gunSlots[1] ? gunSlots[1].toUpperCase() : 'Empty');
+        setText('gun-slot-2-label', gunSlots[2] ? gunSlots[2].toUpperCase() : 'Empty');
+        setText('grenade-label', `Grenade x${grenadeCount}`);
+        setText('bandage-label', `Bandage x${bandageCount}`);
       }
 
       function getBaseForTeam(team) {
@@ -336,7 +322,8 @@
           alert('Not enough coins!');
           return;
         }
-        const emptyIdx = gunSlots.findIndex(g => g === null);
+
+        const emptyIdx = gunSlots.findIndex((g) => g === null);
         if (emptyIdx === -1) {
           if (!addItemToInventory({ type: 'gun', subtype: type })) {
             alert('Inventory and hotbar are full!');
@@ -345,8 +332,9 @@
         } else {
           gunSlots[emptyIdx] = type;
         }
+
         coins -= cost;
-        document.getElementById('coin-val').innerText = coins;
+        setText('coin-val', coins);
         updateHotbarLabels();
       }
 
@@ -356,7 +344,7 @@
           return;
         }
         coins -= cost;
-        document.getElementById('coin-val').innerText = coins;
+        setText('coin-val', coins);
         currentVehicle = type;
         toggleShop();
       }
@@ -372,8 +360,9 @@
           if (e.code === 'Enter') {
             sendTeamChat();
           } else if (e.code === 'Escape') {
-            document.getElementById('chat-input').blur();
-            document.getElementById('chat-input').style.display = 'none';
+            const input = document.getElementById('chat-input');
+            input.blur();
+            input.style.display = 'none';
           }
           return;
         }
@@ -392,7 +381,6 @@
           e.preventDefault();
           isScoping = true;
         }
-
         if (e.code === 'KeyE') {
           e.preventDefault();
           toggleInventory();
@@ -419,31 +407,51 @@
           e.preventDefault();
           isScoping = false;
         }
-        if (e.code === 'Tab') {
-          toggleScoreboard(false);
-        }
+        if (e.code === 'Tab') toggleScoreboard(false);
       });
 
       function toggleScoreboard(show) {
         const overlay = document.getElementById('tab-overlay');
         if (!overlay) return;
         overlay.style.display = show ? 'block' : 'none';
+
         if (show) {
-          let html = `<div class="player-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
-          html += `<div class="player-row"><span>${myName} (You)</span><span>${myTeam}</span><span>${Math.max(0, Math.floor(hp))}</span><span>${coins}</span></div>`;
-          for (let id in players) {
+          const rows = [
+            ['Name', 'Team', 'HP', 'Coins'],
+            [`${myName} (You)`, myTeam, String(Math.max(0, Math.floor(hp))), String(coins)]
+          ];
+
+          for (const id in players) {
             const p = players[id];
-            html += `<div class="player-row"><span>${p.name}</span><span>${p.team}</span><span>${Math.max(0, Math.floor(p.hp))}</span><span>${p.coins || 0}</span></div>`;
+            rows.push([p.name || 'Unknown', p.team || 'FFA', String(Math.max(0, Math.floor(p.hp || 0))), String(p.coins || 0)]);
           }
-          document.getElementById('peer-list-container').innerHTML = html;
+
+          const container = document.getElementById('peer-list-container');
+          container.innerHTML = '';
+          rows.forEach(([name, team, hpVal, coinVal], idx) => {
+            const row = document.createElement('div');
+            row.className = 'player-row';
+            const fields = [name, team, hpVal, coinVal];
+            fields.forEach((value) => {
+              const el = document.createElement('span');
+              el.textContent = value;
+              row.appendChild(el);
+            });
+            if (idx === 0) {
+              row.style.fontWeight = 'bold';
+            }
+            container.appendChild(row);
+          });
         }
       }
 
       function openCoinPopup() {
         if (coins <= 0) return;
-        document.getElementById('coin-popup').style.display = 'block';
-        document.getElementById('coin-drop-input').max = coins;
-        document.getElementById('coin-drop-input').value = Math.min(10, coins);
+        const input = document.getElementById('coin-drop-input');
+        const popup = document.getElementById('coin-popup');
+        popup.style.display = 'block';
+        input.max = String(coins);
+        input.value = String(Math.min(10, coins));
       }
 
       function closeCoinPopup() {
@@ -451,33 +459,38 @@
       }
 
       function confirmDropCoins() {
-        const val = parseInt(document.getElementById('coin-drop-input').value) || 0;
+        const val = parseInt(document.getElementById('coin-drop-input').value, 10) || 0;
         if (val > 0 && val <= coins) {
           coins -= val;
-          document.getElementById('coin-val').innerText = coins;
+          setText('coin-val', coins);
           spawnGroundItem('coin', null, myX + 25, myY + 25, val);
         }
         closeCoinPopup();
       }
 
       function collectGroundItems() {
-        for (let id in groundItems) {
+        for (const id in groundItems) {
           const item = groundItems[id];
           if (Math.hypot(item.x - myX, item.y - myY) < 45) {
             if (item.type === 'coin') {
               coins += item.amount;
-              document.getElementById('coin-val').innerText = coins;
+              setText('coin-val', coins);
             } else if (item.type === 'gun') {
               addItemToInventory({ type: 'gun', subtype: item.subtype });
             } else if (item.type === 'grenade') {
-              grenadeCount++;
+              grenadeCount += 1;
               updateHotbarLabels();
             } else if (item.type === 'bandage') {
-              bandageCount++;
+              bandageCount += 1;
               updateHotbarLabels();
             }
-            delete groundItems[id];
-            break;
+
+            if (item.type === 'gun' && !addItemToInventory({ type: 'gun', subtype: item.subtype })) {
+              // inventory full, leave item on ground
+            } else {
+              delete groundItems[id];
+              break;
+            }
           }
         }
 
@@ -492,7 +505,7 @@
               bandageCount += crate.amount || 2;
             } else if (crate.rewardType === 'coins') {
               coins += crate.amount || 100;
-              document.getElementById('coin-val').innerText = coins;
+              setText('coin-val', coins);
             }
             updateHotbarLabels();
             airdropCrates.splice(i, 1);
@@ -502,7 +515,7 @@
       }
 
       function spawnGroundItem(type, subtype, x, y, amount = 1) {
-        const itemId = 'item_' + Math.random().toString(36).substr(2, 9);
+        const itemId = 'item_' + Math.random().toString(36).slice(2, 11);
         groundItems[itemId] = { id: itemId, type, subtype, x, y, amount };
       }
 
@@ -510,8 +523,8 @@
         hp = 100;
         isSpawnProtected = true;
         spawnTimestamp = Date.now();
-        setTimeout(() => isSpawnProtected = false, 2000);
-        
+        setTimeout(() => { isSpawnProtected = false; }, 2000);
+
         if (gameMode !== 'ffa') {
           if (myTeam === 'Red') { myX = 150; myY = 150; }
           else if (myTeam === 'Blue') { myX = WORLD_SIZE - 150; myY = WORLD_SIZE - 150; }
@@ -525,8 +538,8 @@
 
       function selfDestruct() {
         if (Date.now() - spawnTimestamp < 3000) return;
-        for (let g of gunSlots) {
-          if (g) spawnGroundItem('gun', g, myX + (Math.random()*40-20), myY + (Math.random()*40-20));
+        for (const g of gunSlots) {
+          if (g) spawnGroundItem('gun', g, myX + (Math.random() * 40 - 20), myY + (Math.random() * 40 - 20));
         }
         gunSlots = [null, null, null];
         currentVehicle = null;
@@ -536,7 +549,8 @@
       }
 
       canvas.addEventListener('mousedown', (e) => {
-        if (e.button !== 0 || document.getElementById('lobby-panel').style.display !== 'none') return;
+        if (e.button !== 0) return;
+        if (document.getElementById('lobby-panel').style.display !== 'none') return;
         if (document.getElementById('chat-input') === document.activeElement || document.getElementById('shop-modal').style.display === 'block') return;
         handleMouseAction();
       });
@@ -555,11 +569,11 @@
 
         if (activeSlot === 0) {
           attackCooldown = true;
-          setTimeout(() => attackCooldown = false, 300);
+          setTimeout(() => { attackCooldown = false; }, 300);
           checkMeleeHit(normX, normY, 45, 35);
         } else if (activeSlot === 1) {
           attackCooldown = true;
-          setTimeout(() => attackCooldown = false, 600);
+          setTimeout(() => { attackCooldown = false; }, 600);
           checkMiningHit(worldTargetX, worldTargetY);
         } else if (activeSlot === 2) {
           if (blockCooldown) return;
@@ -571,20 +585,21 @@
             placedBlocks[key] = { bx, by, color: myTeamColor, hp: 100 };
             broadcastState();
           }
-          setTimeout(() => blockCooldown = false, 400);
+          setTimeout(() => { blockCooldown = false; }, 400);
         } else if (activeSlot >= 3 && activeSlot <= 5) {
           const gunType = gunSlots[activeSlot - 3];
           if (!gunType) return;
 
           attackCooldown = true;
-          let cooldown = 350; let speed = 14; let damage = 25;
+          let cooldown = 350;
+          let speed = 14;
+          let damage = 25;
           if (gunType === 'shotgun') { cooldown = 750; speed = 11; damage = 18; }
           if (gunType === 'sniper') { cooldown = 1100; speed = 25; damage = 65; }
           if (gunType === 'smg') { cooldown = 120; speed = 16; damage = 14; }
           if (gunType === 'rocket') { cooldown = 1200; speed = 8; damage = 80; }
 
-          setTimeout(() => attackCooldown = false, cooldown);
-
+          setTimeout(() => { attackCooldown = false; }, cooldown);
           const newProj = { x: myX + normX * 22, y: myY + normY * 22, vx: normX * speed, vy: normY * speed, gunType, ownerId: myId, ownerTeam: myTeam, damage };
           projectiles.push(newProj);
           broadcastProjectile(newProj);
@@ -606,27 +621,39 @@
         if (!box) return;
         const div = document.createElement('div');
         div.className = 'chat-msg';
-        div.innerHTML = `<span style="color:#ffca28;">[${badge}]</span> <b>${sender}:</b> ${escapeHtml(text)}`;
+
+        const badgeEl = document.createElement('span');
+        badgeEl.textContent = `[${badge}]`;
+        badgeEl.style.color = '#ffca28';
+
+        const senderEl = document.createElement('b');
+        senderEl.textContent = `${sender}:`;
+
+        const msgEl = document.createElement('span');
+        msgEl.textContent = ` ${text}`;
+
+        div.appendChild(badgeEl);
+        div.appendChild(document.createTextNode(' '));
+        div.appendChild(senderEl);
+        div.appendChild(msgEl);
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
-      }
-
-      function escapeHtml(str) {
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
 
       function checkMeleeHit(nx, ny, range, damage) {
         const hitX = myX + nx * range;
         const hitY = myY + ny * range;
-        for (let pid in players) {
+
+        for (const pid in players) {
           const pl = players[pid];
           if (gameMode !== 'ffa' && (pl.team === myTeam || isInsideBase(pl.x, pl.y, pl.team))) continue;
           if (Math.hypot(pl.x - hitX, pl.y - hitY) < PLAYER_RADIUS + 25) {
             applyDamageToPlayer(pid, damage);
           }
         }
+
         if (isPracticeMode) {
-          bots.forEach(bot => {
+          bots.forEach((bot) => {
             if (Math.hypot(bot.x - hitX, bot.y - hitY) < PLAYER_RADIUS + 25) {
               bot.hp -= damage;
               if (bot.hp <= 0) {
@@ -634,7 +661,7 @@
                 bot.x = 1000 + Math.random() * 500;
                 bot.y = 1000 + Math.random() * 500;
                 coins += 25;
-                document.getElementById('coin-val').innerText = coins;
+                setText('coin-val', coins);
               }
             }
           });
@@ -682,11 +709,14 @@
         const grid = document.getElementById('inventory-grid');
         if (!grid) return;
         grid.innerHTML = '';
+
         for (let i = 0; i < 32; i++) {
           const item = inventory[i];
           const div = document.createElement('div');
           div.className = 'inv-slot';
-          div.innerHTML = `<span>${i+1}</span><b>${item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : ''}</b>`;
+
+          const label = item ? (item.type === 'gun' ? item.subtype.toUpperCase() : item.type.toUpperCase()) : '';
+          div.innerHTML = `<span>${i + 1}</span><b>${label}</b>`;
           div.onclick = () => moveFromInventoryToHotbar(i);
           grid.appendChild(div);
         }
@@ -695,8 +725,9 @@
       function moveFromInventoryToHotbar(invIdx) {
         const item = inventory[invIdx];
         if (!item) return;
+
         if (item.type === 'gun') {
-          const emptyHotbarIdx = gunSlots.findIndex(g => g === null);
+          const emptyHotbarIdx = gunSlots.findIndex((g) => g === null);
           if (emptyHotbarIdx !== -1) {
             gunSlots[emptyHotbarIdx] = item.subtype;
             inventory[invIdx] = null;
@@ -713,7 +744,7 @@
         if (hotbarIdx >= 3 && hotbarIdx <= 5) {
           const gunType = gunSlots[hotbarIdx - 3];
           if (gunType) {
-            const emptyInvIdx = inventory.findIndex(slot => slot === null);
+            const emptyInvIdx = inventory.findIndex((slot) => slot === null);
             if (emptyInvIdx !== -1) {
               inventory[emptyInvIdx] = { type: 'gun', subtype: gunType };
               gunSlots[hotbarIdx - 3] = null;
@@ -727,7 +758,7 @@
       }
 
       function addItemToInventory(item) {
-        const emptyIdx = inventory.findIndex(slot => slot === null);
+        const emptyIdx = inventory.findIndex((slot) => slot === null);
         if (emptyIdx !== -1) {
           inventory[emptyIdx] = item;
           return true;
@@ -754,15 +785,16 @@
       function initPeer() {
         const peerId = getFormattedPeerId(currentRoomCode);
         if (peer) {
-          try { peer.destroy(); } catch(e){}
+          try { peer.destroy(); } catch (e) {}
         }
+
         peer = new Peer(isHost ? peerId : undefined, {
-          config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+          config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
         });
 
         peer.on('open', (id) => {
           myId = id;
-          document.getElementById('peer-id-display').innerText = `Room: ${currentRoomCode} (${isHost ? 'Host' : 'Client'})`;
+          setText('peer-id-display', `Room: ${currentRoomCode} (${isHost ? 'Host' : 'Client'})`);
           if (!isHost) {
             hostConn = peer.connect(peerId);
             setupHostConnection(hostConn);
@@ -770,7 +802,7 @@
         });
 
         peer.on('error', (err) => {
-          console.error("PeerJS error:", err);
+          console.error('PeerJS error:', err);
           if (!isHost) {
             alert('Could not connect to host room. Please check room code.');
           }
@@ -786,14 +818,13 @@
         c.on('open', () => {
           c.send({ type: 'join', name: myName, team: myTeam, color: myTeamColor, gameMode });
         });
+
         c.on('data', (data) => {
           if (data.type === 'state') {
             players = data.players || {};
             placedBlocks = data.blocks || {};
             groundItems = data.items || {};
-            if (data.gameMode && data.gameMode !== gameMode) {
-              gameMode = data.gameMode;
-            }
+            if (data.gameMode && data.gameMode !== gameMode) gameMode = data.gameMode;
           } else if (data.type === 'damage') {
             if (!isInsideBase(myX, myY, myTeam)) {
               hp -= data.dmg;
@@ -830,6 +861,7 @@
             broadcastProjectile(data.projectile, c.peer);
           }
         });
+
         c.on('close', () => {
           delete players[c.peer];
           delete connections[c.peer];
@@ -839,23 +871,15 @@
 
       function broadcastState() {
         if (!isHost) return;
-        const statePayload = {
-          type: 'state',
-          players,
-          blocks: placedBlocks,
-          items: groundItems,
-          gameMode: gameMode
-        };
-        for (let pid in connections) {
-          if (connections[pid].open) {
-            connections[pid].send(statePayload);
-          }
+        const statePayload = { type: 'state', players, blocks: placedBlocks, items: groundItems, gameMode };
+        for (const pid in connections) {
+          if (connections[pid].open) connections[pid].send(statePayload);
         }
       }
 
       function broadcastProjectile(proj, excludePeerId = null) {
         if (isHost) {
-          for (let pid in connections) {
+          for (const pid in connections) {
             if (pid !== excludePeerId && connections[pid].open) {
               connections[pid].send({ type: 'shoot', projectile: proj });
             }
@@ -865,40 +889,14 @@
         }
       }
 
-      function startPractice() {
-        myName = document.getElementById('player-name-input').value.trim() || 'Player';
-        isPracticeMode = true;
-        gameMode = 'ffa';
-        myTeam = 'FFA';
-        myTeamColor = '#9c27b0';
-        document.getElementById('lobby-panel').style.display = 'none';
-        document.getElementById('pause-btn').style.display = 'block';
-        document.getElementById('btn-toggle-shop').style.display = 'block';
-        document.getElementById('minimap-container').style.display = 'block';
-        document.getElementById('hud-container').style.display = 'flex';
-        document.getElementById('coin-display').style.display = 'flex';
-        document.getElementById('hotbar').style.display = 'flex';
-        spawnBots();
-        startGameLoop();
-      }
-
-      function spawnBots() {
-        bots = [
-          { x: 1200, y: 1200, hp: 100, radius: 14, color: '#e53935' },
-          { x: 1400, y: 1300, hp: 100, radius: 14, color: '#1e88e5' },
-          { x: 1300, y: 1100, hp: 100, radius: 14, color: '#43a047' }
-        ];
-      }
-
       function showModeSelection() {
         const overlay = document.getElementById('modal-overlay');
         document.getElementById('modal-title').innerText = 'Select Game Mode';
-        let html = `
+        document.getElementById('modal-buttons').innerHTML = `
           <button class="team-btn-ffa" onclick="selectGameMode('ffa')">Free For All (FFA)</button>
           <button class="team-btn-red" onclick="selectGameMode('2team')">2 Teams (Red vs Blue)</button>
           <button class="team-btn-blue" onclick="selectGameMode('4team')">4 Teams (4 Corners)</button>
         `;
-        document.getElementById('modal-buttons').innerHTML = html;
         overlay.style.display = 'flex';
       }
 
@@ -911,6 +909,7 @@
       function showTeamSelection() {
         const overlay = document.getElementById('modal-overlay');
         document.getElementById('modal-title').innerText = 'Select Your Team';
+
         let html = '';
         if (gameMode === 'ffa') {
           html = `<button class="team-btn-ffa" onclick="confirmTeam('FFA', '#9c27b0')">FFA Neutral</button>`;
@@ -927,6 +926,7 @@
             <button class="team-btn-yellow" onclick="confirmTeam('Yellow', '#fbc02d')">Yellow Base</button>
           `;
         }
+
         document.getElementById('modal-buttons').innerHTML = html;
         overlay.style.display = 'flex';
       }
@@ -936,12 +936,12 @@
         myTeamColor = color;
         document.getElementById('modal-overlay').style.display = 'none';
         document.getElementById('lobby-panel').style.display = 'none';
-        document.getElementById('pause-btn').style.display = 'block';
-        document.getElementById('btn-toggle-shop').style.display = 'block';
-        document.getElementById('minimap-container').style.display = 'block';
-        document.getElementById('hud-container').style.display = 'flex';
-        document.getElementById('coin-display').style.display = 'flex';
-        document.getElementById('hotbar').style.display = 'flex';
+        setDisplay('pause-btn', 'block');
+        setDisplay('btn-toggle-shop', 'block');
+        setDisplay('minimap-container', 'block');
+        setDisplay('hud-container', 'flex');
+        setDisplay('coin-display', 'flex');
+        setDisplay('hotbar', 'flex');
         respawnPlayer();
         initPeer();
         startGameLoop();
@@ -954,12 +954,12 @@
         myTeam = 'FFA';
         myTeamColor = '#9c27b0';
         document.getElementById('lobby-panel').style.display = 'none';
-        document.getElementById('pause-btn').style.display = 'block';
-        document.getElementById('btn-toggle-shop').style.display = 'block';
-        document.getElementById('minimap-container').style.display = 'block';
-        document.getElementById('hud-container').style.display = 'flex';
-        document.getElementById('coin-display').style.display = 'flex';
-        document.getElementById('hotbar').style.display = 'flex';
+        setDisplay('pause-btn', 'block');
+        setDisplay('btn-toggle-shop', 'block');
+        setDisplay('minimap-container', 'block');
+        setDisplay('hud-container', 'flex');
+        setDisplay('coin-display', 'flex');
+        setDisplay('hotbar', 'flex');
         spawnBots();
         startGameLoop();
       }
@@ -972,331 +972,172 @@
         ];
       }
 
-      function showModeSelection() {
-        const overlay = document.getElementById('modal-overlay');
-        document.getElementById('modal-title').innerText = 'Select Game Mode';
-        let html = `
-          <button class="team-btn-ffa" onclick="selectGameMode('ffa')">Free For All (FFA)</button>
-          <button class="team-btn-red" onclick="selectGameMode('2team')">2 Teams (Red vs Blue)</button>
-          <button class="team-btn-blue" onclick="selectGameMode('4team')">4 Teams (4 Corners)</button>
-        `;
-        document.getElementById('modal-buttons').innerHTML = html;
-        overlay.style.display = 'flex';
-      }
-
-      function selectGameMode(mode) {
-        gameMode = mode;
-        document.getElementById('modal-overlay').style.display = 'none';
-        showTeamSelection();
-      }
-
-      function showTeamSelection() {
-        const overlay = document.getElementById('modal-overlay');
-        document.getElementById('modal-title').innerText = 'Select Your Team';
-        let html = '';
-        if (gameMode === 'ffa') {
-          html = `<button class="team-btn-ffa" onclick="confirmTeam('FFA', '#9c27b0')">FFA Neutral</button>`;
-        } else if (gameMode === '2team') {
-          html = `
-            <button class="team-btn-red" onclick="confirmTeam('Red', '#e53935')">Red Team</button>
-            <button class="team-btn-blue" onclick="confirmTeam('Blue', '#1e88e5')">Blue Team</button>
-          `;
-        } else {
-          html = `
-            <button class="team-btn-red" onclick="confirmTeam('Red', '#e53935')">Red Base</button>
-            <button class="team-btn-blue" onclick="confirmTeam('Blue', '#1e88e5')">Blue Base</button>
-            <button class="team-btn-green" onclick="confirmTeam('Green', '#43a047')">Green Base</button>
-            <button class="team-btn-yellow" onclick="confirmTeam('Yellow', '#fbc02d')">Yellow Base</button>
-          `;
-        }
-        document.getElementById('modal-buttons').innerHTML = html;
-        overlay.style.display = 'flex';
-      }
-
       function leaveRoom() {
-        location.reload();
+        if (peer) {
+          try { peer.destroy(); } catch (e) {}
+        }
+        peer = null;
+        hostConn = null;
+        connections = {};
+        document.getElementById('lobby-panel').style.display = 'block';
+        setDisplay('pause-btn', 'none');
+        setDisplay('btn-toggle-shop', 'none');
+        setDisplay('minimap-container', 'none');
+        setDisplay('hud-container', 'none');
+        setDisplay('coin-display', 'none');
+        setDisplay('hotbar', 'none');
+        setDisplay('shop-modal', 'none');
+        setDisplay('inventory-modal', 'none');
+        setText('peer-id-display', 'Cloud Ready');
       }
 
       function startGameLoop() {
-        airdropTimerInterval = setInterval(() => {
-          airdropCountdown--;
-          const timerEl = document.getElementById('airdrop-timer');
-          if (timerEl) timerEl.innerText = `${airdropCountdown}s`;
-          if (airdropCountdown <= 0) {
-            airdropCountdown = 30;
-            const rewardTypes = ['gun', 'gun', 'grenade', 'bandage', 'coins'];
-            const chosenType = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
-            let subtype = 'pistol';
-            let amount = 1;
-            if (chosenType === 'gun') {
-              const guns = ['pistol', 'smg', 'shotgun', 'sniper', 'rocket'];
-              subtype = guns[Math.floor(Math.random() * guns.length)];
-            } else if (chosenType === 'grenade') {
-              amount = 2;
-            } else if (chosenType === 'bandage') {
-              amount = 2;
-            } else if (chosenType === 'coins') {
-              amount = 150;
-            }
-
-            airdropCrates.push({
-              x: WORLD_SIZE / 2 + (Math.random() * 800 - 400),
-              y: WORLD_SIZE / 2 + (Math.random() * 800 - 400),
-              rewardType: chosenType,
-              subtype: subtype,
-              amount: amount
-            });
-          }
-        }, 1000);
-
-        function frame() {
-          updateGame();
-          renderGame();
-          renderMinimap();
-          requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
+        updateHotbarLabels();
+        renderInventoryGrid();
+        requestAnimationFrame(gameLoop);
       }
 
-      function updateGame() {
-        let speed = 4;
-        if (currentVehicle === 'bike') speed = 4.6;
-        if (currentVehicle === 'car') speed = 5.6;
-        if (currentVehicle === 'tank') speed = 3.5;
+      function gameLoop() {
+        updateHUD();
+        renderWorld();
+        requestAnimationFrame(gameLoop);
+      }
 
-        if (keys['ShiftLeft'] || keys['ShiftRight']) {
-          if (stamina > 0) {
-            speed *= 1.5;
-            stamina = Math.max(0, stamina - 45 * 0.016);
-          }
-        } else {
-          stamina = Math.min(maxStamina, stamina + 30 * 0.016);
-        }
-        const staminaFill = document.getElementById('stamina-fill');
+      function updateHUD() {
+        setText('hp-val', Math.max(0, Math.floor(hp)));
+        setText('stamina-val', Math.max(0, Math.floor(stamina)));
+
         const hpFill = document.getElementById('hp-fill');
-        const hpVal = document.getElementById('hp-val');
-        if (staminaFill) staminaFill.style.width = `${(stamina / maxStamina) * 100}%`;
-        if (hpFill) hpFill.style.width = `${Math.max(0, hp)}%`;
-        if (hpVal) hpVal.innerText = Math.max(0, Math.floor(hp));
+        const staminaFill = document.getElementById('stamina-fill');
+        if (hpFill) hpFill.style.width = `${Math.max(0, Math.min(100, hp))}%`;
+        if (staminaFill) staminaFill.style.width = `${Math.max(0, Math.min(100, stamina))}%`;
 
-        let dx = 0, dy = 0;
-        if (keys['KeyW']) dy -= 1;
-        if (keys['KeyS']) dy += 1;
-        if (keys['KeyA']) dx -= 1;
-        if (keys['KeyD']) dx += 1;
-        if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
-
-        let nextX = myX + dx * speed;
-        let nextY = myY + dy * speed;
-
-        if (gameMode !== 'ffa') {
-          ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
-            if (team !== myTeam && isInsideBase(nextX, nextY, team)) {
-              if (team === 'Red') nextY = Math.max(nextY, BASE_SIZE + PLAYER_RADIUS);
-              if (team === 'Blue') nextY = Math.min(nextY, WORLD_SIZE - BASE_SIZE - PLAYER_RADIUS);
-              if (team === 'Green') nextY = Math.min(nextY, WORLD_SIZE - BASE_SIZE - PLAYER_RADIUS);
-              if (team === 'Yellow') nextY = Math.max(nextY, BASE_SIZE + PLAYER_RADIUS);
-            }
-          });
-        }
-
-        const bx = Math.floor(nextX / 40);
-        const by = Math.floor(nextY / 40);
-        if (!placedBlocks[`${bx},${Math.floor(myY / 40)}`]) {
-          myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextX));
-        }
-        if (!placedBlocks[`${Math.floor(myX / 40)},${by}`]) {
-          myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE - PLAYER_RADIUS, nextY));
-        }
-
-        myAngle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
-
-        if (!isHost && hostConn && hostConn.open) {
-          hostConn.send({ type: 'update', x: myX, y: myY, hp, name: myName, team: myTeam, color: myTeamColor });
-        }
-
-        for (let i = projectiles.length - 1; i >= 0; i--) {
-          const p = projectiles[i];
-          p.x += p.vx;
-          p.y += p.vy;
-
-          const pBx = Math.floor(p.x / 40);
-          const pBy = Math.floor(p.y / 40);
-          if (p.x < 0 || p.x > WORLD_SIZE || p.y < 0 || p.y > WORLD_SIZE || placedBlocks[`${pBx},${pBy}`]) {
-            projectiles.splice(i, 1);
-            continue;
-          }
-
-          if (Math.hypot(p.x - myX, p.y - myY) < PLAYER_RADIUS && p.ownerId !== myId) {
-            if (gameMode === 'ffa' || p.ownerTeam !== myTeam) {
-              if (!isInsideBase(myX, myY, myTeam)) {
-                hp -= p.damage;
-                if (hp <= 0) selfDestruct();
-              }
-              projectiles.splice(i, 1);
-              continue;
-            }
-          }
-        }
-
-        if (isPracticeMode) {
-          bots.forEach(bot => {
-            const angle = Math.atan2(myY - bot.y, myX - bot.x);
-            bot.x += Math.cos(angle) * 2;
-            bot.y += Math.sin(angle) * 2;
-          });
-        }
+        const airdropTimer = document.getElementById('airdrop-timer');
+        if (airdropTimer) airdropTimer.textContent = `${Math.max(0, Math.ceil(airdropCountdown))}s`;
       }
 
-      function renderGame() {
+      function renderWorld() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save();
-        
-        let camX = myX;
-        let camY = myY;
-        if (isScoping) {
-          const mDistX = mouseX - canvas.width / 2;
-          const mDistY = mouseY - canvas.height / 2;
-          camX += mDistX * 0.45;
-          camY += mDistY * 0.45;
-        }
-
-        ctx.translate(canvas.width / 2 - camX, canvas.height / 2 - camY);
-
         ctx.fillStyle = '#2b4c3f';
-        ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= WORLD_SIZE; x += 100) {
-          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_SIZE); ctx.stroke();
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const cameraX = myX - canvas.width / 2;
+        const cameraY = myY - canvas.height / 2;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        for (let x = 0; x < WORLD_SIZE; x += 40) {
+          ctx.beginPath();
+          ctx.moveTo(x - cameraX, 0);
+          ctx.lineTo(x - cameraX, WORLD_SIZE);
+          ctx.stroke();
         }
-        for (let y = 0; y <= WORLD_SIZE; y += 100) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_SIZE, y); ctx.stroke();
+        for (let y = 0; y < WORLD_SIZE; y += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, y - cameraY);
+          ctx.lineTo(WORLD_SIZE, y - cameraY);
+          ctx.stroke();
         }
 
-        if (gameMode !== 'ffa') {
-          ['Red', 'Blue', 'Green', 'Yellow'].forEach(team => {
-            const b = getBaseForTeam(team);
-            if (!b) return;
-            ctx.fillStyle = team === 'Red' ? 'rgba(229,57,53,0.18)' : team === 'Blue' ? 'rgba(30,136,229,0.18)' : team === 'Green' ? 'rgba(67,160,71,0.18)' : 'rgba(251,192,45,0.18)';
-            ctx.fillRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
-            ctx.strokeStyle = team === 'Red' ? '#e53935' : team === 'Blue' ? '#1e88e5' : team === 'Green' ? '#43a047' : '#fbc02d';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(b.x1, b.y1, BASE_SIZE, BASE_SIZE);
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 16px sans-serif';
-            ctx.fillText(`${team} Base`, b.x1 + 20, b.y1 + 30);
-          });
+        for (const key in placedBlocks) {
+          const block = placedBlocks[key];
+          const screenX = block.bx * 40 - cameraX;
+          const screenY = block.by * 40 - cameraY;
+          ctx.fillStyle = block.color || '#fff';
+          ctx.fillRect(screenX, screenY, 40, 40);
         }
 
-        for (let key in placedBlocks) {
-          const blk = placedBlocks[key];
-          ctx.fillStyle = blk.color;
-          ctx.fillRect(blk.bx * 40, blk.by * 40, 40, 40);
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(blk.bx * 40, blk.by * 40, 40, 40);
-        }
-
-        for (let id in groundItems) {
+        for (const id in groundItems) {
           const item = groundItems[id];
-          ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#fff';
-          ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+          const screenX = item.x - cameraX;
+          const screenY = item.y - cameraY;
+          ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#ffffff';
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, 6, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        airdropCrates.forEach(crate => {
-          ctx.fillStyle = '#8d6e63';
-          ctx.fillRect(crate.x - 20, crate.y - 20, 40, 40);
-          ctx.strokeStyle = '#ffca28';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(crate.x - 20, crate.y - 20, 40, 40);
-          ctx.fillStyle = '#fff';
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('📦 CRATE', crate.x, crate.y - 25);
-        });
-
-        if (isPracticeMode) {
-          bots.forEach(bot => {
-            ctx.fillStyle = bot.color;
-            ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
-          });
-        }
-
-        for (let pid in players) {
+        for (const pid in players) {
           const p = players[pid];
-          ctx.fillStyle = p.color || '#fff';
-          ctx.beginPath(); ctx.arc(p.x, p.y, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(p.name || 'Player', p.x, p.y - 22);
+          const screenX = p.x - cameraX;
+          const screenY = p.y - cameraY;
+          ctx.fillStyle = p.color || '#ffffff';
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, PLAYER_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        ctx.save();
-        ctx.translate(myX, myY);
-        ctx.rotate(myAngle);
-        if (currentVehicle) {
-          ctx.fillStyle = currentVehicle === 'bike' ? '#ff9800' : currentVehicle === 'car' ? '#e53935' : '#43a047';
-          ctx.fillRect(-22, -14, 44, 28);
+        for (const bot of bots) {
+          const screenX = bot.x - cameraX;
+          const screenY = bot.y - cameraY;
+          ctx.fillStyle = bot.color || '#fff';
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, bot.radius || 14, 0, Math.PI * 2);
+          ctx.fill();
         }
-        ctx.fillStyle = myTeamColor;
-        ctx.beginPath(); ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, -4, 20, 8);
-        ctx.restore();
 
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(myName + ' (You)', myX, myY - 22);
+        ctx.beginPath();
+        ctx.arc(myX - cameraX, myY - cameraY, PLAYER_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
 
-        ctx.fillStyle = '#ffca28';
-        projectiles.forEach(p => {
-          ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
-        });
-
-        ctx.restore();
+        if (isSpawnProtected) {
+          ctx.strokeStyle = '#90caf9';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(myX - cameraX, myY - cameraY, PLAYER_RADIUS + 8, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       function renderMinimap() {
-        minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        const ctxm = minimapCtx;
         const scale = minimapCanvas.width / WORLD_SIZE;
+        ctxm.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        ctxm.fillStyle = '#0d1a12';
+        ctxm.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
 
-        minimapCtx.fillStyle = '#1b382d';
-        minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-
-        minimapCtx.fillStyle = '#ffca28';
-        airdropCrates.forEach(c => {
-          minimapCtx.fillRect(c.x * scale - 2, c.y * scale - 2, 4, 4);
-        });
-
-        for (let pid in players) {
-          const p = players[pid];
-          minimapCtx.fillStyle = p.color || '#29b6f6';
-          minimapCtx.beginPath();
-          minimapCtx.arc(p.x * scale, p.y * scale, 3, 0, Math.PI * 2);
-          minimapCtx.fill();
+        for (const key in placedBlocks) {
+          const block = placedBlocks[key];
+          ctxm.fillStyle = block.color || '#fff';
+          ctxm.fillRect(block.bx * 40 * scale, block.by * 40 * scale, 40 * scale, 40 * scale);
         }
 
-        minimapCtx.fillStyle = '#ffeb3b';
-        minimapCtx.beginPath();
-        minimapCtx.arc(myX * scale, myY * scale, 4, 0, Math.PI * 2);
-        minimapCtx.fill();
+        ctxm.fillStyle = '#ffd700';
+        for (const id in groundItems) {
+          const item = groundItems[id];
+          ctxm.fillRect(item.x * scale, item.y * scale, 3, 3);
+        }
 
-        const viewW = canvas.width * scale;
-        const viewH = canvas.height * scale;
-        const viewX = (myX * scale) - (viewW / 2);
-        const viewY = (myY * scale) - (viewH / 2);
-        minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-        minimapCtx.lineWidth = 1.5;
-        minimapCtx.strokeRect(viewX, viewY, viewW, viewH);
+        ctxm.fillStyle = '#fff';
+        ctxm.fillRect(myX * scale - 2, myY * scale - 2, 4, 4);
       }
+
+      setInterval(() => {
+        renderMinimap();
+      }, 100);
+
+      const originalLeaveRoom = leaveRoom;
+      window.leaveRoom = originalLeaveRoom;
+      window.toggleShop = toggleShop;
+      window.switchShopTab = switchShopTab;
+      window.buyGun = buyGun;
+      window.buyVehicle = buyVehicle;
+      window.confirmDropCoins = confirmDropCoins;
+      window.closeCoinPopup = closeCoinPopup;
+      window.startHosting = startHosting;
+      window.startJoining = startJoining;
+      window.startPractice = startPractice;
+      window.selectGameMode = selectGameMode;
+      window.confirmTeam = confirmTeam;
+      window.toggleInventory = toggleInventory;
+      window.handleHotbarClick = handleHotbarClick;
+      window.sendTeamChat = sendTeamChat;
+      window.toggleScoreboard = toggleScoreboard;
+      window.openCoinPopup = openCoinPopup;
+      window.dropEquippedItem = dropEquippedItem;
+      window.collectGroundItems = collectGroundItems;
+      window.selfDestruct = selfDestruct;
+      window.moveFromInventoryToHotbar = moveFromInventoryToHotbar;
     </script>
   </body>
 </html>
