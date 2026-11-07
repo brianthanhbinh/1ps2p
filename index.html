@@ -601,6 +601,7 @@
             if (selfDestructCountdown > 0) return;
             selfDestructCountdown = 30;
             baseLockedOut = true;
+            showNotificationBox('Exited Base! Base re-entry locked for 30s or until enemy kill.');
             const banner = document.getElementById('self-destruct-banner');
             const cdSpan = document.getElementById('sd-countdown');
             if (banner) banner.style.display = 'block';
@@ -785,11 +786,6 @@
             } else if (hostConnection && hostConnection.open) {
                 hostConnection.send({ type: 'spawn_loot', id, item });
             }
-        }
-
-        function executeSelfDestruct() {
-            currentHp = 0;
-            showNotificationBox('Self-destruct executed.');
         }
 
         function sendChatMessage() {
