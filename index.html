@@ -288,8 +288,8 @@
         let currentHp = 100;
         let currentStamina = 100;
         let playerCoins = 100;
-        let activeRide = null; // Owned vehicle type (e.g. 'car', 'tank')
-        let boardedVehicle = null; // Currently boarded vehicle object reference
+        let activeRide = null;
+        let boardedVehicle = null;
         let cameraScoped = false;
 
         let baseLockedOut = false;
@@ -316,7 +316,7 @@
         let supplyCrates = [];
         let bulletsList = [];
         let activeGrenades = [];
-        let activeVehiclesList = []; // Array of vehicle instances deployed in world
+        let activeVehiclesList = [];
         let floatingParticles = [];
 
         let airdropTimerSec = 30;
@@ -341,7 +341,6 @@
             const container = document.getElementById('peer-list-container');
             container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">Checking active rooms...</div>`;
             
-            // Temporary Peer instance for listing available rooms via PeerJS listAllPeers if supported or simulation
             const tempPeer = new Peer({ debug: 0 });
             tempPeer.on('open', () => {
                 if (tempPeer.listAllPeers) {
@@ -360,7 +359,6 @@
                         tempPeer.destroy();
                     });
                 } else {
-                    // Fallback if listAllPeers is disabled on server
                     setTimeout(() => {
                         container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Enter exact room code in Match Setup tab to join.</div>`;
                         tempPeer.destroy();
@@ -498,7 +496,6 @@
                 }
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
-                // Deploy vehicle right next to player
                 let capacity = 1;
                 if (subtypeName === 'car') capacity = 2;
                 if (subtypeName === 'tank') capacity = 3;
@@ -556,7 +553,6 @@
             return false;
         }
 
-        // Host / Join Initialization
         function initHostRoom() {
             myUsername = document.getElementById('input-username').value.trim() || 'Host';
             roomCode = document.getElementById('input-room').value.trim() || 'alpha';
@@ -973,7 +969,6 @@
                 showNotificationBox('Already boarded a vehicle! Press H to dismount.');
                 return;
             }
-            // Find nearest vehicle belonging to teammate or neutral
             let closestVeh = null;
             let minDist = 70;
             activeVehiclesList.forEach(veh => {
@@ -989,7 +984,6 @@
                 return;
             }
 
-            // Teammate-only vehicle check
             if (playerTeam !== 'FFA' && closestVeh.team !== playerTeam) {
                 showNotificationBox('⚠️ Access Denied! You can only hop onto teammate vehicles!');
                 return;
@@ -1110,8 +1104,26 @@
                 return;
             }
 
+            // Sword Attack Logic (Slot 1)
+            if (activeHotbar === 0 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                if (isPractice) {
+                    aiBots.forEach(bot => {
+                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
+                            bot.hp -= 40;
+                            if (bot.hp <= 0) onEnemyEliminated();
+                            showNotificationBox('Hit bot with sword!');
+                        }
+                    });
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 250);
+            }
+
             // Pickaxe Mining Logic (Slot 2)
-            if (activeHotbar === 1 && !actionCdAttack) {
+            else if (activeHotbar === 1 && !actionCdAttack) {
                 const targetWorldX = posX + (clickX - canvas.width/2);
                 const targetWorldY = posY + (clickY - canvas.height/2);
 
@@ -1285,7 +1297,6 @@
             let nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
             let nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
 
-            // Block Solid Hitbox Bounding Check
             for (let k in worldBlocks) {
                 const parts = k.split(',');
                 const bx = parseInt(parts[0]) * 40;
@@ -1322,7 +1333,6 @@
             } else {
                 posX = nextX;
                 posY = nextY;
-                // Update boarded vehicle position if driving
                 if (boardedVehicle) {
                     boardedVehicle.x = posX;
                     boardedVehicle.y = posY;
@@ -1337,7 +1347,6 @@
             const screenCenterY = canvas.height / 2;
             aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
 
-            // Update Grenades with Wall Collisions & Expanding Shockwave Circle
             for (let i = activeGrenades.length - 1; i >= 0; i--) {
                 const g = activeGrenades[i];
                 g.x += g.vx;
@@ -1385,7 +1394,6 @@
                 }
             }
 
-            // Update Floating Particles & Shockwave Circles
             for (let i = floatingParticles.length - 1; i >= 0; i--) {
                 const fp = floatingParticles[i];
                 if (fp.isShockwave) {
@@ -1400,7 +1408,6 @@
                 }
             }
 
-            // Bullet Movement & Damage Logic
             for (let i = bulletsList.length - 1; i >= 0; i--) {
                 const b = bulletsList[i];
                 b.x += b.vx;
@@ -1517,7 +1524,6 @@
                 ctx.fillText(b.name, b.x + 20, b.y + 35);
             });
 
-            // Draw Vehicles in world
             activeVehiclesList.forEach(veh => {
                 ctx.save();
                 ctx.translate(veh.x, veh.y);
