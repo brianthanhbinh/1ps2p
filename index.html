@@ -891,9 +891,14 @@
             players = data.players || {};
             placedBlocks = data.blocks || {};
             groundItems = data.items || {};
+            if (data.gameMode && data.gameMode !== gameMode) {
+              gameMode = data.gameMode;
+            }
           } else if (data.type === 'damage') {
             hp -= data.dmg;
             if (hp <= 0) selfDestruct();
+          } else if (data.type === 'sync_mode') {
+            gameMode = data.gameMode;
           }
         });
         c.on('close', () => {
@@ -904,11 +909,12 @@
       function setupClientConnection(c) {
         c.on('open', () => {
           console.log("New client connected:", c.peer);
+          // Send host's game mode immediately upon client connection
+          c.send({ type: 'sync_mode', gameMode: gameMode });
         });
         c.on('data', (data) => {
           if (data.type === 'join') {
             players[c.peer] = { name: data.name, team: data.team, color: data.color, x: 100, y: 100, hp: 100 };
-            // Broadcast state to all
             broadcastState();
           } else if (data.type === 'update') {
             if (players[c.peer]) {
@@ -934,7 +940,8 @@
           type: 'state',
           players,
           blocks: placedBlocks,
-          items: groundItems
+          items: groundItems,
+          gameMode: gameMode
         };
         for (let pid in connections) {
           if (connections[pid].open) {
