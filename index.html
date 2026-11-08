@@ -1713,7 +1713,66 @@
             }
             ctx.translate(-camX, -camY);
 
-            // ... existing map rendering code ...
+            // Draw World Grid Lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            const gridSize = 80;
+            const startX = Math.floor(camX / gridSize) * gridSize;
+            const startY = Math.floor(camY / gridSize) * gridSize;
+            for (let gx = startX; gx < camX + canvas.width + gridSize; gx += gridSize) {
+                ctx.beginPath(); ctx.moveTo(gx, camY); ctx.lineTo(gx, camY + canvas.height); ctx.stroke();
+            }
+            for (let gy = startY; gy < camY + canvas.height + gridSize; gy += gridSize) {
+                ctx.beginPath(); ctx.moveTo(camX, gy); ctx.lineTo(camX + canvas.width, gy); ctx.stroke();
+            }
+
+            // Draw Team Bases (Corners)
+            const bases = [
+                { name: 'Red Base', x1: 0, y1: 0, color: 'rgba(229, 57, 53, 0.25)' },
+                { name: 'Blue Base', x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(30, 136, 229, 0.25)' },
+                { name: 'Green Base', x1: 0, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(67, 160, 71, 0.25)' },
+                { name: 'Yellow Base', x1: MAP_SIZE - ZONE_SIZE, y1: 0, color: 'rgba(251, 192, 45, 0.25)' }
+            ];
+            bases.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText(b.name, b.x1 + 30, b.y1 + 40);
+            });
+
+            // Draw World Blocks
+            for (let k in worldBlocks) {
+                const blk = worldBlocks[k];
+                const parts = k.split(',');
+                const bx = parseInt(parts[0]) * 40;
+                const by = parseInt(parts[1]) * 40;
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(bx, by, 40, 40);
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bx, by, 40, 40);
+            }
+
+            // Draw Dropped Loot
+            for (let lid in droppedLoot) {
+                const item = droppedLoot[lid];
+                ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#00e5ff';
+                ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+            }
+
+            // Draw Supply Crates
+            supplyCrates.forEach(crate => {
+                ctx.fillStyle = '#ab47bc';
+                ctx.fillRect(crate.x - 16, crate.y - 16, 32, 32);
+                ctx.strokeStyle = '#ffeb3b';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(crate.x - 16, crate.y - 16, 32, 32);
+            });
 
             // Draw Remote Players safely without drawing yourself
             for (let pid in remotePlayers) {
@@ -1845,18 +1904,30 @@
             mCtx.fillStyle = '#112218';
             mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
-            mCtx.fillStyle = playerColor;
-            mCtx.beginPath();
-            mCtx.arc(posX * scale, posY * scale, 4, 0, Math.PI * 2);
-            mCtx.fill();
+            // Draw Bases on Minimap
+            mCtx.fillStyle = 'rgba(229, 57, 53, 0.4)';
+            mCtx.fillRect(0, 0, ZONE_SIZE * scale, ZONE_SIZE * scale);
+            mCtx.fillStyle = 'rgba(30, 136, 229, 0.4)';
+            mCtx.fillRect((MAP_SIZE - ZONE_SIZE) * scale, (MAP_SIZE - ZONE_SIZE) * scale, ZONE_SIZE * scale, ZONE_SIZE * scale);
 
+            // Draw Teammates / Remote Players
             for (let pid in remotePlayers) {
+                if (peerInstance && pid === peerInstance.id) continue;
                 const rp = remotePlayers[pid];
-                mCtx.fillStyle = rp.color || '#fff';
+                mCtx.fillStyle = rp.color || '#e53935';
                 mCtx.beginPath();
-                mCtx.arc(rp.x * scale, rp.y * scale, 3, 0, Math.PI * 2);
+                mCtx.arc(rp.x * scale, rp.y * scale, 3.5, 0, Math.PI * 2);
                 mCtx.fill();
             }
+
+            // Draw Local Player on Minimap
+            mCtx.fillStyle = playerColor;
+            mCtx.beginPath();
+            mCtx.arc(posX * scale, posY * scale, 5, 0, Math.PI * 2);
+            mCtx.fill();
+            mCtx.strokeStyle = '#fff';
+            mCtx.lineWidth = 1;
+            mCtx.stroke();
         }
 
         function gameLoop() {
