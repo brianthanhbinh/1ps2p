@@ -1,114 +1,125 @@
-2D P2P Arena
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D P2P Arena</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #0b0b10; }
+        #arena-viewport { position: relative; width: 100vw; height: 100vh; background: #12121a; }
+        #canvas-main { display: block; width: 100%; height: 100%; }
+        #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* Lobby Menu */
+        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
+        #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
+        .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
+        .lobby-content { display: none; text-align: left; }
+        .lobby-content.active { display: block; }
+        #lobby-box input, #lobby-box button { width: 100%; margin: 7px 0; padding: 11px 14px; border: none; border-radius: 8px; font-family: inherit; font-size: 14px; }
+        #lobby-box input { background: #252533; color: #fff; border: 1px solid #444; text-align: center; outline: none; }
+        #lobby-box button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        #lobby-box button:hover { background: #45a049; }
+        #btn-bot-mode { background: #ff9800; }
+        #btn-bot-mode:hover { background: #fb8c00; }
+        #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
+        .peer-list-box { max-height: 180px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
+        .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(255,255,255,0.04); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
+        .peer-item button { width: auto; padding: 5px 12px; margin: 0; font-size: 12px; background: #2196f3; }
+        .peer-item button:hover { background: #1976d2; }
 
-    #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    
-    /* Lobby Menu */
-    #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
-    #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
-    .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-    .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
-    .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
-    .lobby-content { display: none; text-align: left; }
-    .lobby-content.active { display: block; }
-    #lobby-box input, #lobby-box button { width: 100%; margin: 7px 0; padding: 11px 14px; border: none; border-radius: 8px; font-family: inherit; font-size: 14px; }
-    #lobby-box input { background: #252533; color: #fff; border: 1px solid #444; text-align: center; outline: none; }
-    #lobby-box button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-    #lobby-box button:hover { background: #45a049; }
-    #btn-bot-mode { background: #ff9800; }
-    #btn-bot-mode:hover { background: #fb8c00; }
-    #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
-    .peer-list-box { max-height: 180px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
-    .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(255,255,255,0.04); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
-    .peer-item button { width: auto; padding: 5px 12px; margin: 0; font-size: 12px; background: #2196f3; }
-    .peer-item button:hover { background: #1976d2; }
+        /* Modal Overlay */
+        #modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 40; }
+        .modal-card { background: #181822; color: #fff; border: 2px solid #444; border-radius: 14px; width: 380px; padding: 26px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.95); }
+        .modal-card h3 { margin-bottom: 16px; color: #ffca28; font-size: 20px; }
+        .modal-card button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: opacity 0.2s; }
+        .modal-card button:hover { opacity: 0.9; }
 
-    /* Modal Overlay */
-    #modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 40; }
-    .modal-card { background: #181822; color: #fff; border: 2px solid #444; border-radius: 14px; width: 380px; padding: 26px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.95); }
-    .modal-card h3 { margin-bottom: 16px; color: #ffca28; font-size: 20px; }
-    .modal-card button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: opacity 0.2s; }
-    .modal-card button:hover { opacity: 0.9; }
+        .btn-team-red { background: #e53935; color: #fff; }
+        .btn-team-blue { background: #1e88e5; color: #fff; }
+        .btn-team-green { background: #43a047; color: #fff; }
+        .btn-team-yellow { background: #fbc02d; color: #000; }
+        .btn-team-ffa { background: #8e24aa; color: #fff; }
 
-    .btn-team-red { background: #e53935; color: #fff; }
-    .btn-team-blue { background: #1e88e5; color: #fff; }
-    .btn-team-green { background: #43a047; color: #fff; }
-    .btn-team-yellow { background: #fbc02d; color: #000; }
-    .btn-team-ffa { background: #8e24aa; color: #fff; }
+        /* In-Game HUD Elements */
+        #stats-hud { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; width: 230px; display: none; pointer-events: auto; }
+        .meter-box { background: rgba(0,0,0,0.65); padding: 5px; border-radius: 6px; border: 1px solid #444; }
+        .meter-header { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 3px; display: flex; justify-content: space-between; }
+        .meter-track { width: 100%; height: 12px; background: #222; border-radius: 3px; overflow: hidden; }
+        .meter-fill { height: 100%; transition: width 0.1s linear; }
+        #hp-bar-fill { background: #e53935; width: 100%; }
+        #stamina-bar-fill { background: #03a9f4; width: 100%; }
 
-    /* In-Game HUD Elements */
-    #stats-hud { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; width: 230px; display: none; pointer-events: auto; }
-    .meter-box { background: rgba(0,0,0,0.65); padding: 5px; border-radius: 6px; border: 1px solid #444; }
-    .meter-header { color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 3px; display: flex; justify-content: space-between; }
-    .meter-track { width: 100%; height: 12px; background: #222; border-radius: 3px; overflow: hidden; }
-    .meter-fill { height: 100%; transition: width 0.1s linear; }
-    #hp-bar-fill { background: #e53935; width: 100%; }
-    #stamina-bar-fill { background: #03a9f4; width: 100%; }
+        #wallet-badge { position: absolute; top: 80px; left: 16px; background: rgba(0,0,0,0.7); color: #ffd700; padding: 6px 14px; border-radius: 20px; border: 1px solid #ffca28; font-weight: bold; font-size: 14px; display: none; align-items: center; gap: 6px; pointer-events: auto; }
+        #shop-toggle-btn { position: absolute; top: 120px; left: 16px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        #shop-toggle-btn:hover { background: #f57c00; }
 
-    #wallet-badge { position: absolute; top: 80px; left: 16px; background: rgba(0,0,0,0.7); color: #ffd700; padding: 6px 14px; border-radius: 20px; border: 1px solid #ffca28; font-weight: bold; font-size: 14px; display: none; align-items: center; gap: 6px; pointer-events: auto; }
-    #shop-toggle-btn { position: absolute; top: 120px; left: 16px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-    #shop-toggle-btn:hover { background: #f57c00; }
+        /* Action Buttons Top Right */
+        #hud-actions-right { position: absolute; top: 16px; right: 190px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; align-items: flex-end; }
+        #share-link-btn, #share-team-link-btn, #leave-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; white-space: nowrap; }
+        #share-link-btn:hover { background: #1e88e5; }
+        #leave-btn { background: rgba(229,57,53,0.9); border-color: #ff5252; }
+        #leave-btn:hover { background: #e53935; }
+        #share-team-link-btn { background: rgba(233,30,99,0.9); border-color: #f48fb1; color: #ffeb3b; }
 
-    /* Action Buttons Top Right */
-    #hud-actions-right { position: absolute; top: 185px; right: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; }
-    #share-link-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
-    #share-link-btn:hover { background: #1e88e5; }
-    #leave-btn { background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
-    #leave-btn:hover { background: #e53935; }
+        /* Shop Panel (Unified Single List) */
+        #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
+        #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        .shop-content { max-height: 310px; overflow-y: auto; text-align: left; margin-bottom: 14px; }
+        .shop-item-card { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 9px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; font-size: 13px; }
+        .shop-item-card button { background: #4caf50; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .shop-item-card button:hover { background: #43a047; }
 
-    /* Shop Panel (Unified Single List) */
-    #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
-    #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
-    .shop-content { max-height: 310px; overflow-y: auto; text-align: left; margin-bottom: 14px; }
-    .shop-item-card { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 9px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; font-size: 13px; }
-    .shop-item-card button { background: #4caf50; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
-    .shop-item-card button:hover { background: #43a047; }
+        /* Minimap */
+        #minimap-box { position: absolute; top: 16px; right: 16px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 10px; overflow: hidden; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 6px 20px rgba(0,0,0,0.7); }
+        #canvas-minimap { width: 100%; height: 100%; display: block; }
 
-    /* Minimap */
-    #minimap-box { position: absolute; top: 16px; right: 16px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 10px; overflow: hidden; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 6px 20px rgba(0,0,0,0.7); }
-    #canvas-minimap { width: 100%; height: 100%; display: block; }
+        #airdrop-banner { position: absolute; top: 185px; left: 16px; background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; pointer-events: auto; z-index: 15; }
+        #airdrop-countdown { color: #ffca28; }
 
-    #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; }
-    #airdrop-countdown { color: #ffca28; }
+        #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
+        #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
-    #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
-    #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
+        /* Hotbar with Canvas Art Icons */
+        #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
+        .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
+        .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
+        .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
+        .hotbar-canvas { width: 34px; height: 34px; display: block; margin-top: 4px; }
 
-    /* Hotbar with Canvas Art Icons */
-    #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
-    .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
-    .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
-    .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
-    .hotbar-canvas { width: 34px; height: 34px; display: block; margin-top: 4px; }
+        /* Inventory Panel */
+        #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
+        #inventory-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        .inv-grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
+        .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; position: relative; }
+        .inventory-slot:hover { border-color: #ffca28; }
+        .inventory-slot span { position: absolute; top: 2px; left: 3px; font-size: 8px; color: #aaa; }
+        .inv-canvas { width: 26px; height: 26px; display: block; margin-top: 6px; }
 
-    /* Inventory Panel */
-    #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
-    #inventory-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
-    .inv-grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
-    .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; position: relative; }
-    .inventory-slot:hover { border-color: #ffca28; }
-    .inventory-slot span { position: absolute; top: 2px; left: 3px; font-size: 8px; color: #aaa; }
-    .inv-canvas { width: 26px; height: 26px; display: block; margin-top: 6px; }
+        /* Tab Scoreboard */
+        #scoreboard-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,14,20,0.94); border: 1px solid #444; border-radius: 12px; width: 380px; padding: 20px; color: #fff; display: none; pointer-events: none; z-index: 25; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        #scoreboard-panel h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
+        .sb-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.05); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
-    /* Tab Scoreboard */
-    #scoreboard-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,14,20,0.94); border: 1px solid #444; border-radius: 12px; width: 380px; padding: 20px; color: #fff; display: none; pointer-events: none; z-index: 25; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-    #scoreboard-panel h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
-    .sb-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.05); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
+        /* Coin Modal */
+        #coin-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.96); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 55; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
+        #coin-modal h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
+        #coin-modal input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; outline: none; }
 
-    /* Coin Modal */
-    #coin-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.96); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 55; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
-    #coin-modal h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
-    #coin-modal input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; outline: none; }
+        /* Chat Box */
+        #chat-box { position: absolute; bottom: 95px; left: 16px; width: 310px; pointer-events: auto; z-index: 20; display: flex; flex-direction: column; gap: 4px; }
+        #chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+        .chat-line { word-break: break-all; }
+        #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
-    /* Chat Box */
-    #chat-box { position: absolute; bottom: 95px; left: 16px; width: 310px; pointer-events: auto; z-index: 20; display: flex; flex-direction: column; gap: 4px; }
-    #chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
-    .chat-line { word-break: break-all; }
-    #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
-
-    #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
-</style>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
+        #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; z-index: 20; }
+    </style>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
 
 <div id="arena-viewport">
     <canvas id="canvas-main" width="1200" height="800"></canvas>
@@ -169,8 +180,10 @@
     </div>
 
     <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
+    <div id="self-destruct-banner">⚠️ Base Exited! Re-entry locked</div>
+    
     <div id="hud-actions-right">
-        <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
+        <button id="share-team-link-btn" onclick="copyDirectTeamLink()">🚩 Copy Team Link</button>
         <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
         <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
     </div>
@@ -484,7 +497,6 @@
         }
     }
 
-    // Draw procedural item art onto 2D canvas elements for inventory & hotbar
     function drawItemArtOnCanvas(canvasEl, itemType, subType) {
         if (!canvasEl) return;
         const cxt = canvasEl.getContext('2d');
@@ -568,9 +580,6 @@
         if (!gridContainer) return;
         let htmlStr = '';
         for (let i = 0; i < 32; i++) {
-            const item = backpackInventory[i];
-            let itemType = item ? item.type : '';
-            let subType = item ? item.subtype : '';
             htmlStr += `<div class="inventory-slot" onclick="clickInventorySlot(${i})"><span>${i+1}</span><canvas class="inv-canvas" id="inv-canvas-${i}" width="26" height="26"></canvas></div>`;
         }
         gridContainer.innerHTML = htmlStr;
@@ -863,7 +872,8 @@
         baseLockedOut = false;
         selfDestructCountdown = 0;
         if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
-        document.getElementById('self-destruct-banner').style.display = 'none';
+        const banner = document.getElementById('self-destruct-banner');
+        if (banner) banner.style.display = 'none';
         currentHp = Math.min(100, currentHp + 50);
         showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
     }
@@ -1409,7 +1419,7 @@
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
         }
 
-        // Draw Player Body (No hand-held item drawing clutter)
+        // Draw Player Body
         ctx.save();
         ctx.translate(posX, posY);
         ctx.fillStyle = playerColor;
@@ -1442,3 +1452,5 @@
 
     requestAnimationFrame(gameLoop);
 </script>
+</body>
+</html>
