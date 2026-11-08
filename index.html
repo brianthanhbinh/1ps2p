@@ -201,4 +201,955 @@
         </div>
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
-        <div id="self-destruct-banner">⚠️ Base Exited!
+        <div id="self-destruct-banner">⚠️ Base Exited! Re-entry locked (<span id="sd-countdown">30s</span>)</div>
+
+        <!-- Action Buttons Top Right (In-Match Only) -->
+        <div id="hud-actions-right">
+            <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
+            <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
+            <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
+        </div>
+
+        <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
+        <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | J: Hop In | H: Leave Vehicle</div>
+
+        <!-- Inventory Modal -->
+        <div id="inventory-panel">
+            <h3>🎒 BACKPACK INVENTORY (32 SLOTS)</h3>
+            <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click item to transfer to available hotbar slot.</p>
+            <div class="inv-grid-container" id="inv-grid"></div>
+            <button style="width:100%; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleInventoryPanel()">Close (E)</button>
+        </div>
+
+        <!-- Chat Feed & Input -->
+        <div id="chat-box">
+            <div id="chat-feed"></div>
+            <input type="text" id="chat-text-input" placeholder="Type chat message..." maxlength="120" />
+        </div>
+
+        <!-- Lobby Setup Panel -->
+        <div id="lobby-box">
+            <h1>2D P2P Arena</h1>
+            <div class="lobby-tabs">
+                <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('globals', this)">Global Servers</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Custom Peer</button>
+            </div>
+
+            <div id="lobby-tab-main" class="lobby-content active">
+                <input type="text" id="input-username" placeholder="Your Name" value="Combatant">
+                <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
+                <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
+                <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
+                <button id="btn-bot-mode" onclick="promptLocalPlayMode()" style="background:#ff9800;">🎮 Play Locally</button>
+            </div>
+
+            <div id="lobby-tab-globals" class="lobby-content">
+                <input type="text" id="input-username-global" placeholder="Your Name" value="Combatant">
+                <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers (Auto-Host / Auto-Migrate):</p>
+                <div class="peer-list-box">
+                    <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>4global</b> (4 Teams)</span><button onclick="joinGlobalServer('4global', '4team')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>2global</b> (2 Teams)</span><button onclick="joinGlobalServer('2global', '2team')">Join</button></div>
+                    <div class="peer-item"><span>🌐 <b>pvpglobal</b> (FFA PvP)</span><button onclick="joinGlobalServer('pvpglobal', 'ffa')">Join</button></div>
+                </div>
+            </div>
+
+            <div id="lobby-tab-peers" class="lobby-content">
+                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Discovered active online rooms:</p>
+                <div class="peer-list-box" id="peer-list-container">
+                    <div style="text-align:center; color:#777; font-size:11px; padding:20px;">Scanning for rooms...</div>
+                </div>
+                <button style="background:#2196f3;" onclick="scanAvailablePeers()">🔄 Refresh Peers</button>
+            </div>
+
+            <div id="net-status">Ready to Connect</div>
+        </div>
+
+        <!-- Generic Modal Screen -->
+        <div id="modal-screen">
+            <div class="modal-card">
+                <h3 id="modal-title">Select Setup</h3>
+                <div id="modal-options"></div>
+            </div>
+        </div>
+
+        <!-- Tab Scoreboard -->
+        <div id="scoreboard-panel">
+            <h3>BATTLEFIELD SCOREBOARD (TAB)</h3>
+            <div id="scoreboard-list"></div>
+        </div>
+
+        <!-- Hotbar Dock -->
+        <div id="hotbar-dock">
+            <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)"><span>1</span><b>Sword</b></div>
+            <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)"><span>2</span><b>Pickaxe</b></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)"><span>3</span><b>Block</b></div>
+            <div class="hotbar-slot" id="hslot-3" onclick="selectHotbarSlot(3)"><span>4</span><b id="gun0-label">Empty</b></div>
+            <div class="hotbar-slot" id="hslot-4" onclick="selectHotbarSlot(4)"><span>5</span><b id="gun1-label">Empty</b></div>
+            <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)"><span>6</span><b id="gun2-label">Empty</b></div>
+            <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)"><span>7</span><b id="grenade-label">Grenade</b></div>
+            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)"><span>8</span><b id="bandage-label">Bandage</b></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas-main');
+        const ctx = canvas.getContext('2d');
+        const mCanvas = document.getElementById('canvas-minimap');
+        const mCtx = mCanvas.getContext('2d');
+
+        const MAP_SIZE = 2600;
+        const RADIUS_PLAYER = 16;
+        const ZONE_SIZE = 500;
+
+        let inGameActive = false;
+        let isHosting = false;
+        let isPractice = false;
+        let peerInstance = null;
+        let myPeerId = '';
+        let myUsername = 'Combatant';
+        let roomCode = 'alpha';
+        let preselectedTeam = null; 
+        let currentMode = 'ffa';
+        let hostGameMode = 'ffa';
+        let playerTeam = 'FFA';
+        let playerColor = '#8e24aa';
+
+        let peerConnections = {};
+        let hostConnection = null;
+
+        let posX = MAP_SIZE / 2;
+        let posY = MAP_SIZE / 2;
+        let aimAngle = 0;
+        let currentHp = 100;
+        let currentStamina = 100;
+        let playerCoins = 100;
+        let activeRide = null;
+        let boardedVehicle = null;
+        let cameraScoped = false;
+
+        let baseLockedOut = false;
+        let selfDestructCountdown = 0;
+        let selfDestructTimerHandle = null;
+
+        let activeHotbar = 0;
+        let weaponBarSlots = [null, null, null];
+        let grenadesCount = 3;
+        let bandagesCount = 2;
+        let backpackInventory = new Array(32).fill(null);
+
+        let actionCdBuild = false;
+        let actionCdAttack = false;
+
+        let keyboardInput = {};
+        let mouseXCoord = 0;
+        let mouseYCoord = 0;
+
+        let remotePlayers = {};
+        let aiBots = [];
+        let worldBlocks = {};
+        let droppedLoot = {};
+        let supplyCrates = [];
+        let bulletsList = [];
+        let activeGrenades = [];
+        let activeVehiclesList = [];
+        let floatingParticles = [];
+
+        let airdropTimerSec = 30;
+        let airdropIntervalHandle = null;
+
+        const PEER_PREFIX = 'arena-v5-net-';
+        const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
+        let globalHostingInstances = {};
+
+        function formatPeerId(code) {
+            return PEER_PREFIX + code.trim().toLowerCase();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const parts = hash.split('%');
+                const room = parts[0] || 'alpha';
+                const teamReq = parts[1] ? parts[1].toLowerCase() : null;
+
+                document.getElementById('input-room').value = room;
+                
+                if (GLOBAL_ROOMS.includes(room)) {
+                    let mode = 'ffa';
+                    if (room === '4global') mode = '4team';
+                    else if (room === '2global') mode = '2team';
+                    
+                    setTimeout(() => {
+                        joinGlobalServer(room, mode);
+                    }, 300);
+                    return;
+                }
+                
+                const modal = document.getElementById('modal-screen');
+                const title = document.getElementById('modal-title');
+                const opts = document.getElementById('modal-options');
+                title.innerText = `Join Room: ${room.toUpperCase()}`;
+                opts.innerHTML = `
+                    <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Combatant" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
+                    <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
+                `;
+                modal.style.display = 'flex';
+            }
+        });
+
+        function executeDirectLinkJoin(room, teamReq) {
+            const nameInput = document.getElementById('direct-name-input');
+            if (nameInput) myUsername = nameInput.value.trim() || 'Combatant';
+            roomCode = room;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            isHosting = false;
+            isPractice = false;
+            document.getElementById('net-status').innerText = 'Connecting via Direct Link...';
+
+            if (peerInstance) peerInstance.destroy();
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connected = false;
+                conn.on('open', () => {
+                    connected = true;
+                    setupClientConnection(conn);
+                    if (teamReq) {
+                        setTimeout(() => {
+                            if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                            else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                            else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                            else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                            else assignTeamAndSpawn('FFA', '#8e24aa');
+                        }, 400);
+                    }
+                });
+
+                setTimeout(() => {
+                    if (!connected) {
+                        conn.close();
+                        peerInstance.destroy();
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            currentMode = '4team';
+                            document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                            if (teamReq) {
+                                if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                                else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                                else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                                else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                                else assignTeamAndSpawn('FFA', '#8e24aa');
+                            } else {
+                                promptTeamSelection();
+                            }
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
+        }
+
+        function switchLobbyTab(tabKey, btnElement) {
+            document.querySelectorAll('.lobby-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
+            if (targetContent) targetContent.classList.add('active');
+            if (tabKey === 'peers') scanAvailablePeers();
+        }
+
+        function joinGlobalServer(serverCode, gameMode) {
+            myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || 'Combatant';
+            roomCode = serverCode;
+            currentMode = gameMode;
+            hostGameMode = gameMode;
+
+            document.getElementById('net-status').innerText = `Connecting to ${serverCode}...`;
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(serverCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connectedToHost = false;
+                conn.on('open', () => {
+                    connectedToHost = true;
+                    isHosting = false;
+                    setupClientConnection(conn);
+                });
+
+                setTimeout(() => {
+                    if (!connectedToHost) {
+                        conn.close();
+                        peerInstance.destroy();
+                        
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            isPractice = false;
+                            document.getElementById('net-status').innerText = `Hosting Global Server: ${serverCode}`;
+                            promptTeamSelection();
+                        });
+                        peerInstance.on('error', () => {
+                            initJoinRoom();
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
+            peerInstance.on('error', () => {
+                initHostRoom();
+            });
+        }
+
+        function scanAvailablePeers() {
+            const container = document.getElementById('peer-list-container');
+            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Initializing Global Rooms...</div>`;
+
+            GLOBAL_ROOMS.forEach(gRoom => {
+                const gId = formatPeerId(gRoom);
+                if (!globalHostingInstances[gRoom]) {
+                    try {
+                        const p = new Peer(gId, { debug: 0 });
+                        p.on('open', () => {
+                            globalHostingInstances[gRoom] = p;
+                            p.on('connection', (conn) => {
+                                setupServerConnection(conn);
+                            });
+                        });
+                    } catch (e) {}
+                }
+            });
+
+            setTimeout(() => {
+                let html = '';
+                GLOBAL_ROOMS.forEach(code => {
+                    html += `<div class="peer-item"><span>🌐 Global: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                });
+
+                const tempPeer = new Peer({ debug: 0 });
+                tempPeer.on('open', () => {
+                    if (tempPeer.listAllPeers) {
+                        tempPeer.listAllPeers((peers) => {
+                            const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX) && !GLOBAL_ROOMS.some(g => formatPeerId(g) === p));
+                            arenaPeers.forEach(pid => {
+                                const code = pid.replace(PEER_PREFIX, '');
+                                html += `<div class="peer-item"><span>Room: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                            });
+                            container.innerHTML = html;
+                            tempPeer.destroy();
+                        });
+                    } else {
+                        container.innerHTML = html;
+                        tempPeer.destroy();
+                    }
+                });
+                tempPeer.on('error', () => {
+                    container.innerHTML = html;
+                });
+            }, 600);
+        }
+
+        function joinDiscoveredPeer(code) {
+            document.getElementById('input-room').value = code;
+            switchLobbyTab('main', document.querySelector('.lobby-tab'));
+            initJoinRoom();
+        }
+
+        function showUIInGame(active) {
+            document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
+            document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
+            document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
+            document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
+            document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
+            document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
+            if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
+        }
+
+        function copyToClipboardFallback(text) {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+        }
+
+        function copyDirectRoomLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const directUrl = `${baseUrl}#${roomCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🔗 Room link copied to clipboard! (${roomCode})`);
+        }
+
+        function copyDirectTeamLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const teamCode = playerTeam ? playerTeam.toLowerCase() : 'ffa';
+            const directUrl = `${baseUrl}#${roomCode}%${teamCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🚩 ${playerTeam} Team link copied to clipboard!`);
+        }
+
+        function switchShopTab(tabKey, btnElement) {
+            document.querySelectorAll('.shop-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`shop-tab-${tabKey}`);
+            if (targetContent) targetContent.classList.add('active');
+        }
+
+        function selectHotbarSlot(idx) {
+            activeHotbar = idx;
+            for (let i = 0; i <= 7; i++) {
+                const el = document.getElementById(`hslot-${i}`);
+                if (el) el.classList.toggle('selected', i === activeHotbar);
+            }
+        }
+
+        function refreshHotbarUI() {
+            document.getElementById('gun0-label').innerText = weaponBarSlots[0] ? weaponBarSlots[0].toUpperCase() : 'Empty';
+            document.getElementById('gun1-label').innerText = weaponBarSlots[1] ? weaponBarSlots[1].toUpperCase() : 'Empty';
+            document.getElementById('gun2-label').innerText = weaponBarSlots[2] ? weaponBarSlots[2].toUpperCase() : 'Empty';
+            document.getElementById('grenade-label').innerText = `Gren x${grenadesCount}`;
+            document.getElementById('bandage-label').innerText = `Band x${bandagesCount}`;
+        }
+
+        function toggleShopPanel() {
+            const panel = document.getElementById('shop-panel');
+            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            if (!panel) return;
+            const isOpen = panel.style.display === 'block';
+            panel.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) renderBackpackGrid();
+        }
+
+        function renderBackpackGrid() {
+            const gridContainer = document.getElementById('inv-grid');
+            if (!gridContainer) return;
+            let htmlStr = '';
+            for (let i = 0; i < 32; i++) {
+                const item = backpackInventory[i];
+                let label = item ? (item.subtype ? item.subtype.substring(0,4) : item.type) : '';
+                htmlStr += `<div class="inventory-slot" onclick="clickInventorySlot(${i})"><span>${i+1}</span><b style="font-size:9px;">${label}</b></div>`;
+            }
+            gridContainer.innerHTML = htmlStr;
+        }
+
+        function clickInventorySlot(idx) {
+            const item = backpackInventory[idx];
+            if (!item) return;
+            const emptyHotbarIdx = weaponBarSlots.findIndex(w => w === null);
+            if (emptyHotbarIdx !== -1 && item.type === 'gun') {
+                weaponBarSlots[emptyHotbarIdx] = item.subtype;
+                backpackInventory[idx] = null;
+                refreshHotbarUI();
+                renderBackpackGrid();
+            }
+        }
+
+        function pushToBackpack(itemObj) {
+            const emptyIdx = backpackInventory.findIndex(i => i === null);
+            if (emptyIdx !== -1) {
+                backpackInventory[emptyIdx] = itemObj;
+                return true;
+            }
+            return false;
+        }
+
+        function dropActiveItem() {
+            if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunIdx = activeHotbar - 3;
+                if (weaponBarSlots[gunIdx]) {
+                    spawnWorldLoot('gun', weaponBarSlots[gunIdx], posX + 30, posY + 30, 0);
+                    weaponBarSlots[gunIdx] = null;
+                    refreshHotbarUI();
+                }
+            } else if (activeHotbar === 6 && grenadesCount > 0) {
+                grenadesCount--;
+                spawnWorldLoot('grenade', null, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
+            } else if (activeHotbar === 7 && bandagesCount > 0) {
+                bandagesCount--;
+                spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
+            }
+        }
+
+        function buyStoreItem(itemType, subtypeName, price) {
+            if (playerCoins < price) {
+                showNotificationBox('Insufficient coins!');
+                return;
+            }
+            if (itemType === 'gun') {
+                const emptyIdx = weaponBarSlots.findIndex(g => g === null);
+                if (emptyIdx === -1) {
+                    if (!pushToBackpack({ type: 'gun', subtype: subtypeName })) {
+                        showNotificationBox('Hotbar and inventory are completely full!');
+                        return;
+                    }
+                } else {
+                    weaponBarSlots[emptyIdx] = subtypeName;
+                }
+            } else if (itemType === 'consumable') {
+                if (subtypeName === 'grenade') grenadesCount += 3;
+                if (subtypeName === 'bandage') bandagesCount += 2;
+                refreshHotbarUI();
+                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
+            } else if (itemType === 'vehicle') {
+                activeRide = subtypeName;
+                let capacity = 1;
+                if (subtypeName === 'car') capacity = 2;
+                if (subtypeName === 'tank') capacity = 3;
+                if (subtypeName === 'hovercraft') capacity = 2;
+                if (subtypeName === 'mech') capacity = 1;
+
+                const newVeh = {
+                    id: 'veh-' + Math.random().toString(36).substr(2, 9),
+                    type: subtypeName,
+                    x: posX + 40,
+                    y: posY + 40,
+                    team: playerTeam,
+                    color: playerColor,
+                    capacity: capacity,
+                    passengers: []
+                };
+                activeVehiclesList.push(newVeh);
+                showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
+            }
+            playerCoins -= price;
+            document.getElementById('coin-num').innerText = playerCoins;
+            refreshHotbarUI();
+        }
+
+        function showNotificationBox(msg) {
+            const statusEl = document.getElementById('room-notification');
+            if (statusEl) {
+                statusEl.innerText = msg;
+                setTimeout(() => { statusEl.innerText = ''; }, 3000);
+            }
+        }
+
+        function getTeamBaseRegion(teamName) {
+            if (teamName === 'Red') return { x1: 0, y1: 0, x2: ZONE_SIZE, y2: ZONE_SIZE };
+            if (teamName === 'Blue') return { x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, x2: MAP_SIZE, y2: MAP_SIZE };
+            if (teamName === 'Green') return { x1: 0, y1: MAP_SIZE - ZONE_SIZE, x2: ZONE_SIZE, y2: MAP_SIZE };
+            if (teamName === 'Yellow') return { x1: MAP_SIZE - ZONE_SIZE, y1: 0, x2: MAP_SIZE, y2: ZONE_SIZE };
+            return null;
+        }
+
+        function checkInsideBase(x, y, teamName) {
+            const b = getTeamBaseRegion(teamName);
+            if (!b) return false;
+            return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
+        }
+
+        function isEnemyTryingToEnterBase(x, y, myTeam) {
+            if (myTeam === 'FFA') return false;
+            const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
+            for (let t of teamNames) {
+                if (t !== myTeam) {
+                    if (checkInsideBase(x, y, t)) return true;
+                }
+            }
+            return false;
+        }
+
+        function initHostRoom() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Host';
+            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+            isHosting = true;
+            isPractice = false;
+
+            document.getElementById('net-status').innerText = 'Initializing Host Peer...';
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
+                promptGameModeSelection();
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Host Error: ${err.type}`;
+                if (err.type === 'unavailable-id') {
+                    showNotificationBox('Room ID already taken! Choose another code.');
+                }
+            });
+            peerInstance.on('connection', (conn) => {
+                setupServerConnection(conn);
+            });
+        }
+
+        function initJoinRoom() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
+            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+            isHosting = false;
+            isPractice = false;
+
+            document.getElementById('net-status').innerText = 'Connecting to Host...';
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                setupClientConnection(conn);
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
+                showNotificationBox('Could not connect to host room. Please check room code.');
+            });
+        }
+
+        function initPracticeMode() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
+            isHosting = false;
+            isPractice = true;
+            currentMode = '4team';
+            promptTeamSelection();
+        }
+
+        function promptLocalPlayMode() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Local Play Mode';
+            opts.innerHTML = `
+                <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP, 1-Hit Mine)</button>
+                <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectLocalMode(localMode) {
+            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
+            isHosting = false;
+            isPractice = (localMode === 'pvp');
+            currentMode = localMode === 'creative' ? 'creative' : '4team';
+            if (localMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
+        }
+
+        function promptGameModeSelection() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Game Mode';
+            opts.innerHTML = `
+                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
+                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
+                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Server (Inf Coins, 300 HP, 1-Hit Mine)</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectGameModeAndTeam(mode) {
+            currentMode = mode;
+            hostGameMode = mode;
+            if (mode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
+        }
+
+        function promptTeamSelection() {
+            if (preselectedTeam) {
+                assignTeamAndSpawn(preselectedTeam.name, preselectedTeam.color);
+                preselectedTeam = null;
+                return;
+            }
+
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Choose Your Team';
+            
+            const activeMode = isHosting ? currentMode : hostGameMode;
+
+            if (activeMode === 'ffa') {
+                opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA Neutral</button>`;
+            } else if (activeMode === '2team') {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                `;
+            } else {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                    <button class="btn-team-green" onclick="assignTeamAndSpawn('Green', '#43a047')">Green Team</button>
+                    <button class="btn-team-yellow" onclick="assignTeamAndSpawn('Yellow', '#fbc02d')">Yellow Team</button>
+                `;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function assignTeamAndSpawn(teamName, hexColor) {
+            playerTeam = teamName;
+            playerColor = hexColor;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+            } else {
+                currentHp = 100;
+            }
+
+            currentStamina = 100;
+            baseLockedOut = false;
+            inGameActive = true;
+            showUIInGame(true);
+
+            if (isPractice) {
+                spawnPracticeBots();
+            }
+
+            if (!isHosting && hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'client_join',
+                    username: myUsername,
+                    team: playerTeam,
+                    color: playerColor,
+                    x: posX,
+                    y: posY
+                });
+            }
+
+            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
+            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+        }
+
+        function executeSelfDestruct() {
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') return;
+            if (selfDestructCountdown > 0) return;
+            selfDestructCountdown = 30;
+            baseLockedOut = true;
+            showNotificationBox('Exited Base! Base re-entry locked for 30s or until enemy kill.');
+            const banner = document.getElementById('self-destruct-banner');
+            const cdSpan = document.getElementById('sd-countdown');
+            if (banner) banner.style.display = 'block';
+            if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            selfDestructTimerHandle = setInterval(() => {
+                selfDestructCountdown--;
+                if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+                if (selfDestructCountdown <= 0) {
+                    clearInterval(selfDestructTimerHandle);
+                    if (banner) banner.style.display = 'none';
+                    baseLockedOut = false;
+                    showNotificationBox('Base Re-entry unlocked!');
+                }
+            }, 1000);
+        }
+
+        function onEnemyEliminated() {
+            baseLockedOut = false;
+            selfDestructCountdown = 0;
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            const banner = document.getElementById('self-destruct-banner');
+            if (banner) banner.style.display = 'none';
+            currentHp = Math.min(100, currentHp + 50);
+            showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
+        }
+
+        function exitToLobby() {
+            inGameActive = false;
+            showUIInGame(false);
+            if (peerInstance) {
+                peerInstance.destroy();
+                peerInstance = null;
+            }
+            remotePlayers = {};
+            aiBots = [];
+            document.getElementById('net-status').innerText = 'Left room. Ready.';
+        }
+
+        function setupServerConnection(conn) {
+            peerConnections[conn.peer] = conn;
+            conn.on('open', () => {
+                conn.send({ 
+                    type: 'room_config', 
+                    mode: currentMode,
+                    blocks: worldBlocks,
+                    loot: droppedLoot,
+                    crates: supplyCrates,
+                    vehicles: activeVehiclesList
+                });
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'client_join') {
+                    remotePlayers[conn.peer] = {
+                        username: data.username,
+                        team: data.team,
+                        color: data.color,
+                        x: data.x,
+                        y: data.y,
+                        hp: 100,
+                        coins: 100
+                    };
+                    broadcastStateToClients();
+                } else if (data.type === 'player_update') {
+                    if (remotePlayers[conn.peer]) {
+                        remotePlayers[conn.peer].x = data.x;
+                        remotePlayers[conn.peer].y = data.y;
+                        remotePlayers[conn.peer].hp = data.hp;
+                        remotePlayers[conn.peer].coins = data.coins;
+                        remotePlayers[conn.peer].username = data.username;
+                        remotePlayers[conn.peer].team = data.team;
+                        remotePlayers[conn.peer].color = data.color;
+                    }
+                    broadcastStateToClients();
+                } else if (data.type === 'place_block') {
+                    worldBlocks[data.key] = data.block;
+                    broadcastStateToClients();
+                } else if (data.type === 'spawn_loot') {
+                    droppedLoot[data.id] = data.item;
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_loot') {
+                    delete droppedLoot[data.id];
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_crate') {
+                    supplyCrates.splice(data.index, 1);
+                    broadcastStateToClients();
+                } else if (data.type === 'update_vehicles') {
+                    activeVehiclesList = data.vehicles;
+                    broadcastStateToClients();
+                }
+            });
+            conn.on('close', () => {
+                delete peerConnections[conn.peer];
+                delete remotePlayers[conn.peer];
+            });
+        }
+
+        function setupClientConnection(conn) {
+            hostConnection = conn;
+            conn.on('open', () => {
+                document.getElementById('net-status').innerText = 'Connected to Host!';
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'room_config') {
+                    hostGameMode = data.mode || '4team';
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
+                    promptTeamSelection();
+                } else if (data.type === 'server_state') {
+                    if (data.players) {
+                        for (let pid in data.players) {
+                            if (peerInstance && pid !== peerInstance.id) {
+                                remotePlayers[pid] = data.players[pid];
+                            }
+                        }
+                    }
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
+                }
+            });
+            conn.on('close', () => {
+                showNotificationBox('Host disconnected! Migrating server host...');
+                if (!isHosting && roomCode) {
+                    isHosting = true;
+                    if (peerInstance) peerInstance.destroy();
+                    peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+                    peerInstance.on('open', () => {
+                        showNotificationBox('You are now the new room Host!');
+                        document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                        promptTeamSelection();
+                    });
+                    peerInstance.on('connection', (c) => {
+                        setupServerConnection(c);
+                    });
+                } else {
+                    showNotificationBox('Lost connection to host.');
+                }
+            });
+        }
+
+        function broadcastStateToClients() {
+            if (!isHosting) return;
+            let allPlayersState = {
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
+            };
+            for (let pid in remotePlayers) {
+                allPlayersState[pid] = remotePlayers[pid];
+            }
+            const packet = { 
+                type: 'server_state', 
+                players: allPlayersState,
+                blocks: worldBlocks,
+                loot: droppedLoot,
+                crates: supplyCrates,
+                vehicles: activeVehiclesList
+            };
+            for (let pid in peerConnections) {
+                if (peerConnections[pid].open) {
+                    peerConnections[pid].send(packet);
+                }
+            }
+        }
+
+        function spawnPracticeBots() {
+            aiBots = [];
+            for (let i = 0; i < 4; i++) {
+                aiBots.push({
+                    id: 'bot-' + i,
+                    username: 'Bot ' + (i + 1),
+                    team: i % 2 === 0 ? 'Blue' : 'Red',
+                    color: i % 2 === 0 ? '#1e88e5' : '#e53935',
+                    x: Math.random() * (MAP_SIZE - 400) + 200,
+                    y: Math.random() * (MAP_SIZE - 400) + 200,
+                    hp: 100,
+                    radius: RADIUS_PLAYER,
+                    vx: 0,
+                    vy: 0
+                });
+            }
+        }
+
+        function triggerAirdropSpawn() {
+            const newCrate = {
+                x: Math.random() * (MAP_SIZE - 600) + 300,
+                y: Math.random() * (MAP_SIZE - 600) + 300,
+                loot: '
