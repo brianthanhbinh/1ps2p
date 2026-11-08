@@ -427,10 +427,24 @@
         function loadTrackedImage(url, fallbackText) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
+            
+            // Log missing or attempted asset request immediately to F12 Console
+            if (!url || url.trim() === '') {
+                console.error(`[Missing PNG Asset Error] Asset URL is empty or undefined for "${fallbackText}". Using pink checkerboard placeholder.`);
+                const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
+                img.src = placeholderCanvas.toDataURL();
+                return img;
+            }
+
+            console.log(`[Asset Loader] Loading PNG asset: "${url}" (${fallbackText})`);
             img.src = url;
+            
+            img.onload = () => {
+                console.log(`[Asset Success] Successfully loaded PNG asset: "${url}"`);
+            };
+
             img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] Failed to load image asset: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
-                // Fallback to placeholder data URL
+                console.error(`[Missing PNG Asset Error] Failed to load PNG image asset from URL: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
             };
@@ -444,29 +458,16 @@
 
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
-            if (!urlInput) return;
+            if (!urlInput) {
+                console.error(`[Missing PNG Asset Error] Custom skin URL input was left blank.`);
+                showNotificationBox('⚠️ Please enter a valid PNG image URL!');
+                return;
+            }
             
-            console.log(`[Asset Loader] Attempting to load skin from: ${urlInput}`);
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = urlInput;
-            
-            img.onload = () => {
-                customPlayerSkinImg = img;
-                showNotificationBox('Successfully loaded custom player skin PNG!');
-                toggleSkinModal();
-            };
-            img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] Failed to load custom skin URL: "${urlInput}". Asset missing or invalid URL. Using placeholder fallback.`);
-                showNotificationBox('⚠️ Failed to load PNG URL! Logged to F12 Console.');
-                
-                // Assign placeholder canvas as image source
-                const phCanvas = createPlaceholderCanvas(32, 32, 'SKIN');
-                const phImg = new Image();
-                phImg.src = phCanvas.toDataURL();
-                customPlayerSkinImg = phImg;
-                toggleSkinModal();
-            };
+            // Use tracked asset loader to log missing or failed custom skins
+            customPlayerSkinImg = loadTrackedImage(urlInput, 'CUSTOM SKIN');
+            showNotificationBox('Attempting to load custom player skin PNG (check F12 Console)...');
+            toggleSkinModal();
         }
 
         // Procedural Distinct Sprite Art for Every Item / Weapon / Tool
