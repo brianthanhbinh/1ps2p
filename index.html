@@ -182,6 +182,7 @@
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Spike Trap (+2)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -362,6 +363,7 @@
         let weaponBarSlots = [null, null, null];
         let grenadesCount = 3;
         let bandagesCount = 2;
+        let trapsCount = 2;
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10;
@@ -379,6 +381,7 @@
         let remotePlayers = {};
         let aiBots = [];
         let worldBlocks = {};
+        let activeTraps = {};
         let droppedLoot = {};
         let supplyCrates = [];
         let bulletsList = [];
@@ -426,13 +429,13 @@
 
         // Process Image to Remove White Background and Replace Pure Red (#FF0000) with Team Color
         function processImageTransparencyAndTeamColor(imgElement, teamHexColor) {
-            try {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = imgElement.naturalWidth || 32;
-                tempCanvas.height = imgElement.naturalHeight || 32;
-                const tCtx = tempCanvas.getContext('2d');
-                tCtx.drawImage(imgElement, 0, 0);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgElement.naturalWidth || 32;
+            tempCanvas.height = imgElement.naturalHeight || 32;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(imgElement, 0, 0);
 
+            try {
                 const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                 const data = imgData.data;
 
@@ -447,9 +450,8 @@
                     const r = data[i], g = data[i + 1], b = data[i + 2];
 
                     if (r >= 240 && g >= 240 && b >= 240) {
-                        data[i + 3] = 0; // Transparent
-                    }
-                    else if (r > 220 && g < 35 && b < 35) {
+                        data[i + 3] = 0; // Transparent background
+                    } else if (r > 220 && g < 35 && b < 35) {
                         data[i] = teamR;
                         data[i + 1] = teamG;
                         data[i + 2] = teamB;
@@ -464,42 +466,41 @@
             }
         }
 
-        // GitHub Directory PNG Scanner & Safe Fallback Loader
-        function loadTrackedImage(url, fallbackText) {
+        function loadTrackedImage(url, fallbackText, registryKey) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             if (!url || url.trim() === '') {
-                const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
-                img.src = placeholderCanvas.toDataURL();
+                const pc = createPlaceholderCanvas(32, 32, fallbackText);
+                img.src = pc.toDataURL();
+                if (registryKey) assetRegistry[registryKey] = img;
                 return img;
             }
 
             img.onload = () => {
                 const processed = processImageTransparencyAndTeamColor(img, playerColor);
-                img.src = processed.src;
+                if (registryKey) assetRegistry[registryKey] = processed;
             };
 
             img.onerror = () => {
-                // Silently fallback to generated canvas texture to prevent console clutter
-                const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
-                img.src = placeholderCanvas.toDataURL();
+                const pc = createPlaceholderCanvas(32, 32, fallbackText);
+                img.src = pc.toDataURL();
+                if (registryKey) assetRegistry[registryKey] = img;
             };
 
             img.src = url;
+            if (registryKey) assetRegistry[registryKey] = img;
             return img;
         }
 
-        const requiredPngs = [
-            'skin.png', 'sword.png', 'pickaxe.png', 'block.png', 'grenade.png', 'bandage.png',
-            'pistol.png', 'smg.png', 'shotgun.png', 'sniper.png', 'rocket.png', 'minigun.png',
-            'laser.png', 'plasma.png', 'flame.png', 'bike.png', 'car.png', 'tank.png',
-            'hovercraft.png', 'mech.png', 'coin.png', 'crate.png', 'bullet.png'
+        // Preload standard game PNG assets with fallbacks
+        const assetKeysList = [
+            'skin', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
+            'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
+            'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate'
         ];
-
-        requiredPngs.forEach(pngFilename => {
-            const baseName = pngFilename.split('.')[0];
-            assetRegistry[baseName] = loadTrackedImage(pngFilename, baseName);
+        assetKeysList.forEach(key => {
+            loadTrackedImage(`${key}.png`, key.toUpperCase(), key);
         });
 
         function getTeamSpawnCoords(teamName) {
@@ -515,46 +516,31 @@
             const cxt = canvasEl.getContext('2d');
             cxt.clearRect(0, 0, 34, 34);
 
-            cxt.save();
-            cxt.translate(17, 17);
+            const lookupKey = itemType === 'gun' ? subType : itemType;
+            const imgAsset = assetRegistry[lookupKey];
 
-            if (itemType === 'sword') {
-                cxt.fillStyle = '#b0bec5'; cxt.fillRect(-2, -12, 4, 18);
-                cxt.fillStyle = '#78909c'; cxt.fillRect(-1, -14, 2, 4);
-                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-5, 6, 10, 3);
-                cxt.fillStyle = '#d7ccc8'; cxt.fillRect(-2, 9, 4, 5);
-            } else if (itemType === 'pickaxe') {
-                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-1.5, -4, 3, 16);
-                cxt.fillStyle = '#37474f'; cxt.fillRect(-11, -10, 22, 6);
-                cxt.fillStyle = '#cfd8dc'; cxt.fillRect(-11, -10, 8, 3);
-            } else if (itemType === 'block') {
-                cxt.fillStyle = '#795548'; cxt.fillRect(-12, -12, 24, 24);
-                cxt.strokeStyle = '#3e2723'; cxt.lineWidth = 2; cxt.strokeRect(-12, -12, 24, 24);
-                cxt.fillStyle = '#5d4037'; cxt.fillRect(-8, -8, 8, 8); cxt.fillRect(2, 2, 8, 8);
-            } else if (itemType === 'grenade') {
-                cxt.fillStyle = '#388e3c'; cxt.beginPath(); cxt.arc(0, 2, 9, 0, Math.PI * 2); cxt.fill();
-                cxt.fillStyle = '#212121'; cxt.fillRect(-2, -9, 4, 5);
-                cxt.fillStyle = '#ffeb3b'; cxt.fillRect(-1, -11, 2, 3);
-            } else if (itemType === 'bandage') {
-                cxt.fillStyle = '#ffffff'; cxt.fillRect(-12, -8, 24, 16);
-                cxt.strokeStyle = '#b0bec5'; cxt.lineWidth = 1; cxt.strokeRect(-12, -8, 24, 16);
-                cxt.fillStyle = '#e53935'; cxt.fillRect(-3, -7, 6, 14); cxt.fillRect(-7, -3, 14, 6);
-            } else if (itemType === 'gun') {
-                if (subType === 'pistol') {
-                    cxt.fillStyle = '#455a64'; cxt.fillRect(-10, -2, 14, 6);
-                } else if (subType === 'smg') {
-                    cxt.fillStyle = '#263238'; cxt.fillRect(-12, -3, 20, 6);
-                } else if (subType === 'shotgun') {
-                    cxt.fillStyle = '#5d4037'; cxt.fillRect(-14, -2, 10, 6);
-                } else if (subType === 'sniper') {
-                    cxt.fillStyle = '#4e342e'; cxt.fillRect(-14, -2, 12, 6);
-                } else if (subType === 'rocket') {
-                    cxt.fillStyle = '#33691e'; cxt.fillRect(-14, -5, 26, 10);
+            if (imgAsset && imgAsset.complete && imgAsset.naturalWidth > 0 && !imgAsset.src.includes('data:image')) {
+                cxt.drawImage(imgAsset, 2, 2, 30, 30);
+            } else if (imgAsset && imgAsset.complete && imgAsset.naturalWidth > 0) {
+                cxt.drawImage(imgAsset, 2, 2, 30, 30);
+            } else {
+                cxt.save();
+                cxt.translate(17, 17);
+                if (itemType === 'sword') {
+                    cxt.fillStyle = '#b0bec5'; cxt.fillRect(-2, -12, 4, 18);
+                } else if (itemType === 'pickaxe') {
+                    cxt.fillStyle = '#8d6e63'; cxt.fillRect(-1.5, -4, 3, 16);
+                } else if (itemType === 'block') {
+                    cxt.fillStyle = '#795548'; cxt.fillRect(-12, -12, 24, 24);
+                } else if (itemType === 'trap') {
+                    cxt.fillStyle = '#607d8b'; cxt.beginPath(); cxt.arc(0, 0, 10, 0, Math.PI * 2); cxt.fill();
+                } else if (itemType === 'bandage') {
+                    cxt.fillStyle = '#ffffff'; cxt.fillRect(-12, -8, 24, 16);
                 } else {
-                    cxt.fillStyle = '#37474f'; cxt.fillRect(-10, -3, 20, 6);
+                    cxt.fillStyle = '#455a64'; cxt.fillRect(-10, -3, 20, 6);
                 }
+                cxt.restore();
             }
-            cxt.restore();
         }
 
         function refreshHotbarUI() {
@@ -593,7 +579,7 @@
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
             if (!urlInput) return;
-            customPlayerSkinImg = loadTrackedImage(urlInput, 'Custom Skin');
+            customPlayerSkinImg = loadTrackedImage(urlInput, 'Custom Skin', 'skin');
             showNotificationBox('Loaded custom player skin!');
             toggleSkinModal();
         }
@@ -765,27 +751,7 @@
                 GLOBAL_ROOMS.forEach(code => {
                     html += `<div class="peer-item"><span>🌐 Global: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
                 });
-
-                const tempPeer = new Peer({ debug: 0 });
-                tempPeer.on('open', () => {
-                    if (tempPeer.listAllPeers) {
-                        tempPeer.listAllPeers((peers) => {
-                            const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX) && !GLOBAL_ROOMS.some(g => formatPeerId(g) === p));
-                            arenaPeers.forEach(pid => {
-                                const code = pid.replace(PEER_PREFIX, '');
-                                html += `<div class="peer-item"><span>Room: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
-                            });
-                            container.innerHTML = html;
-                            tempPeer.destroy();
-                        });
-                    } else {
-                        container.innerHTML = html;
-                        tempPeer.destroy();
-                    }
-                });
-                tempPeer.on('error', () => {
-                    container.innerHTML = html;
-                });
+                container.innerHTML = html;
             }, 600);
         }
 
@@ -974,6 +940,9 @@
                 if (subtypeName === 'bandage') bandagesCount += 2;
                 refreshHotbarUI();
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
+            } else if (itemType === 'trap') {
+                trapsCount += 2;
+                showNotificationBox('Purchased Spike Traps (+2)!');
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
@@ -1274,6 +1243,7 @@
                     type: 'room_config', 
                     mode: currentMode,
                     blocks: worldBlocks,
+                    traps: activeTraps,
                     loot: droppedLoot,
                     crates: supplyCrates,
                     vehicles: activeVehiclesList
@@ -1306,6 +1276,9 @@
                 } else if (data.type === 'place_block') {
                     worldBlocks[data.key] = data.block;
                     broadcastStateToClients();
+                } else if (data.type === 'place_trap') {
+                    activeTraps[data.key] = data.trap;
+                    broadcastStateToClients();
                 } else if (data.type === 'spawn_loot') {
                     droppedLoot[data.id] = data.item;
                     broadcastStateToClients();
@@ -1335,6 +1308,7 @@
                 if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
                     if (data.blocks) worldBlocks = data.blocks;
+                    if (data.traps) activeTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
@@ -1348,6 +1322,7 @@
                         }
                     }
                     if (data.blocks) worldBlocks = data.blocks;
+                    if (data.traps) activeTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
@@ -1385,6 +1360,7 @@
                 type: 'server_state', 
                 players: allPlayersState,
                 blocks: worldBlocks,
+                traps: activeTraps,
                 loot: droppedLoot,
                 crates: supplyCrates,
                 vehicles: activeVehiclesList
@@ -1414,9 +1390,7 @@
                     x: spawn.x,
                     y: spawn.y,
                     hp: 100,
-                    radius: RADIUS_PLAYER,
-                    vx: 0,
-                    vy: 0
+                    radius: RADIUS_PLAYER
                 });
             }
         }
@@ -1676,10 +1650,10 @@
                 return;
             }
 
-            if (activeHotbar === 0 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
+            const targetWorldX = posX + (clickX - canvas.width/2);
+            const targetWorldY = posY + (clickY - canvas.height/2);
 
+            if (activeHotbar === 0 && !actionCdAttack) {
                 if (isPractice) {
                     aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
@@ -1694,9 +1668,6 @@
             }
 
             else if (activeHotbar === 1 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
                 for (let k in worldBlocks) {
                     const blk = worldBlocks[k];
                     const parts = k.split(',');
@@ -1731,9 +1702,7 @@
             }
 
             else if (activeHotbar === 2 && !actionCdBuild) {
-                const targetX = posX + (clickX - canvas.width/2);
-                const targetY = posY + (clickY - canvas.height/2);
-                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+                const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
                 worldBlocks[bKey] = newBlock;
@@ -1756,8 +1725,6 @@
                 grenadesCount--;
                 refreshHotbarUI();
 
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
                 const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
                 const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
                 const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
@@ -1840,6 +1807,24 @@
             triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
         });
 
+        // Strict Hitbox collision check against world blocks
+        function checkCollisionWithBlocks(x, y, radius) {
+            for (let k in worldBlocks) {
+                const parts = k.split(',');
+                const bx = parseInt(parts[0]) * 40;
+                const by = parseInt(parts[1]) * 40;
+
+                const closestX = Math.max(bx, Math.min(x, bx + 40));
+                const closestY = Math.max(by, Math.min(y, by + 40));
+
+                const dist = Math.hypot(x - closestX, y - closestY);
+                if (dist < radius) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function updateGameLogic() {
             if (!inGameActive) return;
 
@@ -1899,22 +1884,25 @@
                 nextY = posY;
             }
 
-            const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
+            // Check obstacle collisions
+            if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER)) posX = nextX;
+            if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER)) posY = nextY;
+
+            // Check trap collision
+            for (let tk in activeTraps) {
+                const tr = activeTraps[tk];
+                if (tr && tr.team !== playerTeam && Math.hypot(posX - tr.x, posY - tr.y) < 25) {
+                    currentHp -= 20;
+                    delete activeTraps[tk];
+                    showNotificationBox('⚠️ Triggered Spike Trap! (-20 HP)');
+                }
+            }
+
+            const currentlyInBase = checkInsideBase(posX, posY, playerTeam);
             const wasInBase = checkInsideBase(posX, posY, playerTeam);
 
             if (wasInBase && !currentlyInBase && !baseLockedOut) {
                 executeSelfDestruct();
-            }
-
-            if (baseLockedOut && currentlyInBase) {
-                showNotificationBox('Base re-entry locked! Wait timer or kill an enemy.');
-            } else {
-                posX = nextX;
-                posY = nextY;
-                if (boardedVehicle) {
-                    boardedVehicle.x = posX;
-                    boardedVehicle.y = posY;
-                }
             }
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
@@ -2124,17 +2112,11 @@
                 const parts = k.split(',');
                 const bx = parseInt(parts[0]) * 40;
                 const by = parseInt(parts[1]) * 40;
-                
-                const blockPng = assetRegistry['block'];
-                if (blockPng && blockPng.complete && blockPng.naturalWidth > 0) {
-                    ctx.drawImage(blockPng, bx, by, 40, 40);
-                } else {
-                    ctx.fillStyle = '#795548';
-                    ctx.fillRect(bx, by, 40, 40);
-                    ctx.strokeStyle = '#3e2723';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(bx, by, 40, 40);
-                }
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(bx, by, 40, 40);
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bx, by, 40, 40);
 
                 if (blk.hp < 100) {
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -2142,6 +2124,17 @@
                     ctx.fillStyle = '#4caf50';
                     ctx.fillRect(bx, by - 8, (Math.max(0, blk.hp) / 100) * 40, 5);
                 }
+            }
+
+            for (let tk in activeTraps) {
+                const tr = activeTraps[tk];
+                ctx.fillStyle = '#b71c1c';
+                ctx.beginPath();
+                ctx.arc(tr.x, tr.y, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffeb3b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
 
             for (let lid in droppedLoot) {
@@ -2313,8 +2306,13 @@
             });
 
             bulletsList.forEach(b => {
-                const bulletPng = assetRegistry['bullet'];
-                if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0) {
+                const bulletPng = assetRegistry[b.type === 'flame' ? 'flame' : 'bullet'];
+                if (b.type === 'flame') {
+                    ctx.fillStyle = Math.random() > 0.5 ? '#ff5722' : '#ffeb3b';
+                    ctx.beginPath();
+                    ctx.arc(b.x + (Math.random() - 0.5) * 8, b.y + (Math.random() - 0.5) * 8, 8 + Math.random() * 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0 && !bulletPng.src.includes('data:image')) {
                     ctx.drawImage(bulletPng, b.x - 6, b.y - 6, 12, 12);
                 } else {
                     ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
@@ -2362,8 +2360,21 @@
             mCtx.stroke();
         }
 
-        function gameLoop() {
-            updateGameLogic();
+        // Optimized 60 FPS Fixed Time-step Game Loop
+        let lastTime = performance.now();
+        let accumulator = 0;
+        const timeStep = 1000 / 60;
+
+        function gameLoop(timestamp) {
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            accumulator += dt;
+
+            while (accumulator >= timeStep) {
+                updateGameLogic();
+                accumulator -= timeStep;
+            }
+
             renderGameScene();
             renderMinimapScene();
             requestAnimationFrame(gameLoop);
