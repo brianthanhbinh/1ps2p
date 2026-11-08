@@ -496,7 +496,8 @@
         // Preload standard game PNG assets with fallbacks
         const assetKeysList = [
             'skin', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
-            'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
+            'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 
+            'bullet', 'rocket_projectile', 'laser_projectile', 'plasma_projectile',
             'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate'
         ];
         assetKeysList.forEach(key => {
@@ -2312,7 +2313,7 @@
                     ctx.beginPath();
                     ctx.arc(b.x + (Math.random() - 0.5) * 8, b.y + (Math.random() - 0.5) * 8, 8 + Math.random() * 6, 0, Math.PI * 2);
                     ctx.fill();
-                } else if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0 && !bulletPng.src.includes('data:image')) {
+                } else if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0) {
                     ctx.drawImage(bulletPng, b.x - 6, b.y - 6, 12, 12);
                 } else {
                     ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
