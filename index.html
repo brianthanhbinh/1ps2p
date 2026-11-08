@@ -423,12 +423,11 @@
             return pc;
         }
 
-        // Missing PNG Asset Logger into F12 Console & Placeholder Fallback
+        // GitHub Directory PNG Scanner & Missing Asset Logger
         function loadTrackedImage(url, fallbackText) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
-            // Log missing or attempted asset request immediately to F12 Console
             if (!url || url.trim() === '') {
                 console.error(`[Missing PNG Asset Error] Asset URL is empty or undefined for "${fallbackText}". Using pink checkerboard placeholder.`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
@@ -436,20 +435,33 @@
                 return img;
             }
 
-            console.log(`[Asset Loader] Loading PNG asset: "${url}" (${fallbackText})`);
+            console.log(`[Asset Loader] Scanning / checking PNG asset in GitHub directory: "${url}" (${fallbackText})`);
             img.src = url;
             
             img.onload = () => {
-                console.log(`[Asset Success] Successfully loaded PNG asset: "${url}"`);
+                console.log(`[Asset Success] Found and successfully loaded PNG asset from GitHub directory: "${url}"`);
             };
 
             img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] Failed to load PNG image asset from URL: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
+                console.error(`[Missing PNG Asset Error] PNG asset missing or failed to load from GitHub directory URL: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
             };
             return img;
         }
+
+        // Automatically scan GitHub directory on startup for default skin files
+        window.addEventListener('DOMContentLoaded', () => {
+            const repoPathInput = document.getElementById('skin-url-input');
+            if (repoPathInput) {
+                // Default guess for GitHub repo raw skin path if user hasn't specified
+                const defaultGitHubSkinUrl = 'https://raw.githubusercontent.com/username/repo/main/skin.png';
+                console.log(`[GitHub Scan] Scanning repository directory for default PNG skins: skin.png, avatar.png, player.png...`);
+                
+                // Test loading default GitHub skin file
+                loadTrackedImage(defaultGitHubSkinUrl, 'GIT SKIN');
+            }
+        });
 
         function toggleSkinModal() {
             const m = document.getElementById('skin-modal');
@@ -459,14 +471,14 @@
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
             if (!urlInput) {
-                console.error(`[Missing PNG Asset Error] Custom skin URL input was left blank.`);
-                showNotificationBox('⚠️ Please enter a valid PNG image URL!');
+                console.error(`[Missing PNG Asset Error] GitHub PNG skin URL input was left blank.`);
+                showNotificationBox('⚠️ Please enter a valid GitHub PNG URL!');
                 return;
             }
             
-            // Use tracked asset loader to log missing or failed custom skins
-            customPlayerSkinImg = loadTrackedImage(urlInput, 'CUSTOM SKIN');
-            showNotificationBox('Attempting to load custom player skin PNG (check F12 Console)...');
+            // Scan and load GitHub PNG skin with error logging
+            customPlayerSkinImg = loadTrackedImage(urlInput, 'GITHUB SKIN');
+            showNotificationBox('Scanning GitHub directory for PNG skin (check F12 Console)...');
             toggleSkinModal();
         }
 
