@@ -403,7 +403,6 @@
             pc.height = height;
             const pctx = pc.getContext('2d');
             
-            // Draw pink checkerboard
             const size = 6;
             for (let x = 0; x < width; x += size) {
                 for (let y = 0; y < height; y += size) {
@@ -411,7 +410,6 @@
                     pctx.fillRect(x, y, size, size);
                 }
             }
-            // Draw border & text
             pctx.strokeStyle = '#ffff00';
             pctx.lineWidth = 2;
             pctx.strokeRect(0, 0, width, height);
@@ -424,12 +422,14 @@
         }
 
         // GitHub Directory PNG Scanner & Missing Asset Logger
-        function loadTrackedImage(url, fallbackText) {
+        function loadTrackedImage(url, fallbackText, isOptionalScan = false) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             if (!url || url.trim() === '') {
-                console.error(`[Missing PNG Asset Error] Asset URL is empty or undefined for "${fallbackText}". Using pink checkerboard placeholder.`);
+                if (!isOptionalScan) {
+                    console.error(`[Missing PNG Asset Error] Asset URL is empty or undefined for "${fallbackText}". Using pink checkerboard placeholder.`);
+                }
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
                 return img;
@@ -443,24 +443,23 @@
             };
 
             img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] PNG asset missing or failed to load from GitHub directory URL: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
-                const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
-                img.src = placeholderCanvas.toDataURL();
+                if (isOptionalScan) {
+                    console.log(`[GitHub Directory Scan] Optional scan asset not present at "${url}". Skipping placeholder fallback.`);
+                } else {
+                    console.error(`[Missing PNG Asset Error] PNG asset missing or failed to load from GitHub directory URL: "${url}". Replaced with pink checkerboard placeholder (${fallbackText}).`);
+                    const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
+                    img.src = placeholderCanvas.toDataURL();
+                }
             };
             return img;
         }
 
-        // Automatically scan GitHub directory on startup for default skin files
+        // Scan GitHub directory on startup for default skin files
         window.addEventListener('DOMContentLoaded', () => {
-            const repoPathInput = document.getElementById('skin-url-input');
-            if (repoPathInput) {
-                // Default guess for GitHub repo raw skin path if user hasn't specified
-                const defaultGitHubSkinUrl = 'https://raw.githubusercontent.com/username/repo/main/skin.png';
-                console.log(`[GitHub Scan] Scanning repository directory for default PNG skins: skin.png, avatar.png, player.png...`);
-                
-                // Test loading default GitHub skin file
-                loadTrackedImage(defaultGitHubSkinUrl, 'GIT SKIN');
-            }
+            const defaultGitHubSkinUrl = 'skin.png';
+            console.log(`[GitHub Scan] Scanning repository directory for default PNG skins: skin.png, avatar.png, player.png...`);
+            loadTrackedImage(defaultGitHubSkinUrl, 'GIT SKIN', true);
+            refreshHotbarUI();
         });
 
         function toggleSkinModal() {
@@ -470,94 +469,84 @@
 
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
-            if (!urlInput) {
-                console.error(`[Missing PNG Asset Error] GitHub PNG skin URL input was left blank.`);
-                showNotificationBox('⚠️ Please enter a valid GitHub PNG URL!');
-                return;
-            }
-            
-            // Scan and load GitHub PNG skin with error logging
-            customPlayerSkinImg = loadTrackedImage(urlInput, 'GITHUB SKIN');
-            showNotificationBox('Scanning GitHub directory for PNG skin (check F12 Console)...');
+            if (!urlInput) return;
+            customPlayerSkinImg = loadTrackedImage(urlInput, 'CUSTOM SKIN', false);
+            showNotificationBox('Loaded custom player skin PNG request!');
             toggleSkinModal();
         }
 
         // Procedural Distinct Sprite Art for Every Item / Weapon / Tool
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
             if (!canvasEl) return;
-            const ctxRef = canvasEl.getContext('2d');
-            if (!ctxRef) {
-                console.error(`[Canvas Error] Could not retrieve 2d context for canvas element:`, canvasEl);
-                return;
-            }
-            ctxRef.clearRect(0, 0, 34, 34);
+            const cxt = canvasEl.getContext('2d');
+            cxt.clearRect(0, 0, 34, 34);
 
-            ctxRef.save();
-            ctxRef.translate(17, 17);
+            cxt.save();
+            cxt.translate(17, 17);
 
             if (itemType === 'sword') {
-                ctxRef.fillStyle = '#b0bec5'; ctxRef.fillRect(-2, -12, 4, 18);
-                ctxRef.fillStyle = '#78909c'; ctxRef.fillRect(-1, -14, 2, 4);
-                ctxRef.fillStyle = '#8d6e63'; ctxRef.fillRect(-5, 6, 10, 3);
-                ctxRef.fillStyle = '#d7ccc8'; ctxRef.fillRect(-2, 9, 4, 5);
+                cxt.fillStyle = '#b0bec5'; cxt.fillRect(-2, -12, 4, 18);
+                cxt.fillStyle = '#78909c'; cxt.fillRect(-1, -14, 2, 4);
+                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-5, 6, 10, 3);
+                cxt.fillStyle = '#d7ccc8'; cxt.fillRect(-2, 9, 4, 5);
             } else if (itemType === 'pickaxe') {
-                ctxRef.fillStyle = '#8d6e63'; ctxRef.fillRect(-1.5, -4, 3, 16);
-                ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-11, -10, 22, 6);
-                ctxRef.fillStyle = '#cfd8dc'; ctxRef.fillRect(-11, -10, 8, 3);
+                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-1.5, -4, 3, 16);
+                cxt.fillStyle = '#37474f'; cxt.fillRect(-11, -10, 22, 6);
+                cxt.fillStyle = '#cfd8dc'; cxt.fillRect(-11, -10, 8, 3);
             } else if (itemType === 'block') {
-                ctxRef.fillStyle = '#795548'; ctxRef.fillRect(-12, -12, 24, 24);
-                ctxRef.strokeStyle = '#3e2723'; ctxRef.lineWidth = 2; ctxRef.strokeRect(-12, -12, 24, 24);
-                ctxRef.fillStyle = '#5d4037'; ctxRef.fillRect(-8, -8, 8, 8); ctxRef.fillRect(2, 2, 8, 8);
+                cxt.fillStyle = '#795548'; cxt.fillRect(-12, -12, 24, 24);
+                cxt.strokeStyle = '#3e2723'; cxt.lineWidth = 2; cxt.strokeRect(-12, -12, 24, 24);
+                cxt.fillStyle = '#5d4037'; cxt.fillRect(-8, -8, 8, 8); cxt.fillRect(2, 2, 8, 8);
             } else if (itemType === 'grenade') {
-                ctxRef.fillStyle = '#388e3c'; ctxRef.beginPath(); ctxRef.arc(0, 2, 9, 0, Math.PI * 2); ctxRef.fill();
-                ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-2, -9, 4, 5);
-                ctxRef.fillStyle = '#ffeb3b'; ctxRef.fillRect(-1, -11, 2, 3);
+                cxt.fillStyle = '#388e3c'; cxt.beginPath(); cxt.arc(0, 2, 9, 0, Math.PI * 2); cxt.fill();
+                cxt.fillStyle = '#212121'; cxt.fillRect(-2, -9, 4, 5);
+                cxt.fillStyle = '#ffeb3b'; cxt.fillRect(-1, -11, 2, 3);
             } else if (itemType === 'bandage') {
-                ctxRef.fillStyle = '#ffffff'; ctxRef.fillRect(-12, -8, 24, 16);
-                ctxRef.strokeStyle = '#b0bec5'; ctxRef.lineWidth = 1; ctxRef.strokeRect(-12, -8, 24, 16);
-                ctxRef.fillStyle = '#e53935'; ctxRef.fillRect(-3, -7, 6, 14); ctxRef.fillRect(-7, -3, 14, 6);
+                cxt.fillStyle = '#ffffff'; cxt.fillRect(-12, -8, 24, 16);
+                cxt.strokeStyle = '#b0bec5'; cxt.lineWidth = 1; cxt.strokeRect(-12, -8, 24, 16);
+                cxt.fillStyle = '#e53935'; cxt.fillRect(-3, -7, 6, 14); cxt.fillRect(-7, -3, 14, 6);
             } else if (itemType === 'gun') {
                 if (subType === 'pistol') {
-                    ctxRef.fillStyle = '#455a64'; ctxRef.fillRect(-10, -2, 14, 6);
-                    ctxRef.fillStyle = '#90a4ae'; ctxRef.fillRect(-8, -5, 10, 3);
-                    ctxRef.fillStyle = '#263238'; ctxRef.fillRect(-4, 4, 4, 7);
+                    cxt.fillStyle = '#455a64'; cxt.fillRect(-10, -2, 14, 6);
+                    cxt.fillStyle = '#90a4ae'; cxt.fillRect(-8, -5, 10, 3);
+                    cxt.fillStyle = '#263238'; cxt.fillRect(-4, 4, 4, 7);
                 } else if (subType === 'smg') {
-                    ctxRef.fillStyle = '#263238'; ctxRef.fillRect(-12, -3, 20, 6);
-                    ctxRef.fillStyle = '#78909c'; ctxRef.fillRect(8, -2, 6, 4);
-                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-2, 3, 5, 8);
+                    cxt.fillStyle = '#263238'; cxt.fillRect(-12, -3, 20, 6);
+                    cxt.fillStyle = '#78909c'; cxt.fillRect(8, -2, 6, 4);
+                    cxt.fillStyle = '#37474f'; cxt.fillRect(-2, 3, 5, 8);
                 } else if (subType === 'shotgun') {
-                    ctxRef.fillStyle = '#5d4037'; ctxRef.fillRect(-14, -2, 10, 6);
-                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-4, -4, 18, 7);
-                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(14, -3, 3, 5);
+                    cxt.fillStyle = '#5d4037'; cxt.fillRect(-14, -2, 10, 6);
+                    cxt.fillStyle = '#37474f'; cxt.fillRect(-4, -4, 18, 7);
+                    cxt.fillStyle = '#212121'; cxt.fillRect(14, -3, 3, 5);
                 } else if (subType === 'sniper') {
-                    ctxRef.fillStyle = '#4e342e'; ctxRef.fillRect(-14, -2, 12, 6);
-                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-2, -3, 20, 4);
-                    ctxRef.fillStyle = '#90a4ae'; ctxRef.fillRect(2, -7, 8, 3);
+                    cxt.fillStyle = '#4e342e'; cxt.fillRect(-14, -2, 12, 6);
+                    cxt.fillStyle = '#212121'; cxt.fillRect(-2, -3, 20, 4);
+                    cxt.fillStyle = '#90a4ae'; cxt.fillRect(2, -7, 8, 3);
                 } else if (subType === 'rocket') {
-                    ctxRef.fillStyle = '#33691e'; ctxRef.fillRect(-14, -5, 26, 10);
-                    ctxRef.fillStyle = '#827717'; ctxRef.fillRect(-16, -6, 4, 12);
-                    ctxRef.fillStyle = '#ff6f00'; ctxRef.fillRect(12, -4, 4, 8);
+                    cxt.fillStyle = '#33691e'; cxt.fillRect(-14, -5, 26, 10);
+                    cxt.fillStyle = '#827717'; cxt.fillRect(-16, -6, 4, 12);
+                    cxt.fillStyle = '#ff6f00'; cxt.fillRect(12, -4, 4, 8);
                 } else if (subType === 'minigun') {
-                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-10, -5, 14, 10);
-                    ctxRef.fillStyle = '#cfd8dc'; ctxRef.fillRect(4, -4, 14, 3); ctxRef.fillRect(4, 1, 14, 3);
-                    ctxRef.fillStyle = '#b71c1c'; ctxRef.fillRect(-6, 4, 8, 8);
+                    cxt.fillStyle = '#212121'; cxt.fillRect(-10, -5, 14, 10);
+                    cxt.fillStyle = '#cfd8dc'; cxt.fillRect(4, -4, 14, 3); cxt.fillRect(4, 1, 14, 3);
+                    cxt.fillStyle = '#b71c1c'; cxt.fillRect(-6, 4, 8, 8);
                 } else if (subType === 'laser') {
-                    ctxRef.fillStyle = '#006064'; ctxRef.fillRect(-12, -4, 22, 8);
-                    ctxRef.fillStyle = '#00e5ff'; ctxRef.fillRect(2, -2, 10, 4);
-                    ctxRef.fillStyle = '#00838f'; ctxRef.fillRect(-8, 4, 6, 5);
+                    cxt.fillStyle = '#006064'; cxt.fillRect(-12, -4, 22, 8);
+                    cxt.fillStyle = '#00e5ff'; cxt.fillRect(2, -2, 10, 4);
+                    cxt.fillStyle = '#00838f'; cxt.fillRect(-8, 4, 6, 5);
                 } else if (subType === 'plasma') {
-                    ctxRef.fillStyle = '#4a148c'; ctxRef.fillRect(-10, -5, 18, 10);
-                    ctxRef.fillStyle = '#76ff03'; ctxRef.beginPath(); ctxRef.arc(0, 0, 5, 0, Math.PI * 2); ctxRef.fill();
-                    ctxRef.fillStyle = '#9c27b0'; ctxRef.fillRect(8, -3, 6, 6);
+                    cxt.fillStyle = '#4a148c'; cxt.fillRect(-10, -5, 18, 10);
+                    cxt.fillStyle = '#76ff03'; cxt.beginPath(); cxt.arc(0, 0, 5, 0, Math.PI * 2); cxt.fill();
+                    cxt.fillStyle = '#9c27b0'; cxt.fillRect(8, -3, 6, 6);
                 } else if (subType === 'flame') {
-                    ctxRef.fillStyle = '#bf360c'; ctxRef.fillRect(-12, -4, 16, 8);
-                    ctxRef.fillStyle = '#ff5722'; ctxRef.fillRect(-14, -6, 6, 12);
-                    ctxRef.fillStyle = '#3e2723'; ctxRef.fillRect(4, -5, 10, 10);
+                    cxt.fillStyle = '#bf360c'; cxt.fillRect(-12, -4, 16, 8);
+                    cxt.fillStyle = '#ff5722'; cxt.fillRect(-14, -6, 6, 12);
+                    cxt.fillStyle = '#3e2723'; cxt.fillRect(4, -5, 10, 10);
                 } else {
-                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-10, -3, 20, 6);
+                    cxt.fillStyle = '#37474f'; cxt.fillRect(-10, -3, 20, 6);
                 }
             }
-            ctxRef.restore();
+            cxt.restore();
         }
 
         function refreshHotbarUI() {
@@ -572,7 +561,7 @@
                     drawItemArtOnCanvas(slotCanvas, 'gun', weapon);
                 } else {
                     const cx = slotCanvas.getContext('2d');
-                    if (cx) cx.clearRect(0, 0, 34, 34);
+                    cx.clearRect(0, 0, 34, 34);
                 }
             }
 
@@ -581,12 +570,11 @@
             document.getElementById('ammo-count').innerText = currentAmmo;
         }
 
-        function selectHotbarSlot(slotIdx) {
-            activeHotbar = slotIdx;
-            document.querySelectorAll('.hotbar-slot').forEach((slot, idx) => {
-                if (idx === slotIdx) slot.classList.add('selected');
-                else slot.classList.remove('selected');
-            });
+        function selectHotbarSlot(idx) {
+            activeHotbar = idx;
+            document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('selected'));
+            const el = document.getElementById(`hslot-${idx}`);
+            if (el) el.classList.add('selected');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -866,22 +854,9 @@
             }
         }
 
-        // HTML5 Drag and Drop Handlers
         let draggedData = null;
         function dragBackpack(e, idx) {
             draggedData = { source: 'backpack', index: idx, item: backpackInventory[idx] };
-        }
-        function dragHotbar(e, idx) {
-            let item = null;
-            if (idx === 0) item = { type: 'sword', subtype: null };
-            else if (idx === 1) item = { type: 'pickaxe', subtype: null };
-            else if (idx === 2) item = { type: 'block', subtype: null };
-            else if (idx >= 3 && idx <= 5) {
-                const gun = weaponBarSlots[idx - 3];
-                if (gun) item = { type: 'gun', subtype: gun };
-            } else if (idx === 6) item = { type: 'grenade', subtype: null };
-            else if (idx === 7) item = { type: 'bandage', subtype: null };
-            draggedData = { source: 'hotbar', index: idx, item: item };
         }
         function allowDrop(e) { e.preventDefault(); }
 
@@ -1841,7 +1816,6 @@
                 return;
             }
 
-            // Auto-fire check for holding mouse down with automatic weapons
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
                 if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser') {
