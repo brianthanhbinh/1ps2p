@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2D P2P Arena</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background: #0b0b10; }
-        #arena-viewport { position: relative; width: 100vw; height: 100vh; background: #12121a; }
-        #canvas-main { display: block; width: 100%; height: 100%; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #0a0a0e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #arena-viewport { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
+        #canvas-main { width: 1200px; height: 800px; display: block; background: #1e362c; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Lobby Menu */
@@ -58,17 +60,20 @@
         #shop-toggle-btn:hover { background: #f57c00; }
 
         /* Action Buttons Top Right */
-        #hud-actions-right { position: absolute; top: 16px; right: 190px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; align-items: flex-end; }
-        #share-link-btn, #share-team-link-btn, #leave-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; white-space: nowrap; }
+        #hud-actions-right { position: absolute; top: 185px; right: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; }
+        #share-link-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
         #share-link-btn:hover { background: #1e88e5; }
-        #leave-btn { background: rgba(229,57,53,0.9); border-color: #ff5252; }
+        #leave-btn { background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
         #leave-btn:hover { background: #e53935; }
-        #share-team-link-btn { background: rgba(233,30,99,0.9); border-color: #f48fb1; color: #ffeb3b; }
 
-        /* Shop Panel (Unified Single List) */
+        /* Shop Panel */
         #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
         #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
-        .shop-content { max-height: 310px; overflow-y: auto; text-align: left; margin-bottom: 14px; }
+        .shop-tabs-row { display: flex; gap: 6px; margin-bottom: 14px; }
+        .shop-tab { flex: 1; padding: 7px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .shop-tab.active { background: #ff9800; color: #fff; border-color: #ffb74d; }
+        .shop-content { display: none; max-height: 260px; overflow-y: auto; text-align: left; }
+        .shop-content.active { display: block; }
         .shop-item-card { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 9px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; font-size: 13px; }
         .shop-item-card button { background: #4caf50; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
         .shop-item-card button:hover { background: #43a047; }
@@ -77,1380 +82,123 @@
         #minimap-box { position: absolute; top: 16px; right: 16px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 10px; overflow: hidden; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 6px 20px rgba(0,0,0,0.7); }
         #canvas-minimap { width: 100%; height: 100%; display: block; }
 
-        #airdrop-banner { position: absolute; top: 185px; left: 16px; background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; pointer-events: auto; z-index: 15; }
+        #airdrop-banner { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 6px 18px; border-radius: 20px; border: 1px solid #444; color: #fff; font-size: 13px; font-weight: bold; display: none; }
         #airdrop-countdown { color: #ffca28; }
 
         #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
+
         #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
-        /* Hotbar with Canvas Art Icons */
+        /* Hotbar */
         #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
-        .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
+        .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; cursor: pointer; }
         .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
-        .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
-        .hotbar-canvas { width: 34px; height: 34px; display: block; margin-top: 4px; }
+        .hotbar-slot span { position: absolute; top: 3px; left: 5px; font-size: 9px; color: #aaa; }
 
-        /* Inventory Panel */
+        /* Inventory Panel (32 Slots) */
         #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
         #inventory-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
         .inv-grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
-        .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; position: relative; }
+        .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; position: relative; }
         .inventory-slot:hover { border-color: #ffca28; }
-        .inventory-slot span { position: absolute; top: 2px; left: 3px; font-size: 8px; color: #aaa; }
-        .inv-canvas { width: 26px; height: 26px; display: block; margin-top: 6px; }
+        .inventory-slot span { font-size: 9px; color: #aaa; }
 
-        /* Tab Scoreboard */
+        /* Tab Scoreboard Overlay */
         #scoreboard-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,14,20,0.94); border: 1px solid #444; border-radius: 12px; width: 380px; padding: 20px; color: #fff; display: none; pointer-events: none; z-index: 25; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         #scoreboard-panel h3 { font-size: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; color: #29b6f6; }
         .sb-row { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.05); margin-bottom: 6px; border-radius: 6px; font-size: 13px; align-items: center; }
 
-        /* Coin Modal */
+        /* Coin Drop Prompt Modal */
         #coin-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.96); border: 2px solid #ffd700; border-radius: 12px; padding: 20px; width: 300px; color: #fff; display: none; pointer-events: auto; z-index: 55; box-shadow: 0 10px 40px rgba(0,0,0,0.9); text-align: center; }
         #coin-modal h3 { color: #ffd700; margin-bottom: 10px; font-size: 18px; }
         #coin-modal input { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; text-align: center; margin: 10px 0; font-size: 16px; outline: none; }
 
-        /* Chat Box */
+        /* Team Chat Box */
         #chat-box { position: absolute; bottom: 95px; left: 16px; width: 310px; pointer-events: auto; z-index: 20; display: flex; flex-direction: column; gap: 4px; }
         #chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
         .chat-line { word-break: break-all; }
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
-        #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; z-index: 20; }
+        #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
     </style>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-<div id="arena-viewport">
-    <canvas id="canvas-main" width="1200" height="800"></canvas>
-</div>
-
-<div id="hud-layer">
-    <div id="stats-hud">
-        <div class="meter-box">
-            <div class="meter-header"><span>HEALTH</span><span id="hp-num">100</span></div>
-            <div class="meter-track"><div id="hp-bar-fill" class="meter-fill"></div></div>
-        </div>
-        <div class="meter-box">
-            <div class="meter-header"><span>STAMINA (SHIFT)</span><span id="stamina-num">100</span></div>
-            <div class="meter-track"><div id="stamina-bar-fill" class="meter-fill"></div></div>
-        </div>
+    <div id="arena-viewport">
+        <canvas id="canvas-main" width="1200" height="800"></canvas>
     </div>
 
-    <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
-    <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
-
-    <div id="minimap-box">
-        <canvas id="canvas-minimap" width="160" height="160"></canvas>
-    </div>
-
-    <!-- Unified Shop Panel -->
-    <div id="shop-panel">
-        <h3>🛒 ARENA OUTFITTER</h3>
-        <div class="shop-content">
-            <div class="shop-item-card"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
-            <div class="shop-item-card"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 450)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Spike Trap (x3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 60)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Team Door (x2)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'teamdoor', 150)">Buy</button></div></div>
-            <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
-        </div>
-        <button style="width:100%; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
-    </div>
-
-    <!-- Coin Drop Prompt Modal -->
-    <div id="coin-modal">
-        <h3>🪙 Drop Coins</h3>
-        <p style="font-size:12px; color:#aaa;">Amount to drop on ground:</p>
-        <input type="number" id="coin-drop-amt" min="1" value="10">
-        <button style="background:#4caf50; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="executeCoinDrop()">Drop</button>
-        <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinModal()">Cancel</button>
-    </div>
-
-    <!-- Death Screen Modal -->
-    <div id="death-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(229,57,53,0.3); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 70;">
-        <div class="modal-card" style="border-color: #e53935; background: rgba(20,14,14,0.96);">
-            <h3 style="color: #e53935; font-size: 24px;">💀 YOU DIED</h3>
-            <p style="font-size: 13px; color: #ccc; margin-bottom: 16px;">You were eliminated in the battlefield.</p>
-            <button class="btn-team-red" onclick="respawnPlayer()" style="background:#4caf50; margin-bottom: 8px;">Respawn at Base</button>
-            <button class="btn-team-blue" onclick="exitToLobby()" style="background:#e53935;">Leave Room</button>
-        </div>
-    </div>
-
-    <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
-    <div id="self-destruct-banner">⚠️ Base Exited! Re-entry locked</div>
-    
-    <div id="hud-actions-right">
-        <button id="share-team-link-btn" onclick="copyDirectTeamLink()">🚩 Copy Team Link</button>
-        <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
-        <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
-    </div>
-
-    <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
-    <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Action | `: Scope | E: Inventory | Q: Drop | T: Chat | Tab: Score</div>
-
-    <!-- Inventory Panel -->
-    <div id="inventory-panel">
-        <h3>🎒 BACKPACK INVENTORY (32 SLOTS)</h3>
-        <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Click item to transfer to available hotbar slot.</p>
-        <div class="inv-grid-container" id="inv-grid"></div>
-        <button style="width:100%; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleInventoryPanel()">Close (E)</button>
-    </div>
-
-    <!-- Chat Box -->
-    <div id="chat-box">
-        <div id="chat-feed"></div>
-        <input type="text" id="chat-text-input" placeholder="Type chat message..." maxlength="120" />
-    </div>
-
-    <!-- Lobby Setup Panel -->
-    <div id="lobby-box">
-        <h1>2D P2P Arena</h1>
-        <div class="lobby-tabs">
-            <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
-            <button class="lobby-tab" onclick="switchLobbyTab('globals', this)">Global Servers</button>
-        </div>
-
-        <div id="lobby-tab-main" class="lobby-content active">
-            <input type="text" id="input-username" placeholder="Your Name" value="Combatant">
-            <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
-            <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
-            <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
-            <button id="btn-bot-mode" onclick="promptLocalPlayMode()" style="background:#ff9800;">🎮 Play Locally</button>
-        </div>
-
-        <div id="lobby-tab-globals" class="lobby-content">
-            <input type="text" id="input-username-global" placeholder="Your Name" value="Combatant">
-            <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers:</p>
-            <div class="peer-list-box">
-                <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
-                <div class="peer-item"><span>🌐 <b>4global</b> (4 Teams)</span><button onclick="joinGlobalServer('4global', '4team')">Join</button></div>
-                <div class="peer-item"><span>🌐 <b>2global</b> (2 Teams)</span><button onclick="joinGlobalServer('2global', '2team')">Join</button></div>
+    <div id="hud-layer">
+        <div id="stats-hud">
+            <div class="meter-box">
+                <div class="meter-header"><span>HEALTH</span><span id="hp-num">100</span></div>
+                <div class="meter-track"><div id="hp-bar-fill" class="meter-fill"></div></div>
+            </div>
+            <div class="meter-box">
+                <div class="meter-header"><span>STAMINA (SHIFT)</span><span id="stamina-num">100</span></div>
+                <div class="meter-track"><div id="stamina-bar-fill" class="meter-fill"></div></div>
             </div>
         </div>
 
-        <div id="net-status">Ready to Connect</div>
-    </div>
+        <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
+        <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
 
-    <!-- Generic Modal Screen -->
-    <div id="modal-screen">
-        <div class="modal-card">
-            <h3 id="modal-title">Select Setup</h3>
-            <div id="modal-options"></div>
+        <div id="minimap-box">
+            <canvas id="canvas-minimap" width="160" height="160"></canvas>
         </div>
-    </div>
 
-    <!-- Tab Scoreboard -->
-    <div id="scoreboard-panel">
-        <h3>BATTLEFIELD SCOREBOARD (TAB)</h3>
-        <div id="scoreboard-list"></div>
-    </div>
-
-    <!-- Hotbar Dock with Item Art Canvases -->
-    <div id="hotbar-dock">
-        <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-3" onclick="selectHotbarSlot(3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-4" onclick="selectHotbarSlot(4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="34" height="34"></canvas></div>
-        <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="34" height="34"></canvas></div>
-    </div>
-</div>
-
-<script>
-    const canvas = document.getElementById('canvas-main');
-    const ctx = canvas.getContext('2d');
-    const mCanvas = document.getElementById('canvas-minimap');
-    const mCtx = mCanvas.getContext('2d');
-
-    const MAP_SIZE = 2600;
-    const RADIUS_PLAYER = 16;
-    const ZONE_SIZE = 500;
-
-    let inGameActive = false;
-    let isHosting = false;
-    let isPractice = false;
-    let peerInstance = null;
-    let myPeerId = '';
-    let myUsername = 'Combatant';
-    let roomCode = 'alpha';
-    let preselectedTeam = null;
-    let currentMode = 'ffa';
-    let hostGameMode = 'ffa';
-    let playerTeam = 'FFA';
-    let playerColor = '#8e24aa';
-
-    let peerConnections = {};
-    let hostConnection = null;
-
-    let posX = MAP_SIZE / 2;
-    let posY = MAP_SIZE / 2;
-    let aimAngle = 0;
-    let currentHp = 100;
-    let currentStamina = 100;
-    let playerCoins = 100;
-    let cameraScoped = false;
-
-    let baseLockedOut = false;
-    let selfDestructCountdown = 0;
-    let selfDestructTimerHandle = null;
-
-    let activeHotbar = 0;
-    let weaponBarSlots = [null, null, null];
-    let spikesCount = 3;
-    let teamDoorsCount = 2;
-    let bandagesCount = 2;
-    let backpackInventory = new Array(32).fill(null);
-
-    let actionCdBuild = false;
-    let actionCdAttack = false;
-
-    let keyboardInput = {};
-    let mouseXCoord = 0;
-    let mouseYCoord = 0;
-
-    let remotePlayers = {};
-    let aiBots = [];
-    let worldBlocks = {};
-    let worldTraps = {};
-    let droppedLoot = {};
-    let supplyCrates = [];
-    let bulletsList = [];
-    let activeVehiclesList = [];
-
-    let airdropIntervalHandle = null;
-    const PEER_PREFIX = 'arena-v5-net-';
-    const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global'];
-
-    function formatPeerId(code) {
-        return PEER_PREFIX + code.trim().toLowerCase();
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const hash = window.location.hash.substring(1);
-        if (hash) {
-            const parts = hash.split('%');
-            const room = parts[0] || 'alpha';
-            const teamReq = parts[1] ? parts[1].toLowerCase() : null;
-            document.getElementById('input-room').value = room;
-            if (GLOBAL_ROOMS.includes(room)) {
-                let mode = 'ffa';
-                if (room === '4global') mode = '4team';
-                else if (room === '2global') mode = '2team';
-                setTimeout(() => { joinGlobalServer(room, mode); }, 300);
-                return;
-            }
-            const modal = document.getElementById('modal-screen');
-            const title = document.getElementById('modal-title');
-            const opts = document.getElementById('modal-options');
-            title.innerText = `Join Room: ${room.toUpperCase()}`;
-            opts.innerHTML = `
-                <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Combatant" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
-                <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
-            `;
-            modal.style.display = 'flex';
-        }
-        refreshHotbarUI();
-    });
-
-    function executeDirectLinkJoin(room, teamReq) {
-        const nameInput = document.getElementById('direct-name-input');
-        if (nameInput) myUsername = nameInput.value.trim() || 'Combatant';
-        roomCode = room;
-        document.getElementById('modal-screen').style.display = 'none';
-
-        isHosting = false;
-        isPractice = false;
-        document.getElementById('net-status').innerText = 'Connecting via Direct Link...';
-
-        if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer({ debug: 1 });
-        peerInstance.on('open', (id) => {
-            myPeerId = id;
-            const targetHostId = formatPeerId(roomCode);
-            const conn = peerInstance.connect(targetHostId);
-            
-            let connected = false;
-            conn.on('open', () => {
-                connected = true;
-                setupClientConnection(conn);
-                if (teamReq) {
-                    setTimeout(() => {
-                        assignTeamAndSpawn(teamReq.charAt(0).toUpperCase() + teamReq.slice(1), teamReq === 'red' ? '#e53935' : '#1e88e5');
-                    }, 400);
-                }
-            });
-
-            setTimeout(() => {
-                if (!connected) {
-                    conn.close();
-                    peerInstance.destroy();
-                    peerInstance = new Peer(targetHostId, { debug: 1 });
-                    peerInstance.on('open', () => {
-                        isHosting = true;
-                        currentMode = '4team';
-                        document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
-                        if (teamReq) {
-                            assignTeamAndSpawn(teamReq.charAt(0).toUpperCase() + teamReq.slice(1), teamReq === 'red' ? '#e53935' : '#1e88e5');
-                        } else {
-                            promptTeamSelection();
-                        }
-                    });
-                    peerInstance.on('connection', (c) => { setupServerConnection(c); });
-                }
-            }, 1500);
-        });
-    }
-
-    function switchLobbyTab(tabKey, btnElement) {
-        document.querySelectorAll('.lobby-tab').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
-        btnElement.classList.add('active');
-        const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
-        if (targetContent) targetContent.classList.add('active');
-    }
-
-    function joinGlobalServer(serverCode, gameMode) {
-        myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || 'Combatant';
-        roomCode = serverCode;
-        currentMode = gameMode;
-        hostGameMode = gameMode;
-
-        document.getElementById('net-status').innerText = `Connecting to ${serverCode}...`;
-        if (peerInstance) peerInstance.destroy();
-
-        peerInstance = new Peer({ debug: 1 });
-        peerInstance.on('open', (id) => {
-            myPeerId = id;
-            const targetHostId = formatPeerId(serverCode);
-            const conn = peerInstance.connect(targetHostId);
-            
-            let connectedToHost = false;
-            conn.on('open', () => {
-                connectedToHost = true;
-                isHosting = false;
-                setupClientConnection(conn);
-            });
-
-            setTimeout(() => {
-                if (!connectedToHost) {
-                    conn.close();
-                    peerInstance.destroy();
-                    peerInstance = new Peer(targetHostId, { debug: 1 });
-                    peerInstance.on('open', () => {
-                        isHosting = true;
-                        isPractice = false;
-                        document.getElementById('net-status').innerText = `Hosting Global Server: ${serverCode}`;
-                        promptTeamSelection();
-                    });
-                    peerInstance.on('connection', (c) => { setupServerConnection(c); });
-                }
-            }, 1500);
-        });
-    }
-
-    function showUIInGame(active) {
-        document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
-        document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
-        document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
-        document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
-        document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
-        document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
-        document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
-        document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
-        document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
-        document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
-        document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
-        document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
-    }
-
-    function copyToClipboardFallback(text) {
-        const dummy = document.createElement('input');
-        document.body.appendChild(dummy);
-        dummy.value = text;
-        dummy.select();
-        document.execCommand('copy');
-        document.body.removeChild(dummy);
-    }
-
-    function copyDirectRoomLink() {
-        const baseUrl = window.location.href.split('#')[0];
-        copyToClipboardFallback(`${baseUrl}#${roomCode}`);
-        showNotificationBox(`🔗 Room link copied! (${roomCode})`);
-    }
-
-    function copyDirectTeamLink() {
-        const baseUrl = window.location.href.split('#')[0];
-        copyToClipboardFallback(`${baseUrl}#${roomCode}%${playerTeam.toLowerCase()}`);
-        showNotificationBox(`🚩 ${playerTeam} Team link copied!`);
-    }
-
-    function selectHotbarSlot(idx) {
-        activeHotbar = idx;
-        for (let i = 0; i <= 7; i++) {
-            const el = document.getElementById(`hslot-${i}`);
-            if (el) el.classList.toggle('selected', i === activeHotbar);
-        }
-    }
-
-    function drawItemArtOnCanvas(canvasEl, itemType, subType) {
-        if (!canvasEl) return;
-        const cxt = canvasEl.getContext('2d');
-        cxt.clearRect(0, 0, 34, 34);
-
-        cxt.save();
-        cxt.translate(17, 17);
-
-        if (itemType === 'sword') {
-            cxt.fillStyle = '#b0bec5';
-            cxt.fillRect(-2, -12, 4, 20);
-            cxt.fillStyle = '#8d6e63';
-            cxt.fillRect(-5, 6, 10, 3);
-        } else if (itemType === 'pickaxe') {
-            cxt.fillStyle = '#8d6e63';
-            cxt.fillRect(-2, -6, 4, 16);
-            cxt.fillStyle = '#424242';
-            cxt.fillRect(-10, -10, 20, 5);
-        } else if (itemType === 'block') {
-            cxt.fillStyle = '#795548';
-            cxt.fillRect(-12, -12, 24, 24);
-            cxt.strokeStyle = '#3e2723';
-            cxt.lineWidth = 2;
-            cxt.strokeRect(-12, -12, 24, 24);
-        } else if (itemType === 'gun') {
-            cxt.fillStyle = '#37474f';
-            cxt.fillRect(-12, -4, 20, 8);
-            cxt.fillStyle = '#111';
-            cxt.fillRect(4, -3, 8, 5);
-        } else if (itemType === 'trap') {
-            cxt.fillStyle = '#d32f2f';
-            cxt.fillRect(-10, -10, 20, 20);
-            cxt.strokeStyle = '#ffeb3b';
-            cxt.lineWidth = 1.5;
-            cxt.strokeRect(-10, -10, 20, 20);
-        } else if (itemType === 'bandage') {
-            cxt.fillStyle = '#ffffff';
-            cxt.fillRect(-12, -8, 24, 16);
-            cxt.fillStyle = '#e53935';
-            cxt.fillRect(-3, -7, 6, 14);
-            cxt.fillRect(-7, -3, 14, 6);
-        }
-        cxt.restore();
-    }
-
-    function refreshHotbarUI() {
-        drawItemArtOnCanvas(document.getElementById('hcanvas-0'), 'sword', null);
-        drawItemArtOnCanvas(document.getElementById('hcanvas-1'), 'pickaxe', null);
-        drawItemArtOnCanvas(document.getElementById('hcanvas-2'), 'block', null);
-
-        for (let i = 0; i < 3; i++) {
-            const slotCanvas = document.getElementById(`hcanvas-${i + 3}`);
-            const weapon = weaponBarSlots[i];
-            if (weapon) {
-                drawItemArtOnCanvas(slotCanvas, 'gun', weapon);
-            } else {
-                const cx = slotCanvas.getContext('2d');
-                cx.clearRect(0, 0, 34, 34);
-            }
-        }
-
-        drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'trap', null);
-        drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
-    }
-
-    function toggleShopPanel() {
-        const panel = document.getElementById('shop-panel');
-        if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function toggleInventoryPanel() {
-        const panel = document.getElementById('inventory-panel');
-        if (!panel) return;
-        const isOpen = panel.style.display === 'block';
-        panel.style.display = isOpen ? 'none' : 'block';
-        if (!isOpen) renderBackpackGrid();
-    }
-
-    function renderBackpackGrid() {
-        const gridContainer = document.getElementById('inv-grid');
-        if (!gridContainer) return;
-        let htmlStr = '';
-        for (let i = 0; i < 32; i++) {
-            htmlStr += `<div class="inventory-slot" onclick="clickInventorySlot(${i})"><span>${i+1}</span><canvas class="inv-canvas" id="inv-canvas-${i}" width="26" height="26"></canvas></div>`;
-        }
-        gridContainer.innerHTML = htmlStr;
-
-        for (let i = 0; i < 32; i++) {
-            const item = backpackInventory[i];
-            if (item) {
-                drawItemArtOnCanvas(document.getElementById(`inv-canvas-${i}`), item.type, item.subtype);
-            }
-        }
-    }
-
-    function clickInventorySlot(idx) {
-        const item = backpackInventory[idx];
-        if (!item) return;
-        const emptyHotbarIdx = weaponBarSlots.findIndex(w => w === null);
-        if (emptyHotbarIdx !== -1 && item.type === 'gun') {
-            weaponBarSlots[emptyHotbarIdx] = item.subtype;
-            backpackInventory[idx] = null;
-            refreshHotbarUI();
-            renderBackpackGrid();
-        }
-    }
-
-    function pushToBackpack(itemObj) {
-        const emptyIdx = backpackInventory.findIndex(i => i === null);
-        if (emptyIdx !== -1) {
-            backpackInventory[emptyIdx] = itemObj;
-            return true;
-        }
-        return false;
-    }
-
-    function dropActiveItem() {
-        if (activeHotbar >= 3 && activeHotbar <= 5) {
-            const gunIdx = activeHotbar - 3;
-            if (weaponBarSlots[gunIdx]) {
-                spawnWorldLoot('gun', weaponBarSlots[gunIdx], posX + 30, posY + 30, 0);
-                weaponBarSlots[gunIdx] = null;
-                refreshHotbarUI();
-            }
-        } else if (activeHotbar === 6 && spikesCount > 0) {
-            spikesCount--;
-            spawnWorldLoot('spike', null, posX + 30, posY + 30, 1);
-            refreshHotbarUI();
-        } else if (activeHotbar === 7 && bandagesCount > 0) {
-            bandagesCount--;
-            spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
-            refreshHotbarUI();
-        }
-    }
-
-    function buyStoreItem(itemType, subtypeName, price) {
-        const activeMode = isHosting ? currentMode : hostGameMode;
-        if (activeMode !== 'creative' && playerCoins < price) {
-            showNotificationBox('Insufficient coins!');
-            return;
-        }
-        if (activeMode !== 'creative') {
-            playerCoins -= price;
-            document.getElementById('coin-num').innerText = playerCoins;
-        }
-
-        if (itemType === 'gun') {
-            const emptyIdx = weaponBarSlots.findIndex(g => g === null);
-            if (emptyIdx === -1) {
-                if (!pushToBackpack({ type: 'gun', subtype: subtypeName })) {
-                    showNotificationBox('Hotbar and inventory are full!');
-                    return;
-                }
-            } else {
-                weaponBarSlots[emptyIdx] = subtypeName;
-            }
-        } else if (itemType === 'trap') {
-            if (subtypeName === 'spike') spikesCount += 3;
-            if (subtypeName === 'teamdoor') teamDoorsCount += 2;
-            showNotificationBox(`Purchased ${subtypeName.toUpperCase()} trap!`);
-        } else if (itemType === 'consumable') {
-            if (subtypeName === 'bandage') bandagesCount += 2;
-            showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
-        }
-        refreshHotbarUI();
-    }
-
-    function showNotificationBox(msg) {
-        const statusEl = document.getElementById('room-notification');
-        if (statusEl) {
-            statusEl.innerText = msg;
-            setTimeout(() => { statusEl.innerText = ''; }, 3000);
-        }
-    }
-
-    function getTeamBaseRegion(teamName) {
-        if (teamName === 'Red') return { x1: 0, y1: 0, x2: ZONE_SIZE, y2: ZONE_SIZE };
-        if (teamName === 'Blue') return { x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, x2: MAP_SIZE, y2: MAP_SIZE };
-        if (teamName === 'Green') return { x1: 0, y1: MAP_SIZE - ZONE_SIZE, x2: ZONE_SIZE, y2: MAP_SIZE };
-        if (teamName === 'Yellow') return { x1: MAP_SIZE - ZONE_SIZE, y1: 0, x2: MAP_SIZE, y2: ZONE_SIZE };
-        return null;
-    }
-
-    function checkInsideBase(x, y, teamName) {
-        const b = getTeamBaseRegion(teamName);
-        if (!b) return false;
-        return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
-    }
-
-    function isEnemyTryingToEnterBase(x, y, myTeam) {
-        if (myTeam === 'FFA') return false;
-        const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
-        for (let t of teamNames) {
-            if (t !== myTeam) {
-                if (checkInsideBase(x, y, t)) return true;
-            }
-        }
-        return false;
-    }
-
-    function initHostRoom() {
-        myUsername = document.getElementById('input-username').value.trim() || 'Host';
-        roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-        isHosting = true;
-        isPractice = false;
-
-        document.getElementById('net-status').innerText = 'Initializing Host Peer...';
-        if (peerInstance) peerInstance.destroy();
-
-        peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
-        peerInstance.on('open', (id) => {
-            myPeerId = id;
-            document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
-            promptGameModeSelection();
-        });
-        peerInstance.on('connection', (conn) => { setupServerConnection(conn); });
-    }
-
-    function initJoinRoom() {
-        myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
-        roomCode = document.getElementById('input-room').value.trim() || 'alpha';
-        isHosting = false;
-        isPractice = false;
-
-        document.getElementById('net-status').innerText = 'Connecting to Host...';
-        if (peerInstance) peerInstance.destroy();
-
-        peerInstance = new Peer({ debug: 1 });
-        peerInstance.on('open', (id) => {
-            myPeerId = id;
-            const targetHostId = formatPeerId(roomCode);
-            const conn = peerInstance.connect(targetHostId);
-            setupClientConnection(conn);
-        });
-    }
-
-    function promptLocalPlayMode() {
-        const modal = document.getElementById('modal-screen');
-        const title = document.getElementById('modal-title');
-        const opts = document.getElementById('modal-options');
-        title.innerText = 'Select Local Play Mode';
-        opts.innerHTML = `
-            <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
-            <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP)</button>
-            <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
-        `;
-        modal.style.display = 'flex';
-    }
-
-    function selectLocalMode(localMode) {
-        myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
-        isHosting = false;
-        isPractice = (localMode === 'pvp');
-        currentMode = localMode === 'creative' ? 'creative' : '4team';
-        if (localMode === 'creative') {
-            playerCoins = 999999;
-            currentHp = 300;
-            document.getElementById('coin-num').innerText = playerCoins;
-        }
-        document.getElementById('modal-screen').style.display = 'none';
-        promptTeamSelection();
-    }
-
-    function promptGameModeSelection() {
-        const modal = document.getElementById('modal-screen');
-        const title = document.getElementById('modal-title');
-        const opts = document.getElementById('modal-options');
-        title.innerText = 'Select Game Mode';
-        opts.innerHTML = `
-            <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
-            <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
-            <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
-            <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Server (Inf Coins, 300 HP)</button>
-        `;
-        modal.style.display = 'flex';
-    }
-
-    function selectGameModeAndTeam(mode) {
-        currentMode = mode;
-        hostGameMode = mode;
-        if (mode === 'creative') {
-            playerCoins = 999999;
-            currentHp = 300;
-            document.getElementById('coin-num').innerText = playerCoins;
-        }
-        document.getElementById('modal-screen').style.display = 'none';
-        promptTeamSelection();
-    }
-
-    function promptTeamSelection() {
-        if (preselectedTeam) {
-            assignTeamAndSpawn(preselectedTeam.name, preselectedTeam.color);
-            preselectedTeam = null;
-            return;
-        }
-
-        const modal = document.getElementById('modal-screen');
-        const title = document.getElementById('modal-title');
-        const opts = document.getElementById('modal-options');
-        title.innerText = 'Choose Your Team';
-        
-        const activeMode = isHosting ? currentMode : hostGameMode;
-        if (activeMode === 'ffa' || activeMode === 'creative') {
-            opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA / Creative Neutral</button>`;
-        } else if (activeMode === '2team') {
-            opts.innerHTML = `
-                <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
-                <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
-            `;
-        } else {
-            opts.innerHTML = `
-                <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
-                <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
-                <button class="btn-team-green" onclick="assignTeamAndSpawn('Green', '#43a047')">Green Team</button>
-                <button class="btn-team-yellow" onclick="assignTeamAndSpawn('Yellow', '#fbc02d')">Yellow Team</button>
-            `;
-        }
-        modal.style.display = 'flex';
-    }
-
-    function assignTeamAndSpawn(teamName, hexColor) {
-        playerTeam = teamName;
-        playerColor = hexColor;
-        document.getElementById('modal-screen').style.display = 'none';
-
-        const activeMode = isHosting ? currentMode : hostGameMode;
-        if (activeMode === 'creative') {
-            playerCoins = 999999;
-            currentHp = 300;
-        } else {
-            currentHp = 100;
-        }
-
-        if (teamName === 'Red') { posX = 200; posY = 200; }
-        else if (teamName === 'Blue') { posX = MAP_SIZE - 200; posY = MAP_SIZE - 200; }
-        else if (teamName === 'Green') { posX = 200; posY = MAP_SIZE - 200; }
-        else if (teamName === 'Yellow') { posX = MAP_SIZE - 200; posY = 200; }
-        else { posX = MAP_SIZE / 2; posY = MAP_SIZE / 2; }
-
-        currentStamina = 100;
-        baseLockedOut = false;
-        inGameActive = true;
-        showUIInGame(true);
-
-        if (isPractice) spawnPracticeBots();
-        if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
-        airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
-    }
-
-    function executeSelfDestruct() {
-        const activeMode = isHosting ? currentMode : hostGameMode;
-        if (activeMode === 'creative') return;
-        if (selfDestructCountdown > 0) return;
-        selfDestructCountdown = 30;
-        baseLockedOut = true;
-        showNotificationBox('Exited Base! Base re-entry locked for 30s or until enemy kill.');
-        const banner = document.getElementById('self-destruct-banner');
-        if (banner) banner.style.display = 'block';
-
-        if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
-        selfDestructTimerHandle = setInterval(() => {
-            selfDestructCountdown--;
-            if (selfDestructCountdown <= 0) {
-                clearInterval(selfDestructTimerHandle);
-                if (banner) banner.style.display = 'none';
-                baseLockedOut = false;
-                showNotificationBox('Base Re-entry unlocked!');
-            }
-        }, 1000);
-    }
-
-    function onEnemyEliminated() {
-        baseLockedOut = false;
-        selfDestructCountdown = 0;
-        if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
-        const banner = document.getElementById('self-destruct-banner');
-        if (banner) banner.style.display = 'none';
-        currentHp = Math.min(100, currentHp + 50);
-        showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
-    }
-
-    function exitToLobby() {
-        inGameActive = false;
-        showUIInGame(false);
-        if (peerInstance) {
-            peerInstance.destroy();
-            peerInstance = null;
-        }
-        remotePlayers = {};
-        aiBots = [];
-        document.getElementById('net-status').innerText = 'Left room. Ready.';
-    }
-
-    function setupServerConnection(conn) {
-        peerConnections[conn.peer] = conn;
-        conn.on('open', () => {
-            conn.send({ 
-                type: 'room_config', 
-                mode: currentMode,
-                blocks: worldBlocks,
-                traps: worldTraps,
-                loot: droppedLoot,
-                crates: supplyCrates,
-                vehicles: activeVehiclesList
-            });
-        });
-        conn.on('data', (data) => {
-            if (data.type === 'client_join') {
-                remotePlayers[conn.peer] = {
-                    username: data.username,
-                    team: data.team,
-                    color: data.color,
-                    x: data.x,
-                    y: data.y,
-                    hp: 100,
-                    coins: 100
-                };
-                broadcastStateToClients();
-            } else if (data.type === 'player_update') {
-                if (remotePlayers[conn.peer]) {
-                    remotePlayers[conn.peer].x = data.x;
-                    remotePlayers[conn.peer].y = data.y;
-                    remotePlayers[conn.peer].hp = data.hp;
-                    remotePlayers[conn.peer].coins = data.coins;
-                }
-                broadcastStateToClients();
-            } else if (data.type === 'place_block') {
-                worldBlocks[data.key] = data.block;
-                broadcastStateToClients();
-            } else if (data.type === 'place_trap') {
-                worldTraps[data.key] = data.trap;
-                broadcastStateToClients();
-            }
-        });
-        conn.on('close', () => {
-            delete peerConnections[conn.peer];
-            delete remotePlayers[conn.peer];
-        });
-    }
-
-    function setupClientConnection(conn) {
-        hostConnection = conn;
-        conn.on('open', () => {
-            document.getElementById('net-status').innerText = 'Connected to Host!';
-        });
-        conn.on('data', (data) => {
-            if (data.type === 'room_config') {
-                hostGameMode = data.mode || '4team';
-                if (data.blocks) worldBlocks = data.blocks;
-                if (data.traps) worldTraps = data.traps;
-                if (data.loot) droppedLoot = data.loot;
-                if (data.crates) supplyCrates = data.crates;
-                if (data.vehicles) activeVehiclesList = data.vehicles;
-                promptTeamSelection();
-            } else if (data.type === 'server_state') {
-                if (data.players) {
-                    for (let pid in data.players) {
-                        if (peerInstance && pid !== peerInstance.id) {
-                            remotePlayers[pid] = data.players[pid];
-                        }
-                    }
-                }
-                if (data.blocks) worldBlocks = data.blocks;
-                if (data.traps) worldTraps = data.traps;
-                if (data.loot) droppedLoot = data.loot;
-            }
-        });
-    }
-
-    function broadcastStateToClients() {
-        if (!isHosting) return;
-        let allPlayersState = {
-            [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
-        };
-        for (let pid in remotePlayers) {
-            allPlayersState[pid] = remotePlayers[pid];
-        }
-        const packet = { 
-            type: 'server_state', 
-            players: allPlayersState,
-            blocks: worldBlocks,
-            traps: worldTraps,
-            loot: droppedLoot,
-            crates: supplyCrates,
-            vehicles: activeVehiclesList
-        };
-        for (let pid in peerConnections) {
-            if (peerConnections[pid].open) {
-                peerConnections[pid].send(packet);
-            }
-        }
-    }
-
-    function spawnPracticeBots() {
-        aiBots = [];
-        for (let i = 0; i < 4; i++) {
-            aiBots.push({
-                id: 'bot-' + i,
-                username: 'Bot ' + (i + 1),
-                team: i % 2 === 0 ? 'Blue' : 'Red',
-                color: i % 2 === 0 ? '#1e88e5' : '#e53935',
-                x: Math.random() * (MAP_SIZE - 400) + 200,
-                y: Math.random() * (MAP_SIZE - 400) + 200,
-                hp: 100,
-                radius: RADIUS_PLAYER
-            });
-        }
-    }
-
-    function triggerAirdropSpawn() {
-        supplyCrates.push({
-            x: Math.random() * (MAP_SIZE - 600) + 300,
-            y: Math.random() * (MAP_SIZE - 600) + 300
-        });
-        showNotificationBox('✈️ Supply Airdrop has landed on the map!');
-    }
-
-    function spawnWorldLoot(type, subtype, x, y, value) {
-        const id = 'loot-' + Math.random().toString(36).substr(2, 9);
-        droppedLoot[id] = { type, subtype, x, y, value };
-    }
-
-    function sendChatMessage() {
-        const input = document.getElementById('chat-text-input');
-        const txt = input.value.trim();
-        if (txt) {
-            const feed = document.getElementById('chat-feed');
-            feed.innerHTML += `<div class="chat-line"><b>${myUsername}:</b> ${escapeHtml(txt)}</div>`;
-            feed.scrollTop = feed.scrollHeight;
-            input.value = '';
-        }
-        input.blur();
-        input.style.display = 'none';
-    }
-
-    function escapeHtml(str) {
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    window.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        mouseXCoord = e.clientX - rect.left;
-        mouseYCoord = e.clientY - rect.top;
-    });
-
-    window.addEventListener('keydown', (e) => {
-        if (!inGameActive) return;
-        if (document.getElementById('chat-text-input') === document.activeElement) {
-            if (e.code === 'Enter') sendChatMessage();
-            return;
-        }
-
-        keyboardInput[e.code] = true;
-        if (e.code === 'Digit1') selectHotbarSlot(0);
-        if (e.code === 'Digit2') selectHotbarSlot(1);
-        if (e.code === 'Digit3') selectHotbarSlot(2);
-        if (e.code === 'Digit4') selectHotbarSlot(3);
-        if (e.code === 'Digit5') selectHotbarSlot(4);
-        if (e.code === 'Digit6') selectHotbarSlot(5);
-        if (e.code === 'Digit7') selectHotbarSlot(6);
-        if (e.code === 'Digit8') selectHotbarSlot(7);
-        if (e.code === 'KeyB') toggleShopPanel();
-        if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
-        if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
-        if (e.code === 'KeyQ') dropActiveItem();
-        if (e.code === 'KeyZ') openCoinModal();
-        if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
-        if (e.code === 'KeyR') executeSelfDestruct();
-        if (e.code === 'KeyT') {
-            e.preventDefault();
-            const chatInput = document.getElementById('chat-text-input');
-            chatInput.style.display = 'block';
-            chatInput.focus();
-        }
-        if (e.code === 'Tab') { e.preventDefault(); toggleScoreboardDisplay(true); }
-        if (e.code === 'Escape') exitToLobby();
-    });
-
-    window.addEventListener('keyup', (e) => {
-        keyboardInput[e.code] = false;
-        if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
-        if (e.code === 'Tab') toggleScoreboardDisplay(false);
-    });
-
-    function toggleScoreboardDisplay(show) {
-        const panel = document.getElementById('scoreboard-panel');
-        if (!panel) return;
-        panel.style.display = show ? 'block' : 'none';
-        if (show) {
-            let htmlStr = `<div class="sb-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
-            htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span><span>${playerTeam}</span><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
-            for (let pid in remotePlayers) {
-                const rp = remotePlayers[pid];
-                htmlStr += `<div class="sb-row"><span>${rp.username}</span><span>${rp.team}</span><span>${Math.max(0, Math.floor(rp.hp))}</span><span>${rp.coins || 0}</span></div>`;
-            }
-            document.getElementById('scoreboard-list').innerHTML = htmlStr;
-        }
-    }
-
-    function openCoinModal() {
-        if (playerCoins <= 0) return;
-        document.getElementById('coin-modal').style.display = 'block';
-        document.getElementById('coin-drop-amt').value = Math.min(10, playerCoins);
-    }
-
-    function closeCoinModal() {
-        document.getElementById('coin-modal').style.display = 'none';
-    }
-
-    function executeCoinDrop() {
-        const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
-        if (amountVal > 0 && amountVal <= playerCoins) {
-            playerCoins -= amountVal;
-            document.getElementById('coin-num').innerText = playerCoins;
-            spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
-        }
-        closeCoinModal();
-    }
-
-    function pickupNearbyLoot() {
-        for (let lid in droppedLoot) {
-            const item = droppedLoot[lid];
-            if (Math.hypot(posX - item.x, posY - item.y) < 45) {
-                if (item.type === 'coin') {
-                    playerCoins += item.value;
-                    document.getElementById('coin-num').innerText = playerCoins;
-                } else if (item.type === 'spike') {
-                    spikesCount++;
-                    refreshHotbarUI();
-                }
-                delete droppedLoot[lid];
-                showNotificationBox('Picked up loot!');
-                break;
-            }
-        }
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-        if (!inGameActive) return;
-        const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
-
-        if (checkInsideBase(posX, posY, playerTeam)) {
-            showNotificationBox('Actions disabled inside Base Safe Zone!');
-            return;
-        }
-
-        // Sword Attack (Slot 1)
-        if (activeHotbar === 0 && !actionCdAttack) {
-            const targetWorldX = posX + (clickX - canvas.width/2);
-            const targetWorldY = posY + (clickY - canvas.height/2);
-
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
-                        bot.hp -= 40;
-                        if (bot.hp <= 0) onEnemyEliminated();
-                    }
-                });
-            }
-            actionCdAttack = true;
-            setTimeout(() => { actionCdAttack = false; }, 250);
-        }
-
-        // Pickaxe Mining (Slot 2)
-        else if (activeHotbar === 1 && !actionCdAttack) {
-            const targetWorldX = posX + (clickX - canvas.width/2);
-            const targetWorldY = posY + (clickY - canvas.height/2);
-
-            for (let k in worldBlocks) {
-                const blk = worldBlocks[k];
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
-
-                if (targetWorldX >= bx && targetWorldX <= bx + 40 && targetWorldY >= by && targetWorldY <= by + 40) {
-                    if (Math.hypot(posX - (bx + 20), posY - (by + 20)) <= 90) {
-                        blk.hp -= 35;
-                        if (blk.hp <= 0) {
-                            delete worldBlocks[k];
-                            const activeMode = isHosting ? currentMode : hostGameMode;
-                            if (activeMode !== 'creative') {
-                                playerCoins += 15;
-                                document.getElementById('coin-num').innerText = playerCoins;
-                            }
-                            spawnWorldLoot('coin', null, bx + 20, by + 20, 15);
-                            showNotificationBox('Structure destroyed (+15 🪙)!');
-                        }
-                    }
-                    break;
-                }
-            }
-            actionCdAttack = true;
-            setTimeout(() => { actionCdAttack = false; }, 300);
-        }
-
-        // Block Building (Slot 3)
-        else if (activeHotbar === 2 && !actionCdBuild) {
-            const targetX = posX + (clickX - canvas.width/2);
-            const targetY = posY + (clickY - canvas.height/2);
-            const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-            const activeMode = isHosting ? currentMode : hostGameMode;
-            worldBlocks[bKey] = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
-            actionCdBuild = true;
-            setTimeout(() => { actionCdBuild = false; }, 300);
-        }
-
-        // Trap Placement (Slot 7)
-        else if (activeHotbar === 6) {
-            const targetX = posX + (clickX - canvas.width/2);
-            const targetY = posY + (clickY - canvas.height/2);
-            const tKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-            
-            worldTraps[tKey] = {
-                type: spikesCount > 0 ? 'spike' : 'teamdoor',
-                team: playerTeam,
-                hp: 80
-            };
-            if (spikesCount > 0) spikesCount--;
-            else teamDoorsCount--;
-            refreshHotbarUI();
-            showNotificationBox('Placed trap!');
-        }
-
-        // Bandage (Slot 8)
-        else if (activeHotbar === 7) {
-            if (bandagesCount <= 0 || currentHp >= 100) return;
-            bandagesCount--;
-            currentHp = Math.min(100, currentHp + 40);
-            refreshHotbarUI();
-            showNotificationBox('Used bandage (+40 HP)!');
-        }
-
-        // Firearms (Slots 4, 5, 6)
-        else if (activeHotbar >= 3 && activeHotbar <= 5) {
-            const gunEquipped = weaponBarSlots[activeHotbar - 3];
-            if (!gunEquipped) return;
-            if (!actionCdAttack) {
-                bulletsList.push({
-                    x: posX,
-                    y: posY,
-                    vx: Math.cos(aimAngle) * 18,
-                    vy: Math.sin(aimAngle) * 18,
-                    type: gunEquipped,
-                    team: playerTeam
-                });
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 200);
-            }
-        }
-    });
-
-    function updateGameLogic() {
-        if (!inGameActive) return;
-
-        const activeMode = isHosting ? currentMode : hostGameMode;
-        if (activeMode === 'creative') {
-            playerCoins = 999999;
-            document.getElementById('coin-num').innerText = playerCoins;
-        }
-
-        if (currentHp <= 0) {
-            document.getElementById('death-modal').style.display = 'flex';
-            return;
-        }
-
-        let moveSpeed = 3.8;
-        let sprintMultiplier = 1.0;
-        if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
-            if (currentStamina > 2) {
-                sprintMultiplier = 1.75;
-                currentStamina -= 0.5;
-            }
-        } else {
-            currentStamina = Math.min(100, currentStamina + 0.3);
-        }
-
-        let dx = 0, dy = 0;
-        if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
-        if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
-        if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
-        if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
-
-        if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
-
-        let nextX = posX + dx * moveSpeed * sprintMultiplier;
-        let nextY = posY + dy * moveSpeed * sprintMultiplier;
-
-        nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
-        nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
-
-        // Solid Block Collision
-        for (let k in worldBlocks) {
-            const parts = k.split(',');
-            const bx = parseInt(parts[0]) * 40;
-            const by = parseInt(parts[1]) * 40;
-            if (nextX + RADIUS_PLAYER > bx && nextX - RADIUS_PLAYER < bx + 40 &&
-                nextY + RADIUS_PLAYER > by && nextY - RADIUS_PLAYER < by + 40) {
-                nextX = posX; nextY = posY;
-                break;
-            }
-        }
-
-        // Trap Collision
-        for (let k in worldTraps) {
-            const tr = worldTraps[k];
-            const parts = k.split(',');
-            const tx = parseInt(parts[0]) * 40;
-            const ty = parseInt(parts[1]) * 40;
-
-            if (tr.type === 'teamdoor' && tr.team !== playerTeam) {
-                if (nextX + RADIUS_PLAYER > tx && nextX - RADIUS_PLAYER < tx + 40 &&
-                    nextY + RADIUS_PLAYER > ty && nextY - RADIUS_PLAYER < ty + 40) {
-                    nextX = posX; nextY = posY;
-                }
-            }
-            if (tr.type === 'spike') {
-                if (Math.hypot(posX - (tx + 20), posY - (ty + 20)) < 24) {
-                    currentHp = Math.max(0, currentHp - (5 / 60));
-                }
-            }
-        }
-
-        if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
-            nextX = posX; nextY = posY;
-        }
-
-        posX = nextX;
-        posY = nextY;
-
-        const screenCenterX = canvas.width / 2;
-        const screenCenterY = canvas.height / 2;
-        aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
-
-        document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-        document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
-        document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
-        document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
-    }
-
-    function respawnPlayer() {
-        currentHp = 100;
-        if (playerTeam === 'Red') { posX = 200; posY = 200; }
-        else if (playerTeam === 'Blue') { posX = MAP_SIZE - 200; posY = MAP_SIZE - 200; }
-        else if (playerTeam === 'Green') { posX = 200; posY = MAP_SIZE - 200; }
-        else if (playerTeam === 'Yellow') { posX = MAP_SIZE - 200; posY = 200; }
-        else { posX = MAP_SIZE / 2; posY = MAP_SIZE / 2; }
-
-        const safeGridKey = `${Math.floor(posX / 40)},${Math.floor(posY / 40)}`;
-        delete worldTraps[safeGridKey];
-
-        document.getElementById('death-modal').style.display = 'none';
-        inGameActive = true;
-    }
-
-    function renderGameScene() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!inGameActive) return;
-
-        ctx.save();
-        let camX = posX - canvas.width / 2;
-        let camY = posY - canvas.height / 2;
-        ctx.translate(-camX, -camY);
-
-        // Draw World Grid
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.lineWidth = 1;
-        for (let gx = 0; gx <= MAP_SIZE; gx += 80) {
-            ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, MAP_SIZE); ctx.stroke();
-        }
-        for (let gy = 0; gy <= MAP_SIZE; gy += 80) {
-            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(MAP_SIZE, gy); ctx.stroke();
-        }
-
-        // Draw Bases
-        const bases = [
-            { name: 'Red Base', x1: 0, y1: 0, color: 'rgba(229, 57, 53, 0.25)' },
-            { name: 'Blue Base', x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(30, 136, 229, 0.25)' }
-        ];
-        bases.forEach(b => {
-            ctx.fillStyle = b.color;
-            ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-            ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-        });
-
-        // Draw Blocks
-        for (let k in worldBlocks) {
-            const blk = worldBlocks[k];
-            const parts = k.split(',');
-            const bx = parseInt(parts[0]) * 40;
-            const by = parseInt(parts[1]) * 40;
-            ctx.fillStyle = '#795548';
-            ctx.fillRect(bx, by, 40, 40);
-            ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 2;
-            ctx.strokeRect(bx, by, 40, 40);
-        }
-
-        // Draw Traps
-        for (let k in worldTraps) {
-            const tr = worldTraps[k];
-            const parts = k.split(',');
-            const tx = parseInt(parts[0]) * 40;
-            const ty = parseInt(parts[1]) * 40;
-            if (tr.type === 'spike') {
-                ctx.fillStyle = '#d32f2f';
-                ctx.fillRect(tx + 5, ty + 5, 30, 30);
-            } else {
-                ctx.fillStyle = '#2196f3';
-                ctx.fillRect(tx + 4, ty + 4, 32, 32);
-            }
-        }
-
-        // Draw Loot
-        for (let lid in droppedLoot) {
-            const item = droppedLoot[lid];
-            ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#e53935';
-            ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
-        }
-
-        // Draw Player Body
-        ctx.save();
-        ctx.translate(posX, posY);
-        ctx.fillStyle = playerColor;
-        ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-        ctx.restore();
-
-        ctx.restore();
-    }
-
-    function renderMinimapScene() {
-        mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
-        if (!inGameActive) return;
-        const scale = mCanvas.width / MAP_SIZE;
-        mCtx.fillStyle = '#112218';
-        mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-
-        mCtx.fillStyle = playerColor;
-        mCtx.beginPath();
-        mCtx.arc(posX * scale, posY * scale, 5, 0, Math.PI * 2);
-        mCtx.fill();
-    }
-
-    function gameLoop() {
-        updateGameLogic();
-        renderGameScene();
-        renderMinimapScene();
-        requestAnimationFrame(gameLoop);
-    }
-
-    requestAnimationFrame(gameLoop);
-</script>
-</body>
-</html>
+        <!-- Shop Modal -->
+        <div id="shop-panel">
+            <h3>🛒 ARENA OUTFITTER & VEHICLES</h3>
+            <div class="shop-tabs-row">
+                <button class="shop-tab active" onclick="switchShopTab('gear', this)">Weapons</button>
+                <button class="shop-tab" onclick="switchShopTab('rides', this)">🚗 Vehicles</button>
+            </div>
+
+            <div id="shop-tab-gear" class="shop-content active">
+                <div class="shop-item-card"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
+                <div class="shop-item-card"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 450)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Minigun</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('gun', 'minigun', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
+            </div>
+
+            <div id="shop-tab-rides" class="shop-content">
+                <div class="shop-item-card"><span>🚲 Fast Bike (Cap: 1 | +15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
+            </div>
+
+            <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
+        </div>
+
+        <!-- Coin Drop Prompt Modal -->
+        <div id="coin-modal">
+            <h3>🪙 Drop Coins</h3>
+            <p style="font-size:12px; color:#aaa;">Amount to drop on ground:</p>
+            <input type="number" id="coin-drop-amt" min="1" value="10">
+            <button style="background:#4caf50; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="executeCoinDrop()">Drop</button>
+            <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinModal()">Cancel</button>
+        </div>
+
+        <!-- Death Screen Modal -->
+        <div id="death-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(229,57,53,0.3); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 70;">
+            <div class="modal-card" style="border-color: #e53935; background: rgba(20,14,14,0.96);">
+                <h3 style="color: #e53935; font-size: 24px;">💀 YOU DIED</h3>
+                <p style="font-size: 13px; color: #ccc; margin-bottom: 16px;">You were eliminated in the battlefield.</p>
+                <button class="btn-team-red" onclick="respawnPlayer()" style="background:#4caf50; margin-bottom: 8px;">Respawn at Base</button>
+                <button class="btn-team-blue" onclick="exitToLobby()" style="background:#e53935;">Leave Room</button>
+            </div>
+        </div>
+
+        <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
+        <div id="self-destruct-banner">⚠️ Base Exited!
