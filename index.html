@@ -415,7 +415,9 @@
 
         function logMissingAsset(url, errorMsg) {
             const timeStr = new Date().toLocaleTimeString();
-            missingAssetLogs.push(`[${timeStr}] Failed PNG: "${url}" -> ${errorMsg}`);
+            const logEntry = `[${timeStr}] Failed PNG: "${url}" -> ${errorMsg}`;
+            missingAssetLogs.push(logEntry);
+            console.error(logEntry);
             updateDebugLogUI();
         }
 
@@ -462,8 +464,8 @@
                 toggleDrawingPanel();
                 showNotificationBox('✨ GitHub PNG skin loaded and applied successfully!');
             };
-            img.onerror = () => {
-                logMissingAsset(urlVal, 'Network error or CORS restriction loading PNG');
+            img.onerror = (e) => {
+                logMissingAsset(urlVal, 'Network error, 404, or CORS restriction loading PNG asset');
                 customPixelData = getPinkPlaceholderTexture();
                 toggleDrawingPanel();
                 showNotificationBox('❌ Failed to load PNG! Replaced with pink texture. Press Shift+C to view log.');
