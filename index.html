@@ -472,7 +472,201 @@
         }
 
         function toggleShopPanel() {
-<!-- ... --><script>
+            const panel = document.getElementById('shop-panel');
+            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function switchShopTab(tabName, btnEl) {
+            document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
+            btnEl.classList.add('active');
+            const target = document.getElementById('shop-tab-' + tabName);
+            if (target) target.classList.add('active');
+        }
+
+        function switchLobbyTab(tabName, btnEl) {
+            document.querySelectorAll('.lobby-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
+            btnEl.classList.add('active');
+            const target = document.getElementById('lobby-tab-' + tabName);
+            if (target) target.classList.add('active');
+        }
+
+        function formatPeerId(code) {
+            return 'p2parena-room-' + code.trim().toLowerCase();
+        }
+
+        function scanAvailablePeers() {
+            const container = document.getElementById('peer-list-container');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">Scanning active rooms...</div>`;
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="peer-item"><span>🚪 Room: <b>alpha</b></span><button onclick="quickJoinRoom('alpha')">Join</button></div>
+                    <div class="peer-item"><span>🚪 Room: <b>beta</b></span><button onclick="quickJoinRoom('beta')">Join</button></div>
+                `;
+            }, 800);
+        }
+
+        function quickJoinRoom(code) {
+            document.getElementById('input-room').value = code;
+            initJoinRoom();
+        }
+
+        function joinGlobalServer(serverCode, mode) {
+            document.getElementById('input-room').value = serverCode;
+            hostGameMode = mode;
+            currentMode = mode;
+            initJoinRoom();
+        }
+
+        function copyDirectRoomLink() {
+            const url = window.location.origin + window.location.pathname + '?room=' + roomCode;
+            document.execCommand('copy');
+            showNotificationBox('🔗 Room link copied to clipboard!');
+        }
+
+        function copyDirectTeamLink() {
+            const url = window.location.origin + window.location.pathname + '?room=' + roomCode + '&team=' + playerTeam;
+            document.execCommand('copy');
+            showNotificationBox(`🚩 ${playerTeam} team invitation link copied!`);
+        }
+
+        function showUIInGame(active) {
+            document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
+            document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
+            document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
+            document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('draw-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
+            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
+            document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('ammo-hud-box').style.display = active ? 'block' : 'none';
+            document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('room-notification').style.display = active ? 'none' : 'block';
+
+            if (!active) {
+                document.getElementById('death-modal').style.display = 'none';
+                document.getElementById('inventory-panel').style.display = 'none';
+                document.getElementById('shop-panel').style.display = 'none';
+                document.getElementById('drawing-panel').style.display = 'none';
+            }
+        }
+
+        function respawnPlayer() {
+            currentHp = 100;
+            baseLockedOut = false;
+            document.getElementById('death-modal').style.display = 'none';
+            posX = MAP_SIZE / 2;
+            posY = MAP_SIZE / 2;
+            showNotificationBox('Respawned at Battlefield Base!');
+        }
+
+        function toggleInventoryPanel() {
+            const panel = document.getElementById('inventory-panel');
+            if (!panel) return;
+            const isVisible = panel.style.display === 'block';
+            panel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) renderBackpackGrid();
+        }
+
+        function renderBackpackGrid() {
+            const gridEl = document.getElementById('inv-grid');
+            if (!gridEl) return;
+            let htmlStr = '';
+            for (let i = 0; i < 32; i++) {
+                const item = backpackInventory[i];
+                let label = 'Empty';
+                if (item) {
+                    if (item.type === 'gun') label = item.subtype.toUpperCase();
+                }
+                htmlStr += `<div class="inventory-slot" draggable="true" ondragstart="dragBackpackItem(event, ${i})" ondragover="allowDrop(event)" ondrop="dropToBackpack(event, ${i})" onclick="clickInventorySlot(${i})">
+                    <span>${i+1}</span>
+                    <b style="font-size:9px;">${label}</b>
+                </div>`;
+            }
+            gridEl.innerHTML = htmlStr;
+
+            for (let k = 0; k < 3; k++) {
+                const sub = weaponBarSlots[k];
+                const lbl = document.getElementById(`inv-hb${k}-lbl`);
+                if (lbl) lbl.innerText = sub ? sub.toUpperCase() : 'Empty';
+            }
+            refreshHotbarUI();
+        }
+
+        function selectHotbarSlot(idx) {
+            activeHotbar = idx;
+            refreshHotbarUI();
+        }
+
+        function refreshHotbarUI() {
+            for (let i = 0; i < 8; i++) {
+                const slotEl = document.getElementById(`hslot-${i}`);
+                if (slotEl) {
+                    if (i === activeHotbar) slotEl.classList.add('selected');
+                    else slotEl.classList.remove('selected');
+                }
+            }
+            for (let k = 0; k < 3; k++) {
+                const gunSub = weaponBarSlots[k];
+                const labelEl = document.getElementById(`gun${k}-label`);
+                if (labelEl) labelEl.innerText = gunSub ? gunSub.toUpperCase() : 'Empty';
+            }
+            const gLbl = document.getElementById('grenade-label');
+            if (gLbl) gLbl.innerText = `Grenade (${grenadesCount})`;
+            const bLbl = document.getElementById('bandage-label');
+            if (bLbl) bLbl.innerText = `Bandage (${bandagesCount})`;
+            updateAmmoHUD();
+        }
+
+        function updateAmmoHUD() {
+            const ammoCur = document.getElementById('ammo-current');
+            const ammoMax = document.getElementById('ammo-max');
+            const reloadPrompt = document.getElementById('reload-prompt');
+            if (!ammoCur || !ammoMax) return;
+
+            if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunIdx = activeHotbar - 3;
+                const gunSub = weaponBarSlots[gunIdx];
+                if (gunSub && weaponMagazines[gunIdx]) {
+                    ammoCur.innerText = weaponMagazines[gunIdx].current;
+                    ammoMax.innerText = weaponMagazines[gunIdx].max;
+                    if (reloadPrompt) reloadPrompt.style.display = weaponMagazines[gunIdx].current <= 0 ? 'block' : 'none';
+                    return;
+                }
+            }
+            ammoCur.innerText = '-';
+            ammoMax.innerText = '-';
+            if (reloadPrompt) reloadPrompt.style.display = 'none';
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function dragBackpackItem(e, idx) {
+            draggedItemSource = { type: 'backpack', index: idx };
+        }
+
+        function dragHotbarItem(e, hbIdx) {
+            draggedItemSource = { type: 'hotbar', index: hbIdx };
+        }
+
+        function dropToBackpack(e, targetIndex) {
+            e.preventDefault();
+            if (!draggedItemSource) return;
+
+            if (draggedItemSource.type === 'backpack') {
+                const srcIdx = draggedItemSource.index;
+                const temp = backpackInventory[srcIdx];
+                backpackInventory[srcIdx] = backpackInventory[targetIndex];
+                backpackInventory[targetIndex] = temp;
+            } else if (draggedItemSource.type === 'hotbar') {
+                const hbIdx = draggedItemSource.index;
                 const hbItemSub = weaponBarSlots[hbIdx];
                 const targetBackpackItem = backpackInventory[targetIndex];
 
@@ -1284,7 +1478,8 @@
             if (e.code === 'KeyB') toggleShopPanel();
             if (e.shiftKey && e.code === 'KeyC') { e.preventDefault(); toggleDebugLogPanel(); }
             if (e.code === 'Space') { e.preventDefault(); reloadWeapon(); }
-<!-- ... --><script>
+            if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
+            if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
             if (e.code === 'KeyQ') dropActiveItem();
             if (e.code === 'KeyZ') openCoinModal();
             if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
@@ -1458,7 +1653,6 @@
                 return;
             }
 
-            // Continuous Holding Auto-Fire for Automatic Weapons (SMG, Minigun, Flamethrower, Laser)
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const gunEquipped = weaponBarSlots[activeHotbar - 3];
                 if (['smg', 'minigun', 'flame', 'laser', 'plasma'].includes(gunEquipped)) {
@@ -1836,4 +2030,67 @@
                 }
 
                 if (activeHotbar === 0) {
-<!-- ... --><script>
+                    ctx.fillStyle = '#cfd8dc';
+                    ctx.fillRect(10, -3, 20, 6);
+                } else if (activeHotbar === 1) {
+                    ctx.fillStyle = '#8d6e63';
+                    ctx.fillRect(10, -4, 18, 8);
+                } else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                    ctx.fillStyle = '#37474f';
+                    ctx.fillRect(8, -3, 22, 6);
+                }
+                ctx.restore();
+            }
+
+            bulletsList.forEach(b => {
+                ctx.fillStyle = b.type === 'sniper' ? '#ffeb3b' : b.type === 'rocket' ? '#ff5722' : b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#e040fb' : '#fff';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.type === 'rocket' ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+            });
+
+            activeGrenades.forEach(g => {
+                ctx.fillStyle = '#333';
+                ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ff9800'; ctx.lineWidth = 1.5; ctx.stroke();
+            });
+
+            floatingParticles.forEach(fp => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 152, 0, ${fp.alpha})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            ctx.restore();
+
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            mCtx.fillStyle = '#111';
+            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+            const scaleM = mCanvas.width / MAP_SIZE;
+            mCtx.fillStyle = playerColor;
+            mCtx.beginPath(); mCtx.arc(posX * scaleM, posY * scaleM, 4, 0, Math.PI * 2); mCtx.fill();
+
+            for (let pid in remotePlayers) {
+                const rp = remotePlayers[pid];
+                if (rp && rp.hp > 0) {
+                    mCtx.fillStyle = rp.color || '#e53935';
+                    mCtx.beginPath(); mCtx.arc(rp.x * scaleM, rp.y * scaleM, 3, 0, Math.PI * 2); mCtx.fill();
+                }
+            }
+        }
+
+        function gameLoop() {
+            updateGameLogic();
+            renderGameScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = () => {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
