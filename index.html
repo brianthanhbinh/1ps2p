@@ -392,31 +392,7 @@
         const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
         let globalHostingInstances = {};
 
-        // Asset Registry for PNG URLs and loaded Images
-        const assetRegistryUrls = {
-            skin: 'https://raw.githubusercontent.com/username/repo/main/skin.png',
-            sword: 'https://raw.githubusercontent.com/username/repo/main/sword.png',
-            pickaxe: 'https://raw.githubusercontent.com/username/repo/main/pickaxe.png',
-            block: 'https://raw.githubusercontent.com/username/repo/main/block.png',
-            pistol: 'https://raw.githubusercontent.com/username/repo/main/pistol.png',
-            smg: 'https://raw.githubusercontent.com/username/repo/main/smg.png',
-            shotgun: 'https://raw.githubusercontent.com/username/repo/main/shotgun.png',
-            sniper: 'https://raw.githubusercontent.com/username/repo/main/sniper.png',
-            rocket: 'https://raw.githubusercontent.com/username/repo/main/rocket.png',
-            minigun: 'https://raw.githubusercontent.com/username/repo/main/minigun.png',
-            laser: 'https://raw.githubusercontent.com/username/repo/main/laser.png',
-            plasma: 'https://raw.githubusercontent.com/username/repo/main/plasma.png',
-            flame: 'https://raw.githubusercontent.com/username/repo/main/flame.png',
-            grenade: 'https://raw.githubusercontent.com/username/repo/main/grenade.png',
-            bandage: 'https://raw.githubusercontent.com/username/repo/main/bandage.png',
-            coin: 'https://raw.githubusercontent.com/username/repo/main/coin.png',
-            crate: 'https://raw.githubusercontent.com/username/repo/main/crate.png',
-            bike: 'https://raw.githubusercontent.com/username/repo/main/bike.png',
-            car: 'https://raw.githubusercontent.com/username/repo/main/car.png',
-            tank: 'https://raw.githubusercontent.com/username/repo/main/tank.png',
-            hovercraft: 'https://raw.githubusercontent.com/username/repo/main/hovercraft.png',
-            mech: 'https://raw.githubusercontent.com/username/repo/main/mech.png'
-        };
+        // Asset Registry for PNG scans
         const assetRegistry = {};
 
         function formatPeerId(code) {
@@ -450,13 +426,13 @@
 
         // Process Image to Remove White Background and Replace Pure Red (#FF0000) with Team Color
         function processImageTransparencyAndTeamColor(imgElement, teamHexColor) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = imgElement.naturalWidth || 32;
-            tempCanvas.height = imgElement.naturalHeight || 32;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.drawImage(imgElement, 0, 0);
-
             try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = imgElement.naturalWidth || 32;
+                tempCanvas.height = imgElement.naturalHeight || 32;
+                const tCtx = tempCanvas.getContext('2d');
+                tCtx.drawImage(imgElement, 0, 0);
+
                 const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                 const data = imgData.data;
 
@@ -470,11 +446,9 @@
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i], g = data[i + 1], b = data[i + 2];
 
-                    // Pure White or near-white background removal (MS Paint)
                     if (r >= 240 && g >= 240 && b >= 240) {
                         data[i + 3] = 0; // Transparent
                     }
-                    // Pure Red (#FF0000) team color replacement
                     else if (r > 220 && g < 35 && b < 35) {
                         data[i] = teamR;
                         data[i + 1] = teamG;
@@ -486,31 +460,28 @@
                 processedImg.src = tempCanvas.toDataURL();
                 return processedImg;
             } catch (e) {
-                console.warn('[Transparency Filter] CORS restriction on image.', e);
                 return imgElement;
             }
         }
 
-        // GitHub Directory PNG Scanner & Missing Asset Logger
+        // GitHub Directory PNG Scanner & Safe Fallback Loader
         function loadTrackedImage(url, fallbackText) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             if (!url || url.trim() === '') {
-                console.error(`[Missing PNG Asset Error] Empty asset URL for "${fallbackText}". Using pink checkerboard placeholder.`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
                 return img;
             }
 
             img.onload = () => {
-                console.log(`[Asset Success] Found and loaded PNG asset: "${url}"`);
                 const processed = processImageTransparencyAndTeamColor(img, playerColor);
                 img.src = processed.src;
             };
 
             img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] PNG asset missing or failed to load: "${url}". Replaced with pink placeholder (${fallbackText}).`);
+                // Silently fallback to generated canvas texture to prevent console clutter
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
             };
@@ -519,21 +490,26 @@
             return img;
         }
 
-        // Initialize Asset Registry
-        for (let key in assetRegistryUrls) {
-            assetRegistry[key] = loadTrackedImage(assetRegistryUrls[key], key);
-        }
+        const requiredPngs = [
+            'skin.png', 'sword.png', 'pickaxe.png', 'block.png', 'grenade.png', 'bandage.png',
+            'pistol.png', 'smg.png', 'shotgun.png', 'sniper.png', 'rocket.png', 'minigun.png',
+            'laser.png', 'plasma.png', 'flame.png', 'bike.png', 'car.png', 'tank.png',
+            'hovercraft.png', 'mech.png', 'coin.png', 'crate.png', 'bullet.png'
+        ];
 
-        // Calculate Team Spawn Coordinates
+        requiredPngs.forEach(pngFilename => {
+            const baseName = pngFilename.split('.')[0];
+            assetRegistry[baseName] = loadTrackedImage(pngFilename, baseName);
+        });
+
         function getTeamSpawnCoords(teamName) {
             if (teamName === 'Red') return { x: 250, y: 250 };
             if (teamName === 'Blue') return { x: MAP_SIZE - 250, y: MAP_SIZE - 250 };
             if (teamName === 'Green') return { x: 250, y: MAP_SIZE - 250 };
             if (teamName === 'Yellow') return { x: MAP_SIZE - 250, y: 250 };
-            return { x: MAP_SIZE / 2, y: MAP_SIZE / 2 }; // FFA spawns in center
+            return { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
         }
 
-        // Procedural Distinct Sprite Art Fallback for Items
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
             if (!canvasEl) return;
             const cxt = canvasEl.getContext('2d');
@@ -1056,31 +1032,6 @@
             return false;
         }
 
-        // Fixed Wall Collision Helper to prevent clipping/getting stuck
-        function checkCollisionWithBlocks(x, y, radius) {
-            const minGridX = Math.floor((x - radius) / 40);
-            const maxGridX = Math.floor((x + radius) / 40);
-            const minGridY = Math.floor((y - radius) / 40);
-            const maxGridY = Math.floor((y + radius) / 40);
-
-            for (let gx = minGridX; gx <= maxGridX; gx++) {
-                for (let gy = minGridY; gy <= maxGridY; gy++) {
-                    const k = `${gx},${gy}`;
-                    if (worldBlocks[k]) {
-                        const bx = gx * 40;
-                        const by = gy * 40;
-                        const closestX = Math.max(bx, Math.min(x, bx + 40));
-                        const closestY = Math.max(by, Math.min(y, by + 40));
-                        const dist = Math.hypot(x - closestX, y - closestY);
-                        if (dist < radius) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
         function initHostRoom() {
             myUsername = document.getElementById('input-username').value.trim() || 'Host';
             roomCode = document.getElementById('input-room').value.trim() || 'alpha';
@@ -1090,5 +1041,1335 @@
             document.getElementById('net-status').innerText = 'Initializing Host Peer...';
             if (peerInstance) peerInstance.destroy();
 
-            peerInstance = new Peer(format
+            peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
+                promptGameModeSelection();
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Host Error: ${err.type}`;
+                if (err.type === 'unavailable-id') {
+                    showNotificationBox('Room ID already taken! Choose another code.');
+                }
+            });
+            peerInstance.on('connection', (conn) => {
+                setupServerConnection(conn);
+            });
+        }
+
+        function initJoinRoom() {
+            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
+            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+            isHosting = false;
+            isPractice = false;
+
+            document.getElementById('net-status').innerText = 'Connecting to Host...';
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                setupClientConnection(conn);
+            });
+            peerInstance.on('error', (err) => {
+                document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
+                showNotificationBox('Could not connect to host room. Please check room code.');
+            });
+        }
+
+        function promptLocalPlayMode() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Local Play Mode';
+            opts.innerHTML = `
+                <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP, 1-Hit Mine)</button>
+                <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectLocalMode(localMode) {
+            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
+            isHosting = false;
+            isPractice = (localMode === 'pvp');
+            currentMode = localMode === 'creative' ? 'creative' : '4team';
+            if (localMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
+        }
+
+        function promptGameModeSelection() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Game Mode';
+            opts.innerHTML = `
+                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
+                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
+                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Server (Inf Coins, 300 HP, 1-Hit Mine)</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectGameModeAndTeam(mode) {
+            currentMode = mode;
+            hostGameMode = mode;
+            if (mode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
+        }
+
+        function promptTeamSelection() {
+            if (preselectedTeam) {
+                assignTeamAndSpawn(preselectedTeam.name, preselectedTeam.color);
+                preselectedTeam = null;
+                return;
+            }
+
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Choose Your Team';
+            
+            const activeMode = isHosting ? currentMode : hostGameMode;
+
+            if (activeMode === 'ffa') {
+                opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">FFA Neutral</button>`;
+            } else if (activeMode === '2team') {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                `;
+            } else {
+                opts.innerHTML = `
+                    <button class="btn-team-red" onclick="assignTeamAndSpawn('Red', '#e53935')">Red Team</button>
+                    <button class="btn-team-blue" onclick="assignTeamAndSpawn('Blue', '#1e88e5')">Blue Team</button>
+                    <button class="btn-team-green" onclick="assignTeamAndSpawn('Green', '#43a047')">Green Team</button>
+                    <button class="btn-team-yellow" onclick="assignTeamAndSpawn('Yellow', '#fbc02d')">Yellow Team</button>
+                `;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function assignTeamAndSpawn(teamName, hexColor) {
+            playerTeam = teamName;
+            playerColor = hexColor;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            const spawnCoords = getTeamSpawnCoords(teamName);
+            posX = spawnCoords.x;
+            posY = spawnCoords.y;
+
+            if (customPlayerSkinImg && customPlayerSkinImg.complete) {
+                customPlayerSkinImg = processImageTransparencyAndTeamColor(customPlayerSkinImg, playerColor);
+            }
+
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+            } else {
+                currentHp = 100;
+            }
+
+            currentStamina = 100;
+            baseLockedOut = false;
+            inGameActive = true;
+            showUIInGame(true);
+
+            if (isPractice) {
+                spawnPracticeBots();
+            }
+
+            if (!isHosting && hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'client_join',
+                    username: myUsername,
+                    team: playerTeam,
+                    color: playerColor,
+                    x: posX,
+                    y: posY
+                });
+            }
+
+            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
+            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+        }
+
+        function respawnPlayer() {
+            document.getElementById('death-modal').style.display = 'none';
+            currentHp = 100;
+            const spawnCoords = getTeamSpawnCoords(playerTeam);
+            posX = spawnCoords.x;
+            posY = spawnCoords.y;
+            baseLockedOut = false;
+            showNotificationBox(`Respawned at ${playerTeam} Base!`);
+        }
+
+        function executeSelfDestruct() {
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') return;
+            if (selfDestructCountdown > 0) return;
+            selfDestructCountdown = 30;
+            baseLockedOut = true;
+            showNotificationBox('Exited Base! Base re-entry locked for 30s or until enemy kill.');
+            const banner = document.getElementById('self-destruct-banner');
+            const cdSpan = document.getElementById('sd-countdown');
+            if (banner) banner.style.display = 'block';
+            if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            selfDestructTimerHandle = setInterval(() => {
+                selfDestructCountdown--;
+                if (cdSpan) cdSpan.innerText = `${selfDestructCountdown}s`;
+                if (selfDestructCountdown <= 0) {
+                    clearInterval(selfDestructTimerHandle);
+                    if (banner) banner.style.display = 'none';
+                    baseLockedOut = false;
+                    showNotificationBox('Base Re-entry unlocked!');
+                }
+            }, 1000);
+        }
+
+        function onEnemyEliminated() {
+            baseLockedOut = false;
+            selfDestructCountdown = 0;
+            if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
+            const banner = document.getElementById('self-destruct-banner');
+            if (banner) banner.style.display = 'none';
+            currentHp = Math.min(100, currentHp + 50);
+            showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
+        }
+
+        function exitToLobby() {
+            inGameActive = false;
+            showUIInGame(false);
+            if (peerInstance) {
+                peerInstance.destroy();
+                peerInstance = null;
+            }
+            remotePlayers = {};
+            aiBots = [];
+            document.getElementById('net-status').innerText = 'Left room. Ready.';
+        }
+
+        function setupServerConnection(conn) {
+            peerConnections[conn.peer] = conn;
+            conn.on('open', () => {
+                conn.send({ 
+                    type: 'room_config', 
+                    mode: currentMode,
+                    blocks: worldBlocks,
+                    loot: droppedLoot,
+                    crates: supplyCrates,
+                    vehicles: activeVehiclesList
+                });
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'client_join') {
+                    const spawnCoords = getTeamSpawnCoords(data.team);
+                    remotePlayers[conn.peer] = {
+                        username: data.username,
+                        team: data.team,
+                        color: data.color,
+                        x: spawnCoords.x,
+                        y: spawnCoords.y,
+                        hp: 100,
+                        coins: 100
+                    };
+                    broadcastStateToClients();
+                } else if (data.type === 'player_update') {
+                    if (remotePlayers[conn.peer]) {
+                        remotePlayers[conn.peer].x = data.x;
+                        remotePlayers[conn.peer].y = data.y;
+                        remotePlayers[conn.peer].hp = data.hp;
+                        remotePlayers[conn.peer].coins = data.coins;
+                        remotePlayers[conn.peer].username = data.username;
+                        remotePlayers[conn.peer].team = data.team;
+                        remotePlayers[conn.peer].color = data.color;
+                    }
+                    broadcastStateToClients();
+                } else if (data.type === 'place_block') {
+                    worldBlocks[data.key] = data.block;
+                    broadcastStateToClients();
+                } else if (data.type === 'spawn_loot') {
+                    droppedLoot[data.id] = data.item;
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_loot') {
+                    delete droppedLoot[data.id];
+                    broadcastStateToClients();
+                } else if (data.type === 'remove_crate') {
+                    supplyCrates.splice(data.index, 1);
+                    broadcastStateToClients();
+                } else if (data.type === 'update_vehicles') {
+                    activeVehiclesList = data.vehicles;
+                    broadcastStateToClients();
+                }
+            });
+            conn.on('close', () => {
+                delete peerConnections[conn.peer];
+                delete remotePlayers[conn.peer];
+            });
+        }
+
+        function setupClientConnection(conn) {
+            hostConnection = conn;
+            conn.on('open', () => {
+                document.getElementById('net-status').innerText = 'Connected to Host!';
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'room_config') {
+                    hostGameMode = data.mode || '4team';
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
+                    promptTeamSelection();
+                } else if (data.type === 'server_state') {
+                    if (data.players) {
+                        for (let pid in data.players) {
+                            if (peerInstance && pid !== peerInstance.id) {
+                                remotePlayers[pid] = data.players[pid];
+                            }
+                        }
+                    }
+                    if (data.blocks) worldBlocks = data.blocks;
+                    if (data.loot) droppedLoot = data.loot;
+                    if (data.crates) supplyCrates = data.crates;
+                    if (data.vehicles) activeVehiclesList = data.vehicles;
+                }
+            });
+            conn.on('close', () => {
+                showNotificationBox('Host disconnected! Migrating server host...');
+                if (!isHosting && roomCode) {
+                    isHosting = true;
+                    if (peerInstance) peerInstance.destroy();
+                    peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+                    peerInstance.on('open', () => {
+                        showNotificationBox('You are now the new room Host!');
+                        document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                        promptTeamSelection();
+                    });
+                    peerInstance.on('connection', (c) => {
+                        setupServerConnection(c);
+                    });
+                } else {
+                    showNotificationBox('Lost connection to host.');
+                }
+            });
+        }
+
+        function broadcastStateToClients() {
+            if (!isHosting) return;
+            let allPlayersState = {
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
+            };
+            for (let pid in remotePlayers) {
+                allPlayersState[pid] = remotePlayers[pid];
+            }
+            const packet = { 
+                type: 'server_state', 
+                players: allPlayersState,
+                blocks: worldBlocks,
+                loot: droppedLoot,
+                crates: supplyCrates,
+                vehicles: activeVehiclesList
+            };
+            for (let pid in peerConnections) {
+                if (peerConnections[pid].open) {
+                    peerConnections[pid].send(packet);
+                }
+            }
+        }
+
+        function spawnPracticeBots() {
+            aiBots = [];
+            const botTeams = ['Red', 'Blue', 'Green', 'Yellow'];
+            const botColors = ['#e53935', '#1e88e5', '#43a047', '#fbc02d'];
+
+            for (let i = 0; i < 4; i++) {
+                const bTeam = botTeams[i];
+                const bColor = botColors[i];
+                const spawn = getTeamSpawnCoords(bTeam);
+
+                aiBots.push({
+                    id: 'bot-' + i,
+                    username: 'Bot ' + (i + 1),
+                    team: bTeam,
+                    color: bColor,
+                    x: spawn.x,
+                    y: spawn.y,
+                    hp: 100,
+                    radius: RADIUS_PLAYER,
+                    vx: 0,
+                    vy: 0
+                });
+            }
+        }
+
+        function triggerAirdropSpawn() {
+            const newCrate = {
+                x: Math.random() * (MAP_SIZE - 600) + 300,
+                y: Math.random() * (MAP_SIZE - 600) + 300,
+                loot: 'gold'
+            };
+            supplyCrates.push(newCrate);
+            showNotificationBox('✈️ Supply Airdrop has landed on the map!');
+        }
+
+        function spawnWorldLoot(type, subtype, x, y, value) {
+            const id = 'loot-' + Math.random().toString(36).substr(2, 9);
+            const item = { type, subtype, x, y, value };
+            droppedLoot[id] = item;
+            if (isHosting) {
+                broadcastStateToClients();
+            } else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'spawn_loot', id, item });
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-text-input');
+            const txt = input.value.trim();
+            if (txt) {
+                const feed = document.getElementById('chat-feed');
+                feed.innerHTML += `<div class="chat-line"><b>${myUsername}:</b> ${escapeHtml(txt)}</div>`;
+                feed.scrollTop = feed.scrollHeight;
+                input.value = '';
+            }
+            input.blur();
+            input.style.display = 'none';
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseXCoord = e.clientX - rect.left;
+            mouseYCoord = e.clientY - rect.top;
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) isMouseDown = true;
+        });
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 0) isMouseDown = false;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (!inGameActive) return;
+            if (document.getElementById('chat-text-input') === document.activeElement) {
+                if (e.code === 'Enter') sendChatMessage();
+                else if (e.code === 'Escape') {
+                    document.getElementById('chat-text-input').blur();
+                    document.getElementById('chat-text-input').style.display = 'none';
+                }
+                return;
+            }
+
+            keyboardInput[e.code] = true;
+            if (e.code === 'Digit1') selectHotbarSlot(0);
+            if (e.code === 'Digit2') selectHotbarSlot(1);
+            if (e.code === 'Digit3') selectHotbarSlot(2);
+            if (e.code === 'Digit4') selectHotbarSlot(3);
+            if (e.code === 'Digit5') selectHotbarSlot(4);
+            if (e.code === 'Digit6') selectHotbarSlot(5);
+            if (e.code === 'Digit7') selectHotbarSlot(6);
+            if (e.code === 'Digit8') selectHotbarSlot(7);
+            if (e.code === 'KeyB') toggleShopPanel();
+            if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
+            if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
+            if (e.code === 'KeyQ') dropActiveItem();
+            if (e.code === 'KeyZ') openCoinModal();
+            if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
+            if (e.code === 'KeyR') executeSelfDestruct();
+            if (e.code === 'KeyJ') tryHopOnVehicle();
+            if (e.code === 'KeyH') dismountVehicle();
+            if (e.code === 'Space') {
+                e.preventDefault();
+                reloadWeapon();
+            }
+            if (e.code === 'KeyT') {
+                e.preventDefault();
+                const chatInput = document.getElementById('chat-text-input');
+                chatInput.style.display = 'block';
+                chatInput.focus();
+            }
+            if (e.code === 'Tab') {
+                e.preventDefault();
+                toggleScoreboardDisplay(true);
+            }
+            if (e.code === 'Escape') {
+                exitToLobby();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keyboardInput[e.code] = false;
+            if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
+            if (e.code === 'Tab') toggleScoreboardDisplay(false);
+        });
+
+        function reloadWeapon() {
+            if (isReloading) return;
+            isReloading = true;
+            showNotificationBox('Reloading weapon...');
+            setTimeout(() => {
+                currentAmmo = maxAmmo;
+                isReloading = false;
+                document.getElementById('ammo-count').innerText = currentAmmo;
+                showNotificationBox('Reload complete!');
+            }, 800);
+        }
+
+        function tryHopOnVehicle() {
+            if (boardedVehicle) {
+                showNotificationBox('Already boarded a vehicle! Press H to dismount.');
+                return;
+            }
+            let closestVeh = null;
+            let minDist = 70;
+            activeVehiclesList.forEach(veh => {
+                const dist = Math.hypot(posX - veh.x, posY - veh.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestVeh = veh;
+                }
+            });
+
+            if (!closestVeh) {
+                showNotificationBox('No vehicle nearby to hop onto!');
+                return;
+            }
+
+            if (playerTeam !== 'FFA' && closestVeh.team !== playerTeam) {
+                showNotificationBox('⚠️ Access Denied! You can only hop onto teammate vehicles!');
+                return;
+            }
+
+            if (closestVeh.passengers.length >= closestVeh.capacity) {
+                showNotificationBox('Vehicle is at full passenger capacity!');
+                return;
+            }
+
+            closestVeh.passengers.push(myUsername);
+            boardedVehicle = closestVeh;
+            showNotificationBox(`Hopped onto ${closestVeh.type.toUpperCase()}! Press H to leave.`);
+            if (isHosting) broadcastStateToClients();
+            else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'update_vehicles', vehicles: activeVehiclesList });
+            }
+        }
+
+        function dismountVehicle() {
+            if (!boardedVehicle) return;
+            const idx = boardedVehicle.passengers.indexOf(myUsername);
+            if (idx !== -1) boardedVehicle.passengers.splice(idx, 1);
+            showNotificationBox('Dismounted vehicle.');
+            boardedVehicle = null;
+            if (isHosting) broadcastStateToClients();
+            else if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'update_vehicles', vehicles: activeVehiclesList });
+            }
+        }
+
+        function toggleScoreboardDisplay(show) {
+            const panel = document.getElementById('scoreboard-panel');
+            if (!panel) return;
+            panel.style.display = show ? 'block' : 'none';
+            if (show) {
+                let htmlStr = `<div class="sb-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
+                htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span><span>${playerTeam}</span><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
+                for (let pid in remotePlayers) {
+                    const rp = remotePlayers[pid];
+                    htmlStr += `<div class="sb-row"><span>${rp.username}</span><span>${rp.team}</span><span>${Math.max(0, Math.floor(rp.hp))}</span><span>${rp.coins || 0}</span></div>`;
+                }
+                document.getElementById('scoreboard-list').innerHTML = htmlStr;
+            }
+        }
+
+        function openCoinModal() {
+            if (playerCoins <= 0) return;
+            document.getElementById('coin-modal').style.display = 'block';
+            document.getElementById('coin-drop-amt').max = playerCoins;
+            document.getElementById('coin-drop-amt').value = Math.min(10, playerCoins);
+        }
+
+        function closeCoinModal() {
+            document.getElementById('coin-modal').style.display = 'none';
+        }
+
+        function executeCoinDrop() {
+            const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
+            if (amountVal > 0 && amountVal <= playerCoins) {
+                playerCoins -= amountVal;
+                document.getElementById('coin-num').innerText = playerCoins;
+                spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
+            }
+            closeCoinModal();
+        }
+
+        function pickupNearbyLoot() {
+            for (let lid in droppedLoot) {
+                const item = droppedLoot[lid];
+                const dist = Math.hypot(posX - item.x, posY - item.y);
+                if (dist < 45) {
+                    if (item.type === 'coin') {
+                        playerCoins += item.value;
+                        document.getElementById('coin-num').innerText = playerCoins;
+                    } else if (item.type === 'gun') {
+                        const emptyIdx = weaponBarSlots.findIndex(w => w === null);
+                        if (emptyIdx !== -1) {
+                            weaponBarSlots[emptyIdx] = item.subtype;
+                        } else {
+                            pushToBackpack(item);
+                        }
+                        refreshHotbarUI();
+                    }
+                    delete droppedLoot[lid];
+                    if (isHosting) {
+                        broadcastStateToClients();
+                    } else if (hostConnection && hostConnection.open) {
+                        hostConnection.send({ type: 'remove_loot', id: lid });
+                    }
+                    showNotificationBox('Picked up item!');
+                    break;
+                }
+            }
+
+            supplyCrates.forEach((crate, idx) => {
+                const dist = Math.hypot(posX - crate.x, posY - crate.y);
+                if (dist < 50) {
+                    const randomCoinReward = Math.floor(Math.random() * 150) + 1;
+                    playerCoins += randomCoinReward;
+                    document.getElementById('coin-num').innerText = playerCoins;
+                    supplyCrates.splice(idx, 1);
+                    if (isHosting) {
+                        broadcastStateToClients();
+                    } else if (hostConnection && hostConnection.open) {
+                        hostConnection.send({ type: 'remove_crate', index: idx });
+                    }
+                    showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
+                }
+            });
+        }
+
+        function triggerWeaponAttack(clickX, clickY) {
+            if (checkInsideBase(posX, posY, playerTeam)) {
+                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
+                return;
+            }
+
+            if (activeHotbar === 0 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                if (isPractice) {
+                    aiBots.forEach(bot => {
+                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
+                            bot.hp -= 40;
+                            if (bot.hp <= 0) onEnemyEliminated();
+                            showNotificationBox('Hit bot with sword!');
+                        }
+                    });
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 250);
+            }
+
+            else if (activeHotbar === 1 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                for (let k in worldBlocks) {
+                    const blk = worldBlocks[k];
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+
+                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
+                        targetWorldY >= by && targetWorldY <= by + 40) {
+                        
+                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
+                        if (distToBlock <= 90) {
+                            blk.hp -= 35;
+                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
+                            if (blk.hp <= 0) {
+                                delete worldBlocks[k];
+                                playerCoins += 15;
+                                document.getElementById('coin-num').innerText = playerCoins;
+                                showNotificationBox('Block destroyed (+15 🪙)!');
+                            }
+                            if (isHosting) broadcastStateToClients();
+                            else if (hostConnection && hostConnection.open) {
+                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
+                            }
+                        } else {
+                            showNotificationBox('Get closer to mine block!');
+                        }
+                        break;
+                    }
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 300);
+            }
+
+            else if (activeHotbar === 2 && !actionCdBuild) {
+                const targetX = posX + (clickX - canvas.width/2);
+                const targetY = posY + (clickY - canvas.height/2);
+                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+                const activeMode = isHosting ? currentMode : hostGameMode;
+                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
+                worldBlocks[bKey] = newBlock;
+
+                if (isHosting) {
+                    broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
+                }
+
+                actionCdBuild = true;
+                setTimeout(() => { actionCdBuild = false; }, 300);
+            }
+
+            else if (activeHotbar === 6) {
+                if (grenadesCount <= 0) {
+                    showNotificationBox('No grenades remaining!');
+                    return;
+                }
+                grenadesCount--;
+                refreshHotbarUI();
+
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+                const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
+                const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
+                const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
+
+                activeGrenades.push({
+                    startX: posX,
+                    startY: posY,
+                    x: posX,
+                    y: posY,
+                    targetX: targetWorldX,
+                    targetY: targetWorldY,
+                    vx: Math.cos(throwAngle) * speedFactor,
+                    vy: Math.sin(throwAngle) * speedFactor,
+                    fuseTime: Math.max(10, Math.floor(distToTarget / speedFactor))
+                });
+                showNotificationBox('Grenade thrown!');
+            }
+
+            else if (activeHotbar === 7) {
+                if (bandagesCount <= 0) {
+                    showNotificationBox('No bandages remaining!');
+                    return;
+                }
+                if (currentHp >= 100) {
+                    showNotificationBox('Health is already full!');
+                    return;
+                }
+                bandagesCount--;
+                currentHp = Math.min(100, currentHp + 40);
+                refreshHotbarUI();
+                showNotificationBox('Used bandage (+40 HP)!');
+            }
+
+            else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunEquipped = weaponBarSlots[activeHotbar - 3];
+                if (!gunEquipped) {
+                    showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
+                    return;
+                }
+                if (currentAmmo <= 0) {
+                    showNotificationBox('Out of ammo! Press SPACE to reload.');
+                    return;
+                }
+                if (!actionCdAttack) {
+                    currentAmmo--;
+                    document.getElementById('ammo-count').innerText = currentAmmo;
+
+                    let bulletCount = 1;
+                    if (gunEquipped === 'shotgun') bulletCount = 5;
+
+                    for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
+                        let spread = (bIdx - 2) * 0.08;
+                        if (bulletCount === 1) spread = 0;
+
+                        bulletsList.push({
+                            x: posX,
+                            y: posY,
+                            vx: Math.cos(aimAngle + spread) * 18,
+                            vy: Math.sin(aimAngle + spread) * 18,
+                            type: gunEquipped,
+                            team: playerTeam
+                        });
+                    }
+
+                    actionCdAttack = true;
+                    let cdTime = 250;
+                    if (gunEquipped === 'sniper') cdTime = 800;
+                    if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
+                    if (gunEquipped === 'laser' || gunEquipped === 'plasma') cdTime = 200;
+                    if (gunEquipped === 'rocket') cdTime = 600;
+
+                    setTimeout(() => { actionCdAttack = false; }, cdTime);
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!inGameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        function updateGameLogic() {
+            if (!inGameActive) return;
+
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') {
+                playerCoins = 999999;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+
+            if (currentHp <= 0) {
+                document.getElementById('death-modal').style.display = 'flex';
+                return;
+            }
+
+            if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
+                const eq = weaponBarSlots[activeHotbar - 3];
+                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser') {
+                    triggerWeaponAttack(mouseXCoord, mouseYCoord);
+                }
+            }
+
+            let moveSpeed = 3.8;
+            let sprintMultiplier = 1.0;
+            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
+                if (currentStamina > 2) {
+                    sprintMultiplier = 1.75;
+                    currentStamina -= 0.5;
+                }
+            } else {
+                currentStamina = Math.min(100, currentStamina + 0.3);
+            }
+
+            if (boardedVehicle) {
+                sprintMultiplier = 1.95;
+            }
+
+            let dx = 0, dy = 0;
+            if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
+            if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
+            if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
+            if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            let nextX = posX + dx * moveSpeed * sprintMultiplier;
+            let nextY = posY + dy * moveSpeed * sprintMultiplier;
+
+            nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
+            nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
+
+            if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
+                showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
+                nextX = posX;
+                nextY = posY;
+            }
+
+            const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
+            const wasInBase = checkInsideBase(posX, posY, playerTeam);
+
+            if (wasInBase && !currentlyInBase && !baseLockedOut) {
+                executeSelfDestruct();
+            }
+
+            if (baseLockedOut && currentlyInBase) {
+                showNotificationBox('Base re-entry locked! Wait timer or kill an enemy.');
+            } else {
+                posX = nextX;
+                posY = nextY;
+                if (boardedVehicle) {
+                    boardedVehicle.x = posX;
+                    boardedVehicle.y = posY;
+                }
+            }
+
+            if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
+                currentHp = Math.min(100, currentHp + 0.2);
+            }
+
+            const screenCenterX = canvas.width / 2;
+            const screenCenterY = canvas.height / 2;
+            aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
+
+            for (let i = activeGrenades.length - 1; i >= 0; i--) {
+                const g = activeGrenades[i];
+                g.x += g.vx;
+                g.y += g.vy;
+                g.fuseTime--;
+
+                let hitWall = false;
+                for (let k in worldBlocks) {
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+                    if (g.x >= bx && g.x <= bx + 40 && g.y >= by && g.y <= by + 40) {
+                        worldBlocks[k].hp -= 70;
+                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+                        hitWall = true;
+                        break;
+                    }
+                }
+
+                if (hitWall || g.fuseTime <= 0 || Math.hypot(g.x - g.targetX, g.y - g.targetY) < 15) {
+                    const explRadius = 100;
+                    if (isPractice) {
+                        aiBots.forEach(bot => {
+                            if (bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
+                                bot.hp -= 80;
+                                if (bot.hp <= 0) onEnemyEliminated();
+                            }
+                        });
+                    }
+                    if (Math.hypot(g.x - posX, g.y - posY) < explRadius) {
+                        currentHp -= 50;
+                        if (currentHp <= 0) showNotificationBox('You were blown up by a grenade!');
+                    }
+
+                    floatingParticles.push({
+                        x: g.x,
+                        y: g.y,
+                        radius: 10,
+                        maxRadius: explRadius,
+                        alpha: 1.0,
+                        isShockwave: true
+                    });
+
+                    activeGrenades.splice(i, 1);
+                }
+            }
+
+            for (let i = floatingParticles.length - 1; i >= 0; i--) {
+                const fp = floatingParticles[i];
+                if (fp.isShockwave) {
+                    fp.radius += 6;
+                    fp.alpha -= 0.05;
+                    if (fp.alpha <= 0 || fp.radius >= fp.maxRadius) floatingParticles.splice(i, 1);
+                } else {
+                    if (fp.vx) fp.x += fp.vx;
+                    if (fp.vy) fp.y += fp.vy;
+                    fp.alpha -= 0.02;
+                    if (fp.alpha <= 0) floatingParticles.splice(i, 1);
+                }
+            }
+
+            for (let i = bulletsList.length - 1; i >= 0; i--) {
+                const b = bulletsList[i];
+                b.x += b.vx;
+                b.y += b.vy;
+
+                let hitObs = false;
+                for (let k in worldBlocks) {
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+
+                    if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
+                        let dmg = 25;
+                        if (b.type === 'sniper') dmg = 70;
+                        if (b.type === 'rocket') dmg = 90;
+                        if (b.type === 'plasma') dmg = 45;
+                        worldBlocks[k].hp -= dmg;
+                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+
+                        if (b.type === 'rocket') {
+                            floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
+                        }
+
+                        hitObs = true;
+                        break;
+                    }
+                }
+
+                if (hitObs) {
+                    bulletsList.splice(i, 1);
+                    continue;
+                }
+
+                if (isPractice) {
+                    aiBots.forEach(bot => {
+                        if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 4) {
+                            if (b.team !== bot.team) {
+                                let hitDmg = 35;
+                                if (b.type === 'sniper') hitDmg = 75;
+                                if (b.type === 'rocket') {
+                                    hitDmg = 100;
+                                    floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
+                                }
+                                if (b.type === 'laser') hitDmg = 40;
+                                bot.hp -= hitDmg;
+                                if (bot.hp <= 0) onEnemyEliminated();
+                                bulletsList.splice(i, 1);
+                                hitObs = true;
+                            }
+                        }
+                    });
+                }
+
+                if (hitObs) continue;
+
+                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
+                    if (b.type === 'rocket') {
+                        floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
+                    }
+                    bulletsList.splice(i, 1);
+                }
+            }
+
+            if (isPractice) {
+                aiBots.forEach(bot => {
+                    if (bot.hp > 0) {
+                        bot.x += (Math.random() - 0.5) * 2;
+                        bot.y += (Math.random() - 0.5) * 2;
+                    }
+                });
+            }
+
+            if (isHosting) {
+                broadcastStateToClients();
+            } else if (hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'player_update',
+                    username: myUsername,
+                    team: playerTeam,
+                    color: playerColor,
+                    x: posX,
+                    y: posY,
+                    hp: currentHp,
+                    coins: playerCoins
+                });
+            }
+
+            document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
+            document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
+            document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
+            document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
+        }
+
+        function renderGameScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!inGameActive) return;
+
+            ctx.save();
+            let camX = posX - canvas.width / 2;
+            let camY = posY - canvas.height / 2;
+            if (cameraScoped) {
+                camX += (mouseXCoord - canvas.width / 2) * 0.35;
+                camY += (mouseYCoord - canvas.height / 2) * 0.35;
+            }
+            ctx.translate(-camX, -camY);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 1;
+            const gridSize = 80;
+            for (let gx = 0; gx <= MAP_SIZE; gx += gridSize) {
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, MAP_SIZE); ctx.stroke();
+            }
+            for (let gy = 0; gy <= MAP_SIZE; gy += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(MAP_SIZE, gy); ctx.stroke();
+            }
+
+            const bases = [
+                { name: 'Red Base', x1: 0, y1: 0, color: 'rgba(229, 57, 53, 0.25)' },
+                { name: 'Blue Base', x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(30, 136, 229, 0.25)' },
+                { name: 'Green Base', x1: 0, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(67, 160, 71, 0.25)' },
+                { name: 'Yellow Base', x1: MAP_SIZE - ZONE_SIZE, y1: 0, color: 'rgba(251, 192, 45, 0.25)' }
+            ];
+            bases.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText(b.name, b.x1 + 35, b.y1 + 45);
+            });
+
+            for (let k in worldBlocks) {
+                const blk = worldBlocks[k];
+                const parts = k.split(',');
+                const bx = parseInt(parts[0]) * 40;
+                const by = parseInt(parts[1]) * 40;
+                
+                const blockPng = assetRegistry['block'];
+                if (blockPng && blockPng.complete && blockPng.naturalWidth > 0) {
+                    ctx.drawImage(blockPng, bx, by, 40, 40);
+                } else {
+                    ctx.fillStyle = '#795548';
+                    ctx.fillRect(bx, by, 40, 40);
+                    ctx.strokeStyle = '#3e2723';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(bx, by, 40, 40);
+                }
+
+                if (blk.hp < 100) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(bx, by - 8, 40, 5);
+                    ctx.fillStyle = '#4caf50';
+                    ctx.fillRect(bx, by - 8, (Math.max(0, blk.hp) / 100) * 40, 5);
+                }
+            }
+
+            for (let lid in droppedLoot) {
+                const item = droppedLoot[lid];
+                const lootImg = assetRegistry[item.type === 'coin' ? 'coin' : (item.subtype || item.type)];
+                if (lootImg && lootImg.complete && lootImg.naturalWidth > 0) {
+                    ctx.drawImage(lootImg, item.x - 10, item.y - 10, 20, 20);
+                } else {
+                    ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#00e5ff';
+                    ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+                }
+            }
+
+            supplyCrates.forEach(crate => {
+                const crateImg = assetRegistry['crate'];
+                if (crateImg && crateImg.complete && crateImg.naturalWidth > 0) {
+                    ctx.drawImage(crateImg, crate.x - 16, crate.y - 16, 32, 32);
+                } else {
+                    ctx.fillStyle = '#ab47bc';
+                    ctx.fillRect(crate.x - 16, crate.y - 16, 32, 32);
+                    ctx.strokeStyle = '#ffeb3b';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(crate.x - 16, crate.y - 16, 32, 32);
+                }
+            });
+
+            activeVehiclesList.forEach(veh => {
+                ctx.save();
+                ctx.translate(veh.x, veh.y);
+                const vehImg = assetRegistry[veh.type];
+                if (vehImg && vehImg.complete && vehImg.naturalWidth > 0) {
+                    ctx.drawImage(vehImg, -20, -14, 40, 28);
+                } else {
+                    ctx.fillStyle = veh.color || '#333';
+                    ctx.fillRect(-20, -14, 40, 28);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    ctx.strokeRect(-20, -14, 40, 28);
+                }
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${veh.type.toUpperCase()} [${veh.passengers.length}/${veh.capacity}]`, 0, -20);
+                ctx.restore();
+            });
+
+            for (let pid in remotePlayers) {
+                if (peerInstance && pid === peerInstance.id) continue;
+                const rp = remotePlayers[pid];
+                if (!rp || rp.hp <= 0) continue;
+                ctx.save();
+                ctx.translate(rp.x, rp.y);
+
+                const remoteSkinImg = assetRegistry['skin'];
+                if (remoteSkinImg && remoteSkinImg.complete && remoteSkinImg.naturalWidth > 0) {
+                    ctx.drawImage(remoteSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                } else {
+                    ctx.fillStyle = rp.color || '#e53935';
+                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                }
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(rp.username || 'Enemy', 0, -26);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(-18, -20, 36, 4);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(-18, -20, (Math.max(0, rp.hp) / 100) * 36, 4);
+                ctx.restore();
+            }
+
+            aiBots.forEach(bot => {
+                if (!bot || bot.hp <= 0) return;
+                ctx.save();
+                ctx.translate(bot.x, bot.y);
+
+                const botSkinImg = assetRegistry['skin'];
+                if (botSkinImg && botSkinImg.complete && botSkinImg.naturalWidth > 0) {
+                    ctx.drawImage(botSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                } else {
+                    ctx.fillStyle = bot.color || '#ff9800';
+                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                }
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(bot.username, 0, -26);
+
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(-18, -20, 36, 4);
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / 100) * 36, 4);
+                ctx.restore();
+            });
+
+            if (currentHp > 0) {
+                ctx.save();
+                ctx.translate(posX, posY);
+                ctx.rotate(aimAngle);
+
+                const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : 'bandage'))));
+                const itemPng = assetRegistry[activeKey];
+                if (itemPng && itemPng.complete && itemPng.naturalWidth > 0) {
+                    ctx.drawImage(itemPng, 6, -10, 24, 24);
+                } else {
+                    if (activeHotbar === 0) {
+                        ctx.fillStyle = '#b0bec5'; ctx.fillRect(10, 4, 18, 3);
+                    } else if (activeHotbar === 1) {
+                        ctx.fillStyle = '#8d6e63'; ctx.fillRect(10, 2, 14, 4);
+                        ctx.fillStyle = '#424242'; ctx.fillRect(22, -4, 4, 16);
+                    } else if (activeHotbar === 6) {
+                        ctx.fillStyle = '#388e3c'; ctx.beginPath(); ctx.arc(14, 4, 6, 0, Math.PI * 2); ctx.fill();
+                    } else if (activeHotbar === 7) {
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(10, 3, 14, 8);
+                        ctx.fillStyle = '#e53935'; ctx.fillRect(14, 5, 6, 4);
+                    } else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                        ctx.fillStyle = '#37474f'; ctx.fillRect(8, -3, 18, 6);
+                    }
+                }
+                ctx.restore();
+
+                const activePlayerSkin = customPlayerSkinImg || assetRegistry['skin'];
+                if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
+                    ctx.drawImage(activePlayerSkin, posX - RADIUS_PLAYER, posY - RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                } else {
+                    ctx.fillStyle = playerColor;
+                    ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+                }
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
+            }
+
+            activeGrenades.forEach(g => {
+                const grenadePng = assetRegistry['grenade'];
+                if (grenadePng && grenadePng.complete && grenadePng.naturalWidth > 0) {
+                    ctx.drawImage(grenadePng, g.x - 8, g.y - 8, 16, 16);
+                } else {
+                    ctx.fillStyle = '#388e3c';
+                    ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
+                }
+            });
+
+            floatingParticles.forEach(fp => {
+                ctx.save();
+                ctx.globalAlpha = fp.alpha;
+                if (fp.isShockwave) {
+                    ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#4caf50';
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.fillText(fp.text, fp.x, fp.y);
+                }
+                ctx.restore();
+            });
+
+            bulletsList.forEach(b => {
+                const bulletPng = assetRegistry['bullet'];
+                if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0) {
+                    ctx.drawImage(bulletPng, b.x - 6, b.y - 6, 12, 12);
+                } else {
+                    ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
+                    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,202,40,0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x, b.y);
+                    ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
+                    ctx.stroke();
+                }
+            });
+
+            ctx.restore();
+        }
+
+        function renderMinimapScene() {
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            if (!inGameActive) return;
+            const scale = mCanvas.width / MAP_SIZE;
+            
+            mCtx.fillStyle = '#112218';
+            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+            mCtx.fillStyle = 'rgba(229, 57, 53, 0.4)';
+            mCtx.fillRect(0, 0, ZONE_SIZE * scale, ZONE_SIZE * scale);
+            mCtx.fillStyle = 'rgba(30, 136, 229, 0.4)';
+            mCtx.fillRect((MAP_SIZE - ZONE_SIZE) * scale, (MAP_SIZE - ZONE_SIZE) * scale, ZONE_SIZE * scale, ZONE_SIZE * scale);
+
+            for (let pid in remotePlayers) {
+                if (peerInstance && pid === peerInstance.id) continue;
+                const rp = remotePlayers[pid];
+                mCtx.fillStyle = rp.color || '#e53935';
+                mCtx.beginPath();
+                mCtx.arc(rp.x * scale, rp.y * scale, 3.5, 0, Math.PI * 2);
+                mCtx.fill();
+            }
+
+            mCtx.fillStyle = playerColor;
+            mCtx.beginPath();
+            mCtx.arc(posX * scale, posY * scale, 5, 0, Math.PI * 2);
+            mCtx.fill();
+            mCtx.strokeStyle = '#fff';
+            mCtx.lineWidth = 1;
+            mCtx.stroke();
+        }
+
+        function gameLoop() {
+            updateGameLogic();
+            renderGameScene();
+            renderMinimapScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        requestAnimationFrame(gameLoop);
     </script>
+</body>
+</html>
