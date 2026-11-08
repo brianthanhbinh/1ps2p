@@ -189,10 +189,10 @@
         </div>
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
-        <div id="self-destruct-banner">⏳ Base Lockout / Respawn: <span id="sd-countdown">30s</span></div>
-        
+        <!-- Action Buttons Top Right -->
         <div id="hud-actions-right">
-            <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Share Room Link</button>
+            <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
+            <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
             <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         </div>
 
@@ -555,11 +555,36 @@
             document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
             document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
             document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
             document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
             document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
             if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
+        }
+
+        function copyToClipboardFallback(text) {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+        }
+
+        function copyDirectRoomLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const directUrl = `${baseUrl}#${roomCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🔗 Room link copied to clipboard! (${roomCode})`);
+        }
+
+        function copyDirectTeamLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const teamCode = playerTeam ? playerTeam.toLowerCase() : 'ffa';
+            const directUrl = `${baseUrl}#${roomCode}%${teamCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🚩 ${playerTeam} Team link copied to clipboard!`);
         }
 
         function switchShopTab(tabKey, btnElement) {
