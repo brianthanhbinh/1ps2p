@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background: #0a0a0e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #0a0a0e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #arena-viewport { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
         #canvas-main { width: 1200px; height: 800px; display: block; background: #1e362c; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
 
@@ -25,8 +25,6 @@
         #lobby-box input { background: #252533; color: #fff; border: 1px solid #444; text-align: center; outline: none; }
         #lobby-box button { background: #4caf50; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         #lobby-box button:hover { background: #45a049; }
-        #btn-bot-mode { background: #ff9800; }
-        #btn-bot-mode:hover { background: #fb8c00; }
         #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
         .peer-list-box { max-height: 180px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
         .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(255,255,255,0.04); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
@@ -59,9 +57,11 @@
         #shop-toggle-btn { position: absolute; top: 120px; left: 16px; background: #ff9800; color: #fff; border: 1px solid #ffb74d; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
         #shop-toggle-btn:hover { background: #f57c00; }
 
+        #skin-toggle-btn { position: absolute; top: 160px; left: 16px; background: #9c27b0; color: #fff; border: 1px solid #ba68c8; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        #skin-toggle-btn:hover { background: #ab47bc; }
+
         /* Action Buttons Top Right */
         #hud-actions-right { position: absolute; top: 185px; right: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 15; }
-        #ammo-hud-box { background: rgba(0,0,0,0.75); color: #ffca28; border: 1px solid #444; padding: 10px 14px; border-radius: 8px; font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 6px; display: none; }
         #share-link-btn { background: rgba(33,150,243,0.9); color: #fff; border: 1px solid #64b5f6; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
         #share-link-btn:hover { background: #1e88e5; }
         #leave-btn { background: rgba(229,57,53,0.9); color: #fff; border: 1px solid #ff5252; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none; transition: background 0.2s; }
@@ -79,6 +79,14 @@
         .shop-item-card button { background: #4caf50; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
         .shop-item-card button:hover { background: #43a047; }
 
+        /* Skin Modal */
+        #skin-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ba68c8; border-radius: 14px; padding: 22px; width: 380px; color: #fff; display: none; pointer-events: auto; z-index: 55; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
+        #skin-modal h3 { color: #ba68c8; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        #skin-modal input { width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; margin: 10px 0; outline: none; font-size: 13px; text-align: center; }
+
+        /* Ammo HUD badge */
+        #ammo-hud-badge { position: absolute; top: 16px; right: 190px; background: rgba(0,0,0,0.75); border: 1px solid #555; padding: 8px 14px; border-radius: 10px; color: #ffca28; font-weight: bold; font-size: 13px; display: none; z-index: 15; text-align: center; }
+
         /* Minimap */
         #minimap-box { position: absolute; top: 16px; right: 16px; width: 160px; height: 160px; background: rgba(0,0,0,0.75); border: 2px solid #555; border-radius: 10px; overflow: hidden; pointer-events: auto; display: none; z-index: 15; box-shadow: 0 6px 20px rgba(0,0,0,0.7); }
         #canvas-minimap { width: 100%; height: 100%; display: block; }
@@ -90,20 +98,22 @@
 
         #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
-        /* Hotbar */
+        /* Hotbar with Unique Canvases for Icons */
         #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
-        .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 10px; position: relative; cursor: pointer; }
+        .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
         .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
-        .hotbar-slot span { position: absolute; top: 3px; left: 5px; font-size: 9px; color: #aaa; }
+        .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
+        .hotbar-canvas { width: 34px; height: 34px; display: block; margin-top: 4px; }
 
-        /* Inventory Panel (32 Slots) */
+        /* Inventory Panel (32 Slots, Draggable) */
         #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
         #inventory-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
         .inv-grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
-        .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; cursor: grab; position: relative; }
-        .inventory-slot:hover { border-color: #ffca28; }
+        .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; cursor: grab; position: relative; }
         .inventory-slot:active { cursor: grabbing; }
-        .inventory-slot span { font-size: 9px; color: #aaa; }
+        .inventory-slot:hover { border-color: #ffca28; }
+        .inventory-slot span { position: absolute; top: 2px; left: 3px; font-size: 8px; color: #aaa; }
+        .inv-canvas { width: 26px; height: 26px; display: block; margin-top: 6px; }
 
         /* Tab Scoreboard Overlay */
         #scoreboard-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,14,20,0.94); border: 1px solid #444; border-radius: 12px; width: 380px; padding: 20px; color: #fff; display: none; pointer-events: none; z-index: 25; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -145,13 +155,14 @@
 
         <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
         <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
-        <button id="draw-toggle-btn" onclick="toggleDrawingPanel()" style="position: absolute; top: 160px; left: 16px; background: #9c27b0; color: #fff; border: 1px solid #ba68c8; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; z-index: 15; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">🎨 Custom PNG Skin</button>
+        <button id="skin-toggle-btn" onclick="toggleSkinModal()">🎨 Custom PNG Skin</button>
+        <div id="ammo-hud-badge">Ammo: <span id="ammo-count">10</span>/10<br><span style="font-size:9px; color:#aaa;">[SPACE to Reload]</span></div>
 
         <div id="minimap-box">
             <canvas id="canvas-minimap" width="160" height="160"></canvas>
         </div>
 
-        <!-- Shop Panel -->
+        <!-- Shop Modal -->
         <div id="shop-panel">
             <h3>🛒 ARENA OUTFITTER & VEHICLES</h3>
             <div class="shop-tabs-row">
@@ -184,15 +195,13 @@
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
         </div>
 
-        <!-- Custom Drawing / Skin Editor Panel -->
-        <div id="drawing-panel" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ba68c8; border-radius: 14px; padding: 22px; width: 420px; color: #fff; display: none; pointer-events: auto; z-index: 65; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center;">
-            <h3 style="color: #ba68c8; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px;">🎨 GITHUB / WEB PNG SKIN LOADER</h3>
-            <p style="font-size: 11px; color: #aaa; margin-bottom: 14px;">Paste the raw GitHub PNG image link or any direct image URL below to load your custom skin!</p>
-            
-            <input type="text" id="skin-url-input" placeholder="https://raw.githubusercontent.com/.../skin.png" style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 12px; margin-bottom: 14px; outline: none; text-align: center;">
-
-            <button style="width: 100%; background: #9c27b0; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="loadGithubPngSkin()">Load & Apply PNG Skin</button>
-            <button style="width: 100%; background: #e53935; color: #fff; border: none; padding: 9px; border-radius: 8px; font-weight: bold; cursor: pointer;" onclick="toggleDrawingPanel()">Close</button>
+        <!-- Custom PNG Skin Modal -->
+        <div id="skin-modal">
+            <h3>🎨 Load GitHub PNG Skin</h3>
+            <p style="font-size:11px; color:#aaa; margin-bottom:6px;">Paste direct image URL (PNG/JPG) for your avatar:</p>
+            <input type="text" id="skin-url-input" placeholder="https://raw.githubusercontent.com/.../skin.png">
+            <button style="background:#4caf50; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:8px;" onclick="applyCustomSkinUrl()">Load Skin</button>
+            <button style="background:#e53935; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="toggleSkinModal()">Close</button>
         </div>
 
         <!-- Coin Drop Prompt Modal -->
@@ -202,16 +211,6 @@
             <input type="number" id="coin-drop-amt" min="1" value="10">
             <button style="background:#4caf50; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="executeCoinDrop()">Drop</button>
             <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinModal()">Cancel</button>
-        </div>
-
-        <!-- Missing PNG Log Console Modal (Shift + C) -->
-        <div id="debug-log-panel" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #e91e63; border-radius: 14px; padding: 22px; width: 480px; color: #fff; display: none; pointer-events: auto; z-index: 75; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: left;">
-            <h3 style="color: #e91e63; margin-bottom: 10px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; text-align: center;">🐛 Missing PNG Asset Log (Shift + C)</h3>
-            <p style="font-size: 11px; color: #aaa; margin-bottom: 12px; text-align: center;">All failed PNG loads are tracked below and replaced with pink textures.</p>
-            <div id="debug-log-feed" style="background: #111; border: 1px solid #444; border-radius: 6px; padding: 10px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #ff80ab; margin-bottom: 14px;">
-                <div style="color: #777;">No missing PNG assets logged yet.</div>
-            </div>
-            <button style="width: 100%; background: #e53935; color: #fff; border: none; padding: 9px; border-radius: 8px; font-weight: bold; cursor:pointer;" onclick="toggleDebugLogPanel()">Close Log</button>
         </div>
 
         <!-- Death Screen Modal -->
@@ -229,7 +228,6 @@
 
         <!-- Action Buttons Top Right (In-Match Only) -->
         <div id="hud-actions-right">
-            <div id="ammo-hud-box">Ammo: <span id="ammo-current">10</span>/<span id="ammo-max">10</span> <span id="reload-prompt" style="font-size:10px; display:block; color:#aaa;">[SPACE to Reload]</span></div>
             <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
             <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
             <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
@@ -238,19 +236,11 @@
         <div id="room-notification">Create or Join a Room, or Play Solo Practice</div>
         <div id="tip-banner">WASD: Move | Shift: Sprint | Left-Click: Attack/Build | `: Scope toward cursor | E: Inventory | Q: Drop | J: Hop In | H: Leave Vehicle</div>
 
-        <!-- Inventory Modal -->
+        <!-- Inventory Panel -->
         <div id="inventory-panel">
             <h3>🎒 BACKPACK INVENTORY (32 SLOTS)</h3>
-            <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop items between inventory and hotbar slots.</p>
+            <p style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop items between backpack and hotbar slots.</p>
             <div class="inv-grid-container" id="inv-grid"></div>
-            
-            <p style="font-size:11px; color:#ffca28; margin:8px 0 4px 0;">Hotbar Slots (1-3):</p>
-            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:16px;" id="inv-hotbar-quick">
-                <div class="inventory-slot" id="inv-hslot-0" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)" ondragstart="dragHotbarItem(event, 0)" draggable="true"><span>1</span><b id="inv-hb0-lbl" style="font-size:9px;">Empty</b></div>
-                <div class="inventory-slot" id="inv-hslot-1" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)" ondragstart="dragHotbarItem(event, 1)" draggable="true"><span>2</span><b id="inv-hb1-lbl" style="font-size:9px;">Empty</b></div>
-                <div class="inventory-slot" id="inv-hslot-2" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)" ondragstart="dragHotbarItem(event, 2)" draggable="true"><span>3</span><b id="inv-hb2-lbl" style="font-size:9px;">Empty</b></div>
-            </div>
-
             <button style="width:100%; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleInventoryPanel()">Close (E)</button>
         </div>
 
@@ -279,7 +269,7 @@
 
             <div id="lobby-tab-globals" class="lobby-content">
                 <input type="text" id="input-username-global" placeholder="Your Name" value="Combatant">
-                <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers (Auto-Host / Auto-Migrate):</p>
+                <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers:</p>
                 <div class="peer-list-box">
                     <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
                     <div class="peer-item"><span>🌐 <b>4global</b> (4 Teams)</span><button onclick="joinGlobalServer('4global', '4team')">Join</button></div>
@@ -313,16 +303,16 @@
             <div id="scoreboard-list"></div>
         </div>
 
-        <!-- Hotbar Dock -->
+        <!-- Hotbar Dock with Unique Weapon Canvases -->
         <div id="hotbar-dock">
-            <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)"><span>1</span><b>Sword</b></div>
-            <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)"><span>2</span><b>Pickaxe</b></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)"><span>3</span><b>Block</b></div>
-            <div class="hotbar-slot" id="hslot-3" onclick="selectHotbarSlot(3)"><span>4</span><b id="gun0-label">Empty</b></div>
-            <div class="hotbar-slot" id="hslot-4" onclick="selectHotbarSlot(4)"><span>5</span><b id="gun1-label">Empty</b></div>
-            <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)"><span>6</span><b id="gun2-label">Empty</b></div>
-            <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)"><span>7</span><b id="grenade-label">Grenade</b></div>
-            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)"><span>8</span><b id="bandage-label">Bandage</b></div>
+            <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-3" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-4" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="34" height="34"></canvas></div>
         </div>
     </div>
 
@@ -349,6 +339,8 @@
         let playerTeam = 'FFA';
         let playerColor = '#8e24aa';
 
+        let customPlayerSkinImg = null;
+
         let peerConnections = {};
         let hostConnection = null;
 
@@ -362,176 +354,390 @@
         let boardedVehicle = null;
         let cameraScoped = false;
 
-        let actionCdAttack = false;
-        let actionCdBuild = false;
-        let lastAutoFireTime = 0;
-        let isMouseDown = false;
-        let mouseXCoord = 0;
-        let mouseYCoord = 0;
-        let keyboardInput = {};
-
-        let activeGrenades = [];
-        let floatingParticles = [];
-        let bulletsList = [];
-        let worldBlocks = {};
-        let droppedLoot = {};
-        let supplyCrates = [];
-        let activeVehiclesList = [];
-        let aiBots = [];
-        let airdropIntervalHandle = null;
-
         let baseLockedOut = false;
         let selfDestructCountdown = 0;
         let selfDestructTimerHandle = null;
 
         let activeHotbar = 0;
         let weaponBarSlots = [null, null, null];
-        let weaponMagazines = { 0: { current: 10, max: 10 }, 1: { current: 30, max: 30 }, 2: { current: 10, max: 10 } };
-        let isReloading = false;
         let grenadesCount = 3;
         let bandagesCount = 2;
         let backpackInventory = new Array(32).fill(null);
-        let draggedItemSource = null;
 
-        // Custom Pixel Avatar Skin & Missing PNG Logger
-        let customPixelData = null;
-        let missingAssetLogs = [];
-        let pinkPlaceholderCanvas = null;
+        let currentAmmo = 10;
+        let maxAmmo = 10;
+        let isReloading = false;
 
-        function getPinkPlaceholderTexture() {
-            if (pinkPlaceholderCanvas) return pinkPlaceholderCanvas;
-            const pCanvas = document.createElement('canvas');
-            pCanvas.width = 32;
-            pCanvas.height = 32;
-            const pCtx = pCanvas.getContext('2d');
-            pCtx.fillStyle = '#ff00ff';
-            pCtx.fillRect(0, 0, 32, 32);
-            pCtx.fillStyle = '#000000';
-            pCtx.fillRect(0, 0, 16, 16);
-            pCtx.fillRect(16, 16, 16, 16);
-            pinkPlaceholderCanvas = pCanvas;
-            return pCanvas;
-        }
+        let actionCdBuild = false;
+        let actionCdAttack = false;
+        let isMouseDown = false;
 
-        function logMissingAsset(url, errorMsg) {
-            const timeStr = new Date().toLocaleTimeString();
-            const logEntry = `[${timeStr}] Failed PNG: "${url}" -> ${errorMsg}`;
-            missingAssetLogs.push(logEntry);
-            console.error(logEntry);
-            updateDebugLogUI();
-        }
+        let keyboardInput = {};
+        let mouseXCoord = 0;
+        let mouseYCoord = 0;
 
-        function updateDebugLogUI() {
-            const feed = document.getElementById('debug-log-feed');
-            if (!feed) return;
-            if (missingAssetLogs.length === 0) {
-                feed.innerHTML = `<div style="color: #777;">No missing PNG assets logged yet.</div>`;
-                return;
-            }
-            let htmlStr = '';
-            missingAssetLogs.forEach(log => {
-                htmlStr += `<div style="margin-bottom: 4px; word-break: break-all;">⚠️ ${log}</div>`;
-            });
-            feed.innerHTML = htmlStr;
-        }
+        let remotePlayers = {};
+        let aiBots = [];
+        let worldBlocks = {};
+        let droppedLoot = {};
+        let supplyCrates = [];
+        let bulletsList = [];
+        let activeGrenades = [];
+        let activeVehiclesList = [];
+        let floatingParticles = [];
 
-        function toggleDebugLogPanel() {
-            const panel = document.getElementById('debug-log-panel');
-            if (!panel) return;
-            const isVisible = panel.style.display === 'block';
-            panel.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) updateDebugLogUI();
-        }
+        let airdropIntervalHandle = null;
 
-        function toggleDrawingPanel() {
-            const panel = document.getElementById('drawing-panel');
-            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function loadGithubPngSkin() {
-            const urlInput = document.getElementById('skin-url-input');
-            if (!urlInput) return;
-            const urlVal = urlInput.value.trim();
-            if (!urlVal) {
-                showNotificationBox('Please enter a valid image URL!');
-                return;
-            }
-
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => {
-                customPixelData = img;
-                toggleDrawingPanel();
-                showNotificationBox('✨ GitHub PNG skin loaded and applied successfully!');
-            };
-            img.onerror = (e) => {
-                logMissingAsset(urlVal, 'Network error, 404, or CORS restriction loading PNG asset');
-                customPixelData = getPinkPlaceholderTexture();
-                toggleDrawingPanel();
-                showNotificationBox('❌ Failed to load PNG! Replaced with pink texture. Press Shift+C to view log.');
-            };
-            img.src = urlVal;
-        }
-
-        function toggleShopPanel() {
-            const panel = document.getElementById('shop-panel');
-            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function switchShopTab(tabName, btnEl) {
-            document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
-            btnEl.classList.add('active');
-            const target = document.getElementById('shop-tab-' + tabName);
-            if (target) target.classList.add('active');
-        }
-
-        function switchLobbyTab(tabName, btnEl) {
-            document.querySelectorAll('.lobby-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
-            btnEl.classList.add('active');
-            const target = document.getElementById('lobby-tab-' + tabName);
-            if (target) target.classList.add('active');
-        }
+        const PEER_PREFIX = 'arena-v5-net-';
+        const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
+        let globalHostingInstances = {};
 
         function formatPeerId(code) {
-            return 'p2parena-room-' + code.trim().toLowerCase();
+            return PEER_PREFIX + code.trim().toLowerCase();
+        }
+
+        // Missing PNG Asset Logger into F12 Console & Pink Checkerboard Fallback
+        function loadTrackedImage(url) {
+            const img = new Image();
+            img.src = url;
+            img.onerror = () => {
+                console.error(`[Missing PNG Asset Error] Failed to load image asset: "${url}". Replaced with pink checkerboard placeholder.`);
+            };
+            return img;
+        }
+
+        function drawPinkCheckerboardTexture(cxt, width, height) {
+            const size = 6;
+            for (let x = 0; x < width; x += size) {
+                for (let y = 0; y < height; y += size) {
+                    cxt.fillStyle = ((x / size + y / size) % 2 === 0) ? '#ff00ff' : '#000000';
+                    cxt.fillRect(x, y, size, size);
+                }
+            }
+        }
+
+        function toggleSkinModal() {
+            const m = document.getElementById('skin-modal');
+            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function applyCustomSkinUrl() {
+            const urlInput = document.getElementById('skin-url-input').value.trim();
+            if (!urlInput) return;
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = urlInput;
+            img.onload = () => {
+                customPlayerSkinImg = img;
+                showNotificationBox('Successfully loaded custom player skin PNG!');
+                toggleSkinModal();
+            };
+            img.onerror = () => {
+                console.error(`[Missing PNG Asset Error] Failed to load custom skin URL: "${urlInput}". Asset missing or invalid URL.`);
+                showNotificationBox('⚠️ Failed to load PNG URL! Check F12 console log.');
+                toggleSkinModal();
+            };
+        }
+
+        // Procedural Distinct Sprite Art for Every Item / Weapon / Tool
+        function drawItemArtOnCanvas(canvasEl, itemType, subType) {
+            if (!canvasEl) return;
+            const ctxRef = canvasEl.getContext('2d');
+            if (!ctxRef) return;
+            ctxRef.clearRect(0, 0, 34, 34);
+
+            ctxRef.save();
+            ctxRef.translate(17, 17);
+
+            if (itemType === 'sword') {
+                ctxRef.fillStyle = '#b0bec5'; ctxRef.fillRect(-2, -12, 4, 18);
+                ctxRef.fillStyle = '#78909c'; ctxRef.fillRect(-1, -14, 2, 4);
+                ctxRef.fillStyle = '#8d6e63'; ctxRef.fillRect(-5, 6, 10, 3);
+                ctxRef.fillStyle = '#d7ccc8'; ctxRef.fillRect(-2, 9, 4, 5);
+            } else if (itemType === 'pickaxe') {
+                ctxRef.fillStyle = '#8d6e63'; ctxRef.fillRect(-1.5, -4, 3, 16);
+                ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-11, -10, 22, 6);
+                ctxRef.fillStyle = '#cfd8dc'; ctxRef.fillRect(-11, -10, 8, 3);
+            } else if (itemType === 'block') {
+                ctxRef.fillStyle = '#795548'; ctxRef.fillRect(-12, -12, 24, 24);
+                ctxRef.strokeStyle = '#3e2723'; ctxRef.lineWidth = 2; ctxRef.strokeRect(-12, -12, 24, 24);
+                ctxRef.fillStyle = '#5d4037'; ctxRef.fillRect(-8, -8, 8, 8); ctxRef.fillRect(2, 2, 8, 8);
+            } else if (itemType === 'grenade') {
+                ctxRef.fillStyle = '#388e3c'; ctxRef.beginPath(); ctxRef.arc(0, 2, 9, 0, Math.PI * 2); ctxRef.fill();
+                ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-2, -9, 4, 5);
+                ctxRef.fillStyle = '#ffeb3b'; ctxRef.fillRect(-1, -11, 2, 3);
+            } else if (itemType === 'bandage') {
+                ctxRef.fillStyle = '#ffffff'; ctxRef.fillRect(-12, -8, 24, 16);
+                ctxRef.strokeStyle = '#b0bec5'; ctxRef.lineWidth = 1; ctxRef.strokeRect(-12, -8, 24, 16);
+                ctxRef.fillStyle = '#e53935'; ctxRef.fillRect(-3, -7, 6, 14); ctxRef.fillRect(-7, -3, 14, 6);
+            } else if (itemType === 'gun') {
+                if (subType === 'pistol') {
+                    ctxRef.fillStyle = '#455a64'; ctxRef.fillRect(-10, -2, 14, 6);
+                    ctxRef.fillStyle = '#90a4ae'; ctxRef.fillRect(-8, -5, 10, 3);
+                    ctxRef.fillStyle = '#263238'; ctxRef.fillRect(-4, 4, 4, 7);
+                } else if (subType === 'smg') {
+                    ctxRef.fillStyle = '#263238'; ctxRef.fillRect(-12, -3, 20, 6);
+                    ctxRef.fillStyle = '#78909c'; ctxRef.fillRect(8, -2, 6, 4);
+                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-2, 3, 5, 8);
+                } else if (subType === 'shotgun') {
+                    ctxRef.fillStyle = '#5d4037'; ctxRef.fillRect(-14, -2, 10, 6);
+                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-4, -4, 18, 7);
+                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(14, -3, 3, 5);
+                } else if (subType === 'sniper') {
+                    ctxRef.fillStyle = '#4e342e'; ctxRef.fillRect(-14, -2, 12, 6);
+                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-2, -3, 20, 4);
+                    ctxRef.fillStyle = '#90a4ae'; ctxRef.fillRect(2, -7, 8, 3);
+                } else if (subType === 'rocket') {
+                    ctxRef.fillStyle = '#33691e'; ctxRef.fillRect(-14, -5, 26, 10);
+                    ctxRef.fillStyle = '#827717'; ctxRef.fillRect(-16, -6, 4, 12);
+                    ctxRef.fillStyle = '#ff6f00'; ctxRef.fillRect(12, -4, 4, 8);
+                } else if (subType === 'minigun') {
+                    ctxRef.fillStyle = '#212121'; ctxRef.fillRect(-10, -5, 14, 10);
+                    ctxRef.fillStyle = '#cfd8dc'; ctxRef.fillRect(4, -4, 14, 3); ctxRef.fillRect(4, 1, 14, 3);
+                    ctxRef.fillStyle = '#b71c1c'; ctxRef.fillRect(-6, 4, 8, 8);
+                } else if (subType === 'laser') {
+                    ctxRef.fillStyle = '#006064'; ctxRef.fillRect(-12, -4, 22, 8);
+                    ctxRef.fillStyle = '#00e5ff'; ctxRef.fillRect(2, -2, 10, 4);
+                    ctxRef.fillStyle = '#00838f'; ctxRef.fillRect(-8, 4, 6, 5);
+                } else if (subType === 'plasma') {
+                    ctxRef.fillStyle = '#4a148c'; ctxRef.fillRect(-10, -5, 18, 10);
+                    ctxRef.fillStyle = '#76ff03'; ctxRef.beginPath(); ctxRef.arc(0, 0, 5, 0, Math.PI * 2); ctxRef.fill();
+                    ctxRef.fillStyle = '#9c27b0'; ctxRef.fillRect(8, -3, 6, 6);
+                } else if (subType === 'flame') {
+                    ctxRef.fillStyle = '#bf360c'; ctxRef.fillRect(-12, -4, 16, 8);
+                    ctxRef.fillStyle = '#ff5722'; ctxRef.fillRect(-14, -6, 6, 12);
+                    ctxRef.fillStyle = '#3e2723'; ctxRef.fillRect(4, -5, 10, 10);
+                } else {
+                    ctxRef.fillStyle = '#37474f'; ctxRef.fillRect(-10, -3, 20, 6);
+                }
+            }
+            ctxRef.restore();
+        }
+
+        function refreshHotbarUI() {
+            drawItemArtOnCanvas(document.getElementById('hcanvas-0'), 'sword', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-1'), 'pickaxe', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-2'), 'block', null);
+
+            for (let i = 0; i < 3; i++) {
+                const slotCanvas = document.getElementById(`hcanvas-${i + 3}`);
+                const weapon = weaponBarSlots[i];
+                if (weapon) {
+                    drawItemArtOnCanvas(slotCanvas, 'gun', weapon);
+                } else {
+                    const cx = slotCanvas.getContext('2d');
+                    if (cx) cx.clearRect(0, 0, 34, 34);
+                }
+            }
+
+            drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'grenade', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
+            document.getElementById('ammo-count').innerText = currentAmmo;
+        }
+
+        function selectHotbarSlot(slotIdx) {
+            activeHotbar = slotIdx;
+            document.querySelectorAll('.hotbar-slot').forEach((slot, idx) => {
+                if (idx === slotIdx) slot.classList.add('selected');
+                else slot.classList.remove('selected');
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const parts = hash.split('%');
+                const room = parts[0] || 'alpha';
+                const teamReq = parts[1] ? parts[1].toLowerCase() : null;
+                document.getElementById('input-room').value = room;
+                if (GLOBAL_ROOMS.includes(room)) {
+                    let mode = 'ffa';
+                    if (room === '4global') mode = '4team';
+                    else if (room === '2global') mode = '2team';
+                    setTimeout(() => { joinGlobalServer(room, mode); }, 300);
+                    return;
+                }
+                const modal = document.getElementById('modal-screen');
+                const title = document.getElementById('modal-title');
+                const opts = document.getElementById('modal-options');
+                title.innerText = `Join Room: ${room.toUpperCase()}`;
+                opts.innerHTML = `
+                    <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Combatant" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
+                    <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
+                `;
+                modal.style.display = 'flex';
+            }
+            refreshHotbarUI();
+        });
+
+        function executeDirectLinkJoin(room, teamReq) {
+            const nameInput = document.getElementById('direct-name-input');
+            if (nameInput) myUsername = nameInput.value.trim() || 'Combatant';
+            roomCode = room;
+            document.getElementById('modal-screen').style.display = 'none';
+
+            isHosting = false;
+            isPractice = false;
+            document.getElementById('net-status').innerText = 'Connecting via Direct Link...';
+
+            if (peerInstance) peerInstance.destroy();
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(roomCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connected = false;
+                conn.on('open', () => {
+                    connected = true;
+                    setupClientConnection(conn);
+                    if (teamReq) {
+                        setTimeout(() => {
+                            if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                            else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                            else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                            else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                            else assignTeamAndSpawn('FFA', '#8e24aa');
+                        }, 400);
+                    }
+                });
+
+                setTimeout(() => {
+                    if (!connected) {
+                        conn.close();
+                        peerInstance.destroy();
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            currentMode = '4team';
+                            document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
+                            if (teamReq) {
+                                if (teamReq === 'red') assignTeamAndSpawn('Red', '#e53935');
+                                else if (teamReq === 'blue') assignTeamAndSpawn('Blue', '#1e88e5');
+                                else if (teamReq === 'green') assignTeamAndSpawn('Green', '#43a047');
+                                else if (teamReq === 'yellow') assignTeamAndSpawn('Yellow', '#fbc02d');
+                                else assignTeamAndSpawn('FFA', '#8e24aa');
+                            } else {
+                                promptTeamSelection();
+                            }
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
+        }
+
+        function switchLobbyTab(tabKey, btnElement) {
+            document.querySelectorAll('.lobby-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
+            if (targetContent) targetContent.classList.add('active');
+            if (tabKey === 'peers') scanAvailablePeers();
+        }
+
+        function joinGlobalServer(serverCode, gameMode) {
+            myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || 'Combatant';
+            roomCode = serverCode;
+            currentMode = gameMode;
+            hostGameMode = gameMode;
+
+            document.getElementById('net-status').innerText = `Connecting to ${serverCode}...`;
+            if (peerInstance) peerInstance.destroy();
+
+            peerInstance = new Peer({ debug: 1 });
+            peerInstance.on('open', (id) => {
+                myPeerId = id;
+                const targetHostId = formatPeerId(serverCode);
+                const conn = peerInstance.connect(targetHostId);
+                
+                let connectedToHost = false;
+                conn.on('open', () => {
+                    connectedToHost = true;
+                    isHosting = false;
+                    setupClientConnection(conn);
+                });
+
+                setTimeout(() => {
+                    if (!connectedToHost) {
+                        conn.close();
+                        peerInstance.destroy();
+                        
+                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance.on('open', () => {
+                            isHosting = true;
+                            isPractice = false;
+                            document.getElementById('net-status').innerText = `Hosting Global Server: ${serverCode}`;
+                            promptTeamSelection();
+                        });
+                        peerInstance.on('error', () => {
+                            initJoinRoom();
+                        });
+                        peerInstance.on('connection', (c) => {
+                            setupServerConnection(c);
+                        });
+                    }
+                }, 1500);
+            });
+            peerInstance.on('error', () => {
+                initHostRoom();
+            });
         }
 
         function scanAvailablePeers() {
             const container = document.getElementById('peer-list-container');
-            if (!container) return;
-            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:20px;">Scanning active rooms...</div>`;
+            container.innerHTML = `<div style="text-align:center; color:#777; font-size:11px; padding:15px;">Initializing Global Rooms...</div>`;
+
+            GLOBAL_ROOMS.forEach(gRoom => {
+                const gId = formatPeerId(gRoom);
+                if (!globalHostingInstances[gRoom]) {
+                    try {
+                        const p = new Peer(gId, { debug: 0 });
+                        p.on('open', () => {
+                            globalHostingInstances[gRoom] = p;
+                            p.on('connection', (conn) => {
+                                setupServerConnection(conn);
+                            });
+                        });
+                    } catch (e) {}
+                }
+            });
+
             setTimeout(() => {
-                container.innerHTML = `
-                    <div class="peer-item"><span>🚪 Room: <b>alpha</b></span><button onclick="quickJoinRoom('alpha')">Join</button></div>
-                    <div class="peer-item"><span>🚪 Room: <b>beta</b></span><button onclick="quickJoinRoom('beta')">Join</button></div>
-                `;
-            }, 800);
+                let html = '';
+                GLOBAL_ROOMS.forEach(code => {
+                    html += `<div class="peer-item"><span>🌐 Global: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                });
+
+                const tempPeer = new Peer({ debug: 0 });
+                tempPeer.on('open', () => {
+                    if (tempPeer.listAllPeers) {
+                        tempPeer.listAllPeers((peers) => {
+                            const arenaPeers = peers.filter(p => p.startsWith(PEER_PREFIX) && !GLOBAL_ROOMS.some(g => formatPeerId(g) === p));
+                            arenaPeers.forEach(pid => {
+                                const code = pid.replace(PEER_PREFIX, '');
+                                html += `<div class="peer-item"><span>Room: <b>${code}</b></span><button onclick="joinDiscoveredPeer('${code}')">Join</button></div>`;
+                            });
+                            container.innerHTML = html;
+                            tempPeer.destroy();
+                        });
+                    } else {
+                        container.innerHTML = html;
+                        tempPeer.destroy();
+                    }
+                });
+                tempPeer.on('error', () => {
+                    container.innerHTML = html;
+                });
+            }, 600);
         }
 
-        function quickJoinRoom(code) {
+        function joinDiscoveredPeer(code) {
             document.getElementById('input-room').value = code;
+            switchLobbyTab('main', document.querySelector('.lobby-tab'));
             initJoinRoom();
-        }
-
-        function joinGlobalServer(serverCode, mode) {
-            document.getElementById('input-room').value = serverCode;
-            hostGameMode = mode;
-            currentMode = mode;
-            initJoinRoom();
-        }
-
-        function copyDirectRoomLink() {
-            const url = window.location.origin + window.location.pathname + '?room=' + roomCode;
-            document.execCommand('copy');
-            showNotificationBox('🔗 Room link copied to clipboard!');
-        }
-
-        function copyDirectTeamLink() {
-            const url = window.location.origin + window.location.pathname + '?room=' + roomCode + '&team=' + playerTeam;
-            document.execCommand('copy');
-            showNotificationBox(`🚩 ${playerTeam} team invitation link copied!`);
         }
 
         function showUIInGame(active) {
@@ -539,173 +745,129 @@
             document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
             document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
             document.getElementById('shop-toggle-btn').style.display = active ? 'block' : 'none';
-            document.getElementById('draw-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('skin-toggle-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('ammo-hud-badge').style.display = active ? 'block' : 'none';
             document.getElementById('minimap-box').style.display = active ? 'block' : 'none';
-            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
             document.getElementById('airdrop-banner').style.display = active ? 'block' : 'none';
-            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
-            document.getElementById('ammo-hud-box').style.display = active ? 'block' : 'none';
             document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
-            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
             document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
-            document.getElementById('room-notification').style.display = active ? 'none' : 'block';
-
-            if (!active) {
-                document.getElementById('death-modal').style.display = 'none';
-                document.getElementById('inventory-panel').style.display = 'none';
-                document.getElementById('shop-panel').style.display = 'none';
-                document.getElementById('drawing-panel').style.display = 'none';
-            }
+            document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
+            document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
+            document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
+            if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
         }
 
-        function respawnPlayer() {
-            currentHp = 100;
-            baseLockedOut = false;
-            document.getElementById('death-modal').style.display = 'none';
-            posX = MAP_SIZE / 2;
-            posY = MAP_SIZE / 2;
-            showNotificationBox('Respawned at Battlefield Base!');
+        function copyToClipboardFallback(text) {
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+        }
+
+        function copyDirectRoomLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const directUrl = `${baseUrl}#${roomCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🔗 Room link copied to clipboard! (${roomCode})`);
+        }
+
+        function copyDirectTeamLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const teamCode = playerTeam ? playerTeam.toLowerCase() : 'ffa';
+            const directUrl = `${baseUrl}#${roomCode}%${teamCode}`;
+            copyToClipboardFallback(directUrl);
+            showNotificationBox(`🚩 ${playerTeam} Team link copied to clipboard!`);
+        }
+
+        function switchShopTab(tabKey, btnElement) {
+            document.querySelectorAll('.shop-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.shop-content').forEach(c => c.classList.remove('active'));
+            btnElement.classList.add('active');
+            const targetContent = document.getElementById(`shop-tab-${tabKey}`);
+            if (targetContent) targetContent.classList.add('active');
+        }
+
+        function toggleShopPanel() {
+            const panel = document.getElementById('shop-panel');
+            if (panel) panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
 
         function toggleInventoryPanel() {
             const panel = document.getElementById('inventory-panel');
             if (!panel) return;
-            const isVisible = panel.style.display === 'block';
-            panel.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) renderBackpackGrid();
+            const isOpen = panel.style.display === 'block';
+            panel.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) renderBackpackGrid();
         }
 
         function renderBackpackGrid() {
-            const gridEl = document.getElementById('inv-grid');
-            if (!gridEl) return;
+            const gridContainer = document.getElementById('inv-grid');
+            if (!gridContainer) return;
             let htmlStr = '';
             for (let i = 0; i < 32; i++) {
+                htmlStr += `<div class="inventory-slot" draggable="true" ondragstart="dragBackpack(event, ${i})" ondragover="allowDrop(event)" ondrop="dropToBackpack(event, ${i})" onclick="clickInventorySlot(${i})"><span>${i+1}</span><canvas class="inv-canvas" id="inv-canvas-${i}" width="26" height="26"></canvas></div>`;
+            }
+            gridContainer.innerHTML = htmlStr;
+
+            for (let i = 0; i < 32; i++) {
                 const item = backpackInventory[i];
-                let label = 'Empty';
                 if (item) {
-                    if (item.type === 'gun') label = item.subtype.toUpperCase();
-                }
-                htmlStr += `<div class="inventory-slot" draggable="true" ondragstart="dragBackpackItem(event, ${i})" ondragover="allowDrop(event)" ondrop="dropToBackpack(event, ${i})" onclick="clickInventorySlot(${i})">
-                    <span>${i+1}</span>
-                    <b style="font-size:9px;">${label}</b>
-                </div>`;
-            }
-            gridEl.innerHTML = htmlStr;
-
-            for (let k = 0; k < 3; k++) {
-                const sub = weaponBarSlots[k];
-                const lbl = document.getElementById(`inv-hb${k}-lbl`);
-                if (lbl) lbl.innerText = sub ? sub.toUpperCase() : 'Empty';
-            }
-            refreshHotbarUI();
-        }
-
-        function selectHotbarSlot(idx) {
-            activeHotbar = idx;
-            refreshHotbarUI();
-        }
-
-        function refreshHotbarUI() {
-            for (let i = 0; i < 8; i++) {
-                const slotEl = document.getElementById(`hslot-${i}`);
-                if (slotEl) {
-                    if (i === activeHotbar) slotEl.classList.add('selected');
-                    else slotEl.classList.remove('selected');
+                    drawItemArtOnCanvas(document.getElementById(`inv-canvas-${i}`), item.type, item.subtype);
                 }
             }
-            for (let k = 0; k < 3; k++) {
-                const gunSub = weaponBarSlots[k];
-                const labelEl = document.getElementById(`gun${k}-label`);
-                if (labelEl) labelEl.innerText = gunSub ? gunSub.toUpperCase() : 'Empty';
-            }
-            const gLbl = document.getElementById('grenade-label');
-            if (gLbl) gLbl.innerText = `Grenade (${grenadesCount})`;
-            const bLbl = document.getElementById('bandage-label');
-            if (bLbl) bLbl.innerText = `Bandage (${bandagesCount})`;
-            updateAmmoHUD();
         }
 
-        function updateAmmoHUD() {
-            const ammoCur = document.getElementById('ammo-current');
-            const ammoMax = document.getElementById('ammo-max');
-            const reloadPrompt = document.getElementById('reload-prompt');
-            if (!ammoCur || !ammoMax) return;
-
-            if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunIdx = activeHotbar - 3;
-                const gunSub = weaponBarSlots[gunIdx];
-                if (gunSub && weaponMagazines[gunIdx]) {
-                    ammoCur.innerText = weaponMagazines[gunIdx].current;
-                    ammoMax.innerText = weaponMagazines[gunIdx].max;
-                    if (reloadPrompt) reloadPrompt.style.display = weaponMagazines[gunIdx].current <= 0 ? 'block' : 'none';
-                    return;
-                }
-            }
-            ammoCur.innerText = '-';
-            ammoMax.innerText = '-';
-            if (reloadPrompt) reloadPrompt.style.display = 'none';
+        // HTML5 Drag and Drop Handlers
+        let draggedData = null;
+        function dragBackpack(e, idx) {
+            draggedData = { source: 'backpack', index: idx, item: backpackInventory[idx] };
         }
+        function dragHotbar(e, idx) {
+            let item = null;
+            if (idx === 0) item = { type: 'sword', subtype: null };
+            else if (idx === 1) item = { type: 'pickaxe', subtype: null };
+            else if (idx === 2) item = { type: 'block', subtype: null };
+            else if (idx >= 3 && idx <= 5) {
+                const gun = weaponBarSlots[idx - 3];
+                if (gun) item = { type: 'gun', subtype: gun };
+            } else if (idx === 6) item = { type: 'grenade', subtype: null };
+            else if (idx === 7) item = { type: 'bandage', subtype: null };
+            draggedData = { source: 'hotbar', index: idx, item: item };
+        }
+        function allowDrop(e) { e.preventDefault(); }
 
-        function allowDrop(e) {
+        function dropToBackpack(e, targetIdx) {
             e.preventDefault();
-        }
+            if (!draggedData) return;
+            const targetItem = backpackInventory[targetIdx];
+            backpackInventory[targetIdx] = draggedData.item;
 
-        function dragBackpackItem(e, idx) {
-            draggedItemSource = { type: 'backpack', index: idx };
-        }
-
-        function dragHotbarItem(e, hbIdx) {
-            draggedItemSource = { type: 'hotbar', index: hbIdx };
-        }
-
-        function dropToBackpack(e, targetIndex) {
-            e.preventDefault();
-            if (!draggedItemSource) return;
-
-            if (draggedItemSource.type === 'backpack') {
-                const srcIdx = draggedItemSource.index;
-                const temp = backpackInventory[srcIdx];
-                backpackInventory[srcIdx] = backpackInventory[targetIndex];
-                backpackInventory[targetIndex] = temp;
-            } else if (draggedItemSource.type === 'hotbar') {
-                const hbIdx = draggedItemSource.index;
-                const hbItemSub = weaponBarSlots[hbIdx];
-                const targetBackpackItem = backpackInventory[targetIndex];
-
-                weaponBarSlots[hbIdx] = targetBackpackItem ? targetBackpackItem.subtype : null;
-                if (hbItemSub) {
-                    backpackInventory[targetIndex] = { type: 'gun', subtype: hbItemSub };
-                } else {
-                    backpackInventory[targetIndex] = null;
-                }
+            if (draggedData.source === 'backpack') {
+                backpackInventory[draggedData.index] = targetItem;
+            } else if (draggedData.source === 'hotbar') {
+                const hIdx = draggedData.index;
+                if (hIdx >= 3 && hIdx <= 5) weaponBarSlots[hIdx - 3] = targetItem ? targetItem.subtype : null;
             }
-            draggedItemSource = null;
+            draggedData = null;
+            refreshHotbarUI();
             renderBackpackGrid();
         }
 
-        function dropToHotbar(e, hbIdx) {
+        function dropToHotbar(e, targetHIdx) {
             e.preventDefault();
-            if (!draggedItemSource) return;
-
-            if (draggedItemSource.type === 'backpack') {
-                const srcIdx = draggedItemSource.index;
-                const bpItem = backpackInventory[srcIdx];
-                if (bpItem && bpItem.type === 'gun') {
-                    const currentHbSub = weaponBarSlots[hbIdx];
-                    weaponBarSlots[hbIdx] = bpItem.subtype;
-                    if (currentHbSub) {
-                        backpackInventory[srcIdx] = { type: 'gun', subtype: currentHbSub };
-                    } else {
-                        backpackInventory[srcIdx] = null;
-                    }
+            if (!draggedData) return;
+            if (targetHIdx >= 3 && targetHIdx <= 5) {
+                const gunSubtype = draggedData.item && draggedData.item.type === 'gun' ? draggedData.item.subtype : null;
+                weaponBarSlots[targetHIdx - 3] = gunSubtype;
+                if (draggedData.source === 'backpack') {
+                    backpackInventory[draggedData.index] = null;
                 }
-            } else if (draggedItemSource.type === 'hotbar') {
-                const srcHbIdx = draggedItemSource.index;
-                const temp = weaponBarSlots[hbIdx];
-                weaponBarSlots[hbIdx] = weaponBarSlots[srcHbIdx];
-                weaponBarSlots[srcHbIdx] = temp;
             }
-            draggedItemSource = null;
+            draggedData = null;
+            refreshHotbarUI();
             renderBackpackGrid();
         }
 
@@ -763,14 +925,6 @@
                     }
                 } else {
                     weaponBarSlots[emptyIdx] = subtypeName;
-                    let maxCap = 10;
-                    if (subtypeName === 'smg' || subtypeName === 'minigun') maxCap = 30;
-                    if (subtypeName === 'shotgun') maxCap = 8;
-                    if (subtypeName === 'sniper') maxCap = 5;
-                    if (subtypeName === 'rocket') maxCap = 3;
-                    if (subtypeName === 'laser' || subtypeName === 'plasma') maxCap = 20;
-                    if (subtypeName === 'flame') maxCap = 50;
-                    weaponMagazines[emptyIdx] = { current: maxCap, max: maxCap };
                 }
                 refreshHotbarUI();
             } else if (itemType === 'consumable') {
@@ -1004,6 +1158,15 @@
 
             if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
             airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+        }
+
+        function respawnPlayer() {
+            document.getElementById('death-modal').style.display = 'none';
+            currentHp = 100;
+            posX = MAP_SIZE / 2;
+            posY = MAP_SIZE / 2;
+            baseLockedOut = false;
+            showNotificationBox('Respawned at Battlefield center!');
         }
 
         function executeSelfDestruct() {
@@ -1245,217 +1408,10 @@
 
         window.addEventListener('mousedown', (e) => {
             if (e.button === 0) isMouseDown = true;
-            if (!inGameActive) return;
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            if (checkInsideBase(posX, posY, playerTeam)) {
-                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
-                return;
-            }
-
-            if (activeHotbar === 0 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
-                if (isPractice) {
-                    aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
-                            bot.hp -= 40;
-                            if (bot.hp <= 0) onEnemyEliminated();
-                            showNotificationBox('Hit bot with sword!');
-                        }
-                    });
-                }
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 250);
-            }
-
-            else if (activeHotbar === 1 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
-                for (let k in worldBlocks) {
-                    const blk = worldBlocks[k];
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-
-                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
-                        targetWorldY >= by && targetWorldY <= by + 40) {
-                        
-                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
-                        if (distToBlock <= 90) {
-                            blk.hp -= 35;
-                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
-                            if (blk.hp <= 0) {
-                                delete worldBlocks[k];
-                                playerCoins += 15;
-                                document.getElementById('coin-num').innerText = playerCoins;
-                                showNotificationBox('Block destroyed (+15 🪙)!');
-                            }
-                            if (isHosting) broadcastStateToClients();
-                            else if (hostConnection && hostConnection.open) {
-                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
-                            }
-                        } else {
-                            showNotificationBox('Get closer to mine block!');
-                        }
-                        break;
-                    }
-                }
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 300);
-            }
-
-            else if (activeHotbar === 2 && !actionCdBuild) {
-                const targetX = posX + (clickX - canvas.width/2);
-                const targetY = posY + (clickY - canvas.height/2);
-                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-                const activeMode = isHosting ? currentMode : hostGameMode;
-                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
-                worldBlocks[bKey] = newBlock;
-
-                if (isHosting) {
-                    broadcastStateToClients();
-                } else if (hostConnection && hostConnection.open) {
-                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
-                }
-
-                actionCdBuild = true;
-                setTimeout(() => { actionCdBuild = false; }, 300);
-            }
-
-            else if (activeHotbar === 6) {
-                if (grenadesCount <= 0) {
-                    showNotificationBox('No grenades remaining!');
-                    return;
-                }
-                grenadesCount--;
-                refreshHotbarUI();
-
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-                const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
-                const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
-                const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
-
-                activeGrenades.push({
-                    startX: posX,
-                    startY: posY,
-                    x: posX,
-                    y: posY,
-                    targetX: targetWorldX,
-                    targetY: targetWorldY,
-                    vx: Math.cos(throwAngle) * speedFactor,
-                    vy: Math.sin(throwAngle) * speedFactor,
-                    fuseTime: Math.max(10, Math.floor(distToTarget / speedFactor))
-                });
-                showNotificationBox('Grenade thrown!');
-            }
-
-            else if (activeHotbar === 7) {
-                if (bandagesCount <= 0) {
-                    showNotificationBox('No bandages remaining!');
-                    return;
-                }
-                if (currentHp >= 100) {
-                    showNotificationBox('Health is already full!');
-                    return;
-                }
-                bandagesCount--;
-                currentHp = Math.min(100, currentHp + 40);
-                refreshHotbarUI();
-                showNotificationBox('Used bandage (+40 HP)!');
-            }
-
-            else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                triggerWeaponFire();
-            }
         });
-
         window.addEventListener('mouseup', (e) => {
             if (e.button === 0) isMouseDown = false;
         });
-
-        function triggerWeaponFire() {
-            if (isReloading) return;
-            const gunIdx = activeHotbar - 3;
-            const gunEquipped = weaponBarSlots[gunIdx];
-            if (!gunEquipped) return;
-
-            if (!weaponMagazines[gunIdx]) {
-                let maxCap = 10;
-                if (gunEquipped === 'smg' || gunEquipped === 'minigun') maxCap = 30;
-                if (gunEquipped === 'shotgun') maxCap = 8;
-                if (gunEquipped === 'sniper') maxCap = 5;
-                if (gunEquipped === 'rocket') maxCap = 3;
-                if (gunEquipped === 'laser' || gunEquipped === 'plasma') maxCap = 20;
-                if (gunEquipped === 'flame') maxCap = 50;
-                weaponMagazines[gunIdx] = { current: maxCap, max: maxCap };
-            }
-
-            const mag = weaponMagazines[gunIdx];
-            if (mag.current <= 0) {
-                showNotificationBox('Magazine empty! Press SPACE to reload.');
-                return;
-            }
-            mag.current--;
-            updateAmmoHUD();
-
-            let bulletCount = 1;
-            if (gunEquipped === 'shotgun') bulletCount = 5;
-            if (gunEquipped === 'minigun') bulletCount = 3;
-
-            for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
-                let spread = (bIdx - 1) * 0.08;
-                if (bulletCount === 1) spread = 0;
-
-                let bulletType = gunEquipped;
-                let bSpeed = 18;
-                if (gunEquipped === 'sniper') bSpeed = 28;
-                if (gunEquipped === 'laser') bSpeed = 35;
-                if (gunEquipped === 'plasma') bSpeed = 14;
-                if (gunEquipped === 'rocket') bSpeed = 11;
-                if (gunEquipped === 'flame') { bSpeed = 8; spread = (Math.random() - 0.5) * 0.3; }
-
-                bulletsList.push({
-                    x: posX,
-                    y: posY,
-                    vx: Math.cos(aimAngle + spread) * bSpeed,
-                    vy: Math.sin(aimAngle + spread) * bSpeed,
-                    type: bulletType,
-                    team: playerTeam
-                });
-            }
-        }
-
-        function reloadWeapon() {
-            if (isReloading) return;
-            if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunIdx = activeHotbar - 3;
-                const gunSub = weaponBarSlots[gunIdx];
-                if (!gunSub) return;
-                isReloading = true;
-                showNotificationBox('Reloading weapon...');
-                updateAmmoHUD();
-
-                setTimeout(() => {
-                    let maxCap = 10;
-                    if (gunSub === 'smg' || gunSub === 'minigun') maxCap = 30;
-                    if (gunSub === 'shotgun') maxCap = 8;
-                    if (gunSub === 'sniper') maxCap = 5;
-                    if (gunSub === 'rocket') maxCap = 3;
-                    if (gunSub === 'laser' || gunSub === 'plasma') maxCap = 20;
-                    if (gunSub === 'flame') maxCap = 50;
-                    weaponMagazines[gunIdx] = { current: maxCap, max: maxCap };
-                    isReloading = false;
-                    showNotificationBox('Reload complete!');
-                    updateAmmoHUD();
-                }, 1000);
-            }
-        }
 
         window.addEventListener('keydown', (e) => {
             if (!inGameActive) return;
@@ -1478,8 +1434,6 @@
             if (e.code === 'Digit7') selectHotbarSlot(6);
             if (e.code === 'Digit8') selectHotbarSlot(7);
             if (e.code === 'KeyB') toggleShopPanel();
-            if (e.shiftKey && e.code === 'KeyC') { e.preventDefault(); toggleDebugLogPanel(); }
-            if (e.code === 'Space') { e.preventDefault(); reloadWeapon(); }
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
             if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
             if (e.code === 'KeyQ') dropActiveItem();
@@ -1488,6 +1442,10 @@
             if (e.code === 'KeyR') executeSelfDestruct();
             if (e.code === 'KeyJ') tryHopOnVehicle();
             if (e.code === 'KeyH') dismountVehicle();
+            if (e.code === 'Space') {
+                e.preventDefault();
+                reloadWeapon();
+            }
             if (e.code === 'KeyT') {
                 e.preventDefault();
                 const chatInput = document.getElementById('chat-text-input');
@@ -1508,6 +1466,18 @@
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
             if (e.code === 'Tab') toggleScoreboardDisplay(false);
         });
+
+        function reloadWeapon() {
+            if (isReloading) return;
+            isReloading = true;
+            showNotificationBox('Reloading weapon...');
+            setTimeout(() => {
+                currentAmmo = maxAmmo;
+                isReloading = false;
+                document.getElementById('ammo-count').innerText = currentAmmo;
+                showNotificationBox('Reload complete!');
+            }, 800);
+        }
 
         function tryHopOnVehicle() {
             if (boardedVehicle) {
@@ -1641,6 +1611,176 @@
             });
         }
 
+        function triggerWeaponAttack(clickX, clickY) {
+            if (checkInsideBase(posX, posY, playerTeam)) {
+                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
+                return;
+            }
+
+            if (activeHotbar === 0 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                if (isPractice) {
+                    aiBots.forEach(bot => {
+                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
+                            bot.hp -= 40;
+                            if (bot.hp <= 0) onEnemyEliminated();
+                            showNotificationBox('Hit bot with sword!');
+                        }
+                    });
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 250);
+            }
+
+            else if (activeHotbar === 1 && !actionCdAttack) {
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+
+                for (let k in worldBlocks) {
+                    const blk = worldBlocks[k];
+                    const parts = k.split(',');
+                    const bx = parseInt(parts[0]) * 40;
+                    const by = parseInt(parts[1]) * 40;
+
+                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
+                        targetWorldY >= by && targetWorldY <= by + 40) {
+                        
+                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
+                        if (distToBlock <= 90) {
+                            blk.hp -= 35;
+                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
+                            if (blk.hp <= 0) {
+                                delete worldBlocks[k];
+                                playerCoins += 15;
+                                document.getElementById('coin-num').innerText = playerCoins;
+                                showNotificationBox('Block destroyed (+15 🪙)!');
+                            }
+                            if (isHosting) broadcastStateToClients();
+                            else if (hostConnection && hostConnection.open) {
+                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
+                            }
+                        } else {
+                            showNotificationBox('Get closer to mine block!');
+                        }
+                        break;
+                    }
+                }
+                actionCdAttack = true;
+                setTimeout(() => { actionCdAttack = false; }, 300);
+            }
+
+            else if (activeHotbar === 2 && !actionCdBuild) {
+                const targetX = posX + (clickX - canvas.width/2);
+                const targetY = posY + (clickY - canvas.height/2);
+                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
+                const activeMode = isHosting ? currentMode : hostGameMode;
+                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
+                worldBlocks[bKey] = newBlock;
+
+                if (isHosting) {
+                    broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
+                }
+
+                actionCdBuild = true;
+                setTimeout(() => { actionCdBuild = false; }, 300);
+            }
+
+            else if (activeHotbar === 6) {
+                if (grenadesCount <= 0) {
+                    showNotificationBox('No grenades remaining!');
+                    return;
+                }
+                grenadesCount--;
+                refreshHotbarUI();
+
+                const targetWorldX = posX + (clickX - canvas.width/2);
+                const targetWorldY = posY + (clickY - canvas.height/2);
+                const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
+                const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
+                const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
+
+                activeGrenades.push({
+                    startX: posX,
+                    startY: posY,
+                    x: posX,
+                    y: posY,
+                    targetX: targetWorldX,
+                    targetY: targetWorldY,
+                    vx: Math.cos(throwAngle) * speedFactor,
+                    vy: Math.sin(throwAngle) * speedFactor,
+                    fuseTime: Math.max(10, Math.floor(distToTarget / speedFactor))
+                });
+                showNotificationBox('Grenade thrown!');
+            }
+
+            else if (activeHotbar === 7) {
+                if (bandagesCount <= 0) {
+                    showNotificationBox('No bandages remaining!');
+                    return;
+                }
+                if (currentHp >= 100) {
+                    showNotificationBox('Health is already full!');
+                    return;
+                }
+                bandagesCount--;
+                currentHp = Math.min(100, currentHp + 40);
+                refreshHotbarUI();
+                showNotificationBox('Used bandage (+40 HP)!');
+            }
+
+            else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                const gunEquipped = weaponBarSlots[activeHotbar - 3];
+                if (!gunEquipped) {
+                    showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
+                    return;
+                }
+                if (currentAmmo <= 0) {
+                    showNotificationBox('Out of ammo! Press SPACE to reload.');
+                    return;
+                }
+                if (!actionCdAttack) {
+                    currentAmmo--;
+                    document.getElementById('ammo-count').innerText = currentAmmo;
+
+                    let bulletCount = 1;
+                    if (gunEquipped === 'shotgun') bulletCount = 5;
+
+                    for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
+                        let spread = (bIdx - 2) * 0.08;
+                        if (bulletCount === 1) spread = 0;
+
+                        bulletsList.push({
+                            x: posX,
+                            y: posY,
+                            vx: Math.cos(aimAngle + spread) * 18,
+                            vy: Math.sin(aimAngle + spread) * 18,
+                            type: gunEquipped,
+                            team: playerTeam
+                        });
+                    }
+
+                    actionCdAttack = true;
+                    let cdTime = 250;
+                    if (gunEquipped === 'sniper') cdTime = 800;
+                    if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
+                    if (gunEquipped === 'laser' || gunEquipped === 'plasma') cdTime = 200;
+                    if (gunEquipped === 'rocket') cdTime = 600;
+
+                    setTimeout(() => { actionCdAttack = false; }, cdTime);
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!inGameActive) return;
+            const rect = canvas.getBoundingClientRect();
+            triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
         function updateGameLogic() {
             if (!inGameActive) return;
 
@@ -1655,17 +1795,11 @@
                 return;
             }
 
+            // Auto-fire check for holding mouse down with automatic weapons
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunEquipped = weaponBarSlots[activeHotbar - 3];
-                if (['smg', 'minigun', 'flame', 'laser', 'plasma'].includes(gunEquipped)) {
-                    const now = Date.now();
-                    let fireInterval = 120;
-                    if (gunEquipped === 'minigun') fireInterval = 70;
-                    if (gunEquipped === 'flame') fireInterval = 80;
-                    if (now - lastAutoFireTime > fireInterval) {
-                        triggerWeaponFire();
-                        lastAutoFireTime = now;
-                    }
+                const eq = weaponBarSlots[activeHotbar - 3];
+                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser') {
+                    triggerWeaponAttack(mouseXCoord, mouseYCoord);
                 }
             }
 
@@ -1799,8 +1933,7 @@
                 b.x += b.vx;
                 b.y += b.vy;
 
-                let bulletHit = false;
-
+                let hitObs = false;
                 for (let k in worldBlocks) {
                     const parts = k.split(',');
                     const bx = parseInt(parts[0]) * 40;
@@ -1809,48 +1942,51 @@
                     if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
                         let dmg = 25;
                         if (b.type === 'sniper') dmg = 70;
-                        if (b.type === 'rocket') dmg = 120;
+                        if (b.type === 'rocket') dmg = 90;
                         if (b.type === 'plasma') dmg = 45;
                         worldBlocks[k].hp -= dmg;
                         if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
-                        bulletHit = true;
+
+                        if (b.type === 'rocket') {
+                            floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
+                        }
+
+                        hitObs = true;
                         break;
                     }
                 }
 
-                if (isPractice && !bulletHit) {
-                    for (let bot of aiBots) {
+                if (hitObs) {
+                    bulletsList.splice(i, 1);
+                    continue;
+                }
+
+                if (isPractice) {
+                    aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 4) {
                             if (b.team !== bot.team) {
                                 let hitDmg = 35;
                                 if (b.type === 'sniper') hitDmg = 75;
-                                if (b.type === 'rocket') hitDmg = 120;
+                                if (b.type === 'rocket') {
+                                    hitDmg = 100;
+                                    floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
+                                }
                                 if (b.type === 'laser') hitDmg = 40;
                                 bot.hp -= hitDmg;
                                 if (bot.hp <= 0) onEnemyEliminated();
-                                bulletHit = true;
-                                break;
+                                bulletsList.splice(i, 1);
+                                hitObs = true;
                             }
                         }
-                    }
-                }
-
-                if (b.type === 'rocket' && bulletHit) {
-                    floatingParticles.push({
-                        x: b.x,
-                        y: b.y,
-                        radius: 12,
-                        maxRadius: 110,
-                        alpha: 1.0,
-                        isShockwave: true
                     });
-                    if (Math.hypot(b.x - posX, b.y - posY) < 110) {
-                        currentHp -= 65;
-                        if (currentHp <= 0) showNotificationBox('You were caught in a rocket explosion!');
-                    }
                 }
 
-                if (bulletHit || b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
+                if (hitObs) continue;
+
+                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
+                    if (b.type === 'rocket') {
+                        floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
+                    }
                     bulletsList.splice(i, 1);
                 }
             }
@@ -2023,76 +2159,132 @@
                 ctx.translate(posX, posY);
                 ctx.rotate(aimAngle);
 
-                if (customPixelData) {
-                    ctx.drawImage(customPixelData, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                if (activeHotbar === 0) {
+                    ctx.fillStyle = '#b0bec5'; ctx.fillRect(10, 4, 18, 3);
+                } else if (activeHotbar === 1) {
+                    ctx.fillStyle = '#8d6e63'; ctx.fillRect(10, 2, 14, 4);
+                    ctx.fillStyle = '#424242'; ctx.fillRect(22, -4, 4, 16);
+                } else if (activeHotbar === 6) {
+                    ctx.fillStyle = '#388e3c'; ctx.beginPath(); ctx.arc(14, 4, 6, 0, Math.PI * 2); ctx.fill();
+                } else if (activeHotbar === 7) {
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(10, 3, 14, 8);
+                    ctx.fillStyle = '#e53935'; ctx.fillRect(14, 5, 6, 4);
+                } else if (activeHotbar >= 3 && activeHotbar <= 5) {
+                    const eqGun = weaponBarSlots[activeHotbar - 3];
+                    if (eqGun === 'pistol') {
+                        ctx.fillStyle = '#455a64'; ctx.fillRect(10, -2, 12, 5);
+                    } else if (eqGun === 'smg') {
+                        ctx.fillStyle = '#263238'; ctx.fillRect(8, -3, 16, 5);
+                    } else if (eqGun === 'shotgun') {
+                        ctx.fillStyle = '#5d4037'; ctx.fillRect(8, -3, 18, 6);
+                    } else if (eqGun === 'sniper') {
+                        ctx.fillStyle = '#212121'; ctx.fillRect(6, -2, 22, 4);
+                    } else if (eqGun === 'rocket') {
+                        ctx.fillStyle = '#33691e'; ctx.fillRect(6, -5, 22, 10);
+                    } else if (eqGun === 'minigun') {
+                        ctx.fillStyle = '#212121'; ctx.fillRect(8, -5, 16, 10);
+                    } else if (eqGun === 'laser') {
+                        ctx.fillStyle = '#00e5ff'; ctx.fillRect(8, -3, 18, 6);
+                    } else if (eqGun === 'plasma') {
+                        ctx.fillStyle = '#76ff03'; ctx.fillRect(8, -4, 16, 8);
+                    } else if (eqGun === 'flame') {
+                        ctx.fillStyle = '#ff5722'; ctx.fillRect(8, -4, 18, 8);
+                    } else {
+                        ctx.fillStyle = '#37474f'; ctx.fillRect(8, -3, 18, 6);
+                    }
+                }
+                ctx.restore();
+
+                if (customPlayerSkinImg && customPlayerSkinImg.complete && customPlayerSkinImg.naturalWidth > 0) {
+                    ctx.drawImage(customPlayerSkinImg, posX - RADIUS_PLAYER, posY - RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
                 } else {
                     ctx.fillStyle = playerColor;
-                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
                 }
 
-                if (activeHotbar === 0) {
-                    ctx.fillStyle = '#cfd8dc';
-                    ctx.fillRect(10, -3, 20, 6);
-                } else if (activeHotbar === 1) {
-                    ctx.fillStyle = '#8d6e63';
-                    ctx.fillRect(10, -4, 18, 8);
-                } else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                    ctx.fillStyle = '#37474f';
-                    ctx.fillRect(8, -3, 22, 6);
-                }
-                ctx.restore();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
             }
 
-            bulletsList.forEach(b => {
-                ctx.fillStyle = b.type === 'sniper' ? '#ffeb3b' : b.type === 'rocket' ? '#ff5722' : b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#e040fb' : '#fff';
-                ctx.beginPath(); ctx.arc(b.x, b.y, b.type === 'rocket' ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
-            });
-
             activeGrenades.forEach(g => {
-                ctx.fillStyle = '#333';
-                ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#ff9800'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.fillStyle = '#388e3c';
+                ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
             });
 
             floatingParticles.forEach(fp => {
                 ctx.save();
-                ctx.beginPath();
-                ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 152, 0, ${fp.alpha})`;
-                ctx.lineWidth = 3;
-                ctx.stroke();
+                ctx.globalAlpha = fp.alpha;
+                if (fp.isShockwave) {
+                    ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#4caf50';
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.fillText(fp.text, fp.x, fp.y);
+                }
                 ctx.restore();
             });
 
-            ctx.restore();
+            bulletsList.forEach(b => {
+                ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
+                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,202,40,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y);
+                ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
+                ctx.stroke();
+            });
 
+            ctx.restore();
+        }
+
+        function renderMinimapScene() {
             mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
-            mCtx.fillStyle = '#111';
+            if (!inGameActive) return;
+            const scale = mCanvas.width / MAP_SIZE;
+            
+            mCtx.fillStyle = '#112218';
             mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
-            const scaleM = mCanvas.width / MAP_SIZE;
-            mCtx.fillStyle = playerColor;
-            mCtx.beginPath(); mCtx.arc(posX * scaleM, posY * scaleM, 4, 0, Math.PI * 2); mCtx.fill();
+            mCtx.fillStyle = 'rgba(229, 57, 53, 0.4)';
+            mCtx.fillRect(0, 0, ZONE_SIZE * scale, ZONE_SIZE * scale);
+            mCtx.fillStyle = 'rgba(30, 136, 229, 0.4)';
+            mCtx.fillRect((MAP_SIZE - ZONE_SIZE) * scale, (MAP_SIZE - ZONE_SIZE) * scale, ZONE_SIZE * scale, ZONE_SIZE * scale);
 
             for (let pid in remotePlayers) {
+                if (peerInstance && pid === peerInstance.id) continue;
                 const rp = remotePlayers[pid];
-                if (rp && rp.hp > 0) {
-                    mCtx.fillStyle = rp.color || '#e53935';
-                    mCtx.beginPath(); mCtx.arc(rp.x * scaleM, rp.y * scaleM, 3, 0, Math.PI * 2); mCtx.fill();
-                }
+                mCtx.fillStyle = rp.color || '#e53935';
+                mCtx.beginPath();
+                mCtx.arc(rp.x * scale, rp.y * scale, 3.5, 0, Math.PI * 2);
+                mCtx.fill();
             }
+
+            mCtx.fillStyle = playerColor;
+            mCtx.beginPath();
+            mCtx.arc(posX * scale, posY * scale, 5, 0, Math.PI * 2);
+            mCtx.fill();
+            mCtx.strokeStyle = '#fff';
+            mCtx.lineWidth = 1;
+            mCtx.stroke();
         }
 
         function gameLoop() {
             updateGameLogic();
             renderGameScene();
+            renderMinimapScene();
             requestAnimationFrame(gameLoop);
         }
 
-        window.onload = () => {
-            requestAnimationFrame(gameLoop);
-        };
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
