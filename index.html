@@ -68,7 +68,7 @@
         #leave-btn:hover { background: #e53935; }
 
         /* Shop Panel */
-        #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 440px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
+        #shop-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 460px; color: #fff; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 15px 45px rgba(0,0,0,0.9); text-align: center; }
         #shop-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
         .shop-tabs-row { display: flex; gap: 6px; margin-bottom: 14px; }
         .shop-tab { flex: 1; padding: 7px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
@@ -98,7 +98,7 @@
 
         #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; }
 
-        /* Hotbar with Unique Canvases for Icons */
+        /* Hotbar Dock with Unique Canvases for Icons */
         #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 20; }
         .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
         .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
@@ -162,12 +162,13 @@
             <canvas id="canvas-minimap" width="160" height="160"></canvas>
         </div>
 
-        <!-- Shop Modal -->
+        <!-- Shop Panel -->
         <div id="shop-panel">
-            <h3>🛒 ARENA OUTFITTER & VEHICLES</h3>
+            <h3>🛒 ARENA OUTFITTER, VEHICLES & TRAPS</h3>
             <div class="shop-tabs-row">
                 <button class="shop-tab active" onclick="switchShopTab('gear', this)">Weapons</button>
                 <button class="shop-tab" onclick="switchShopTab('rides', this)">🚗 Vehicles</button>
+                <button class="shop-tab" onclick="switchShopTab('traps', this)">⚠️ Traps</button>
             </div>
 
             <div id="shop-tab-gear" class="shop-content active">
@@ -190,6 +191,12 @@
                 <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
+            </div>
+
+            <div id="shop-tab-traps" class="shop-content">
+                <div class="shop-item-card"><span>📌 Spike Trap (Places sharp ground hazard)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🕸️ Glue Trap (Slows down enemies)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 80)">Buy</button></div></div>
+                <div class="shop-item-card"><span>💥 Proximity Mine (Triggers on enemy touch)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 150)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -362,6 +369,7 @@
         let weaponBarSlots = [null, null, null];
         let grenadesCount = 3;
         let bandagesCount = 2;
+        let activeTrapsInventory = { spike: 0, glue: 0, mine: 0 };
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10;
@@ -379,6 +387,7 @@
         let remotePlayers = {};
         let aiBots = [];
         let worldBlocks = {};
+        let worldTraps = {};
         let droppedLoot = {};
         let supplyCrates = [];
         let bulletsList = [];
@@ -392,14 +401,12 @@
         const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
         let globalHostingInstances = {};
 
-        // Asset Registry for PNG scans
         const assetRegistry = {};
 
         function formatPeerId(code) {
             return PEER_PREFIX + code.trim().toLowerCase();
         }
 
-        // Built-in Pink Checkerboard Fallback Generator for Missing PNG Assets
         function createPlaceholderCanvas(width, height, text) {
             const pc = document.createElement('canvas');
             pc.width = width;
@@ -424,7 +431,6 @@
             return pc;
         }
 
-        // Process Image to Remove White Background and Replace Pure Red (#FF0000) with Team Color
         function processImageTransparencyAndTeamColor(imgElement, teamHexColor) {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = imgElement.naturalWidth || 32;
@@ -436,7 +442,7 @@
                 const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                 const data = imgData.data;
 
-                let teamR = 142, teamG = 36, teamB = 170; // Default FFA Purple
+                let teamR = 142, teamG = 36, teamB = 170;
                 if (teamHexColor && teamHexColor.startsWith('#') && teamHexColor.length === 7) {
                     teamR = parseInt(teamHexColor.slice(1, 3), 16);
                     teamG = parseInt(teamHexColor.slice(3, 5), 16);
@@ -445,13 +451,9 @@
 
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i], g = data[i + 1], b = data[i + 2];
-
-                    // Pure White or near-white background removal (MS Paint)
                     if (r >= 240 && g >= 240 && b >= 240) {
-                        data[i + 3] = 0; // Transparent
-                    }
-                    // Pure Red (#FF0000) team color replacement
-                    else if (r > 220 && g < 35 && b < 35) {
+                        data[i + 3] = 0;
+                    } else if (r > 220 && g < 35 && b < 35) {
                         data[i] = teamR;
                         data[i + 1] = teamG;
                         data[i + 2] = teamB;
@@ -462,31 +464,26 @@
                 processedImg.src = tempCanvas.toDataURL();
                 return processedImg;
             } catch (e) {
-                console.warn('[Transparency Filter] CORS restriction on image.', e);
                 return imgElement;
             }
         }
 
-        // GitHub Directory PNG Scanner & Missing Asset Logger
         function loadTrackedImage(url, fallbackText) {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             if (!url || url.trim() === '') {
-                console.error(`[Missing PNG Asset Error] Empty asset URL for "${fallbackText}". Using pink checkerboard placeholder.`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
                 return img;
             }
 
             img.onload = () => {
-                console.log(`[Asset Success] Found and loaded PNG asset: "${url}"`);
                 const processed = processImageTransparencyAndTeamColor(img, playerColor);
                 img.src = processed.src;
             };
 
             img.onerror = () => {
-                console.error(`[Missing PNG Asset Error] PNG asset missing or failed to load: "${url}". Replaced with pink placeholder (${fallbackText}).`);
                 const placeholderCanvas = createPlaceholderCanvas(32, 32, fallbackText);
                 img.src = placeholderCanvas.toDataURL();
             };
@@ -495,16 +492,23 @@
             return img;
         }
 
-        // Calculate Team Spawn Coordinates
+        const requiredAssets = [
+            'skin', 'sword', 'pickaxe', 'block', 'grenade', 'bandage',
+            'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame',
+            'coin', 'crate', 'bike', 'car', 'tank', 'hovercraft', 'mech'
+        ];
+        requiredAssets.forEach(assetKey => {
+            assetRegistry[assetKey] = loadTrackedImage(`${assetKey}.png`, assetKey.toUpperCase());
+        });
+
         function getTeamSpawnCoords(teamName) {
             if (teamName === 'Red') return { x: 250, y: 250 };
             if (teamName === 'Blue') return { x: MAP_SIZE - 250, y: MAP_SIZE - 250 };
             if (teamName === 'Green') return { x: 250, y: MAP_SIZE - 250 };
             if (teamName === 'Yellow') return { x: MAP_SIZE - 250, y: 250 };
-            return { x: MAP_SIZE / 2, y: MAP_SIZE / 2 }; // FFA spawns in center
+            return { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
         }
 
-        // Procedural Distinct Sprite Art Fallback for Items
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
             if (!canvasEl) return;
             const cxt = canvasEl.getContext('2d');
@@ -969,6 +973,9 @@
                 if (subtypeName === 'bandage') bandagesCount += 2;
                 refreshHotbarUI();
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
+            } else if (itemType === 'trap') {
+                activeTrapsInventory[subtypeName] = (activeTrapsInventory[subtypeName] || 0) + 1;
+                showNotificationBox(`Purchased 1x ${subtypeName.toUpperCase()} Trap! Click on the map to place.`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
@@ -1165,7 +1172,6 @@
             playerColor = hexColor;
             document.getElementById('modal-screen').style.display = 'none';
 
-            // Spawns player inside their designated team base
             const spawnCoords = getTeamSpawnCoords(teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
@@ -1270,6 +1276,7 @@
                     type: 'room_config', 
                     mode: currentMode,
                     blocks: worldBlocks,
+                    traps: worldTraps,
                     loot: droppedLoot,
                     crates: supplyCrates,
                     vehicles: activeVehiclesList
@@ -1302,6 +1309,9 @@
                 } else if (data.type === 'place_block') {
                     worldBlocks[data.key] = data.block;
                     broadcastStateToClients();
+                } else if (data.type === 'place_trap') {
+                    worldTraps[data.key] = data.trap;
+                    broadcastStateToClients();
                 } else if (data.type === 'spawn_loot') {
                     droppedLoot[data.id] = data.item;
                     broadcastStateToClients();
@@ -1331,6 +1341,7 @@
                 if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
                     if (data.blocks) worldBlocks = data.blocks;
+                    if (data.traps) worldTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
@@ -1344,6 +1355,7 @@
                         }
                     }
                     if (data.blocks) worldBlocks = data.blocks;
+                    if (data.traps) worldTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
@@ -1381,6 +1393,7 @@
                 type: 'server_state', 
                 players: allPlayersState,
                 blocks: worldBlocks,
+                traps: worldTraps,
                 loot: droppedLoot,
                 crates: supplyCrates,
                 vehicles: activeVehiclesList
@@ -1627,734 +1640,4 @@
                 const dist = Math.hypot(posX - item.x, posY - item.y);
                 if (dist < 45) {
                     if (item.type === 'coin') {
-                        playerCoins += item.value;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                    } else if (item.type === 'gun') {
-                        const emptyIdx = weaponBarSlots.findIndex(w => w === null);
-                        if (emptyIdx !== -1) {
-                            weaponBarSlots[emptyIdx] = item.subtype;
-                        } else {
-                            pushToBackpack(item);
-                        }
-                        refreshHotbarUI();
-                    }
-                    delete droppedLoot[lid];
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_loot', id: lid });
-                    }
-                    showNotificationBox('Picked up item!');
-                    break;
-                }
-            }
-
-            supplyCrates.forEach((crate, idx) => {
-                const dist = Math.hypot(posX - crate.x, posY - crate.y);
-                if (dist < 50) {
-                    const randomCoinReward = Math.floor(Math.random() * 150) + 1;
-                    playerCoins += randomCoinReward;
-                    document.getElementById('coin-num').innerText = playerCoins;
-                    supplyCrates.splice(idx, 1);
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_crate', index: idx });
-                    }
-                    showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
-                }
-            });
-        }
-
-        function triggerWeaponAttack(clickX, clickY) {
-            if (checkInsideBase(posX, posY, playerTeam)) {
-                showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
-                return;
-            }
-
-            if (activeHotbar === 0 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
-                if (isPractice) {
-                    aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
-                            bot.hp -= 40;
-                            if (bot.hp <= 0) onEnemyEliminated();
-                            showNotificationBox('Hit bot with sword!');
-                        }
-                    });
-                }
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 250);
-            }
-
-            else if (activeHotbar === 1 && !actionCdAttack) {
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-
-                for (let k in worldBlocks) {
-                    const blk = worldBlocks[k];
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-
-                    if (targetWorldX >= bx && targetWorldX <= bx + 40 &&
-                        targetWorldY >= by && targetWorldY <= by + 40) {
-                        
-                        const distToBlock = Math.hypot(posX - (bx + 20), posY - (by + 20));
-                        if (distToBlock <= 90) {
-                            blk.hp -= 35;
-                            showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
-                            if (blk.hp <= 0) {
-                                delete worldBlocks[k];
-                                playerCoins += 15;
-                                document.getElementById('coin-num').innerText = playerCoins;
-                                showNotificationBox('Block destroyed (+15 🪙)!');
-                            }
-                            if (isHosting) broadcastStateToClients();
-                            else if (hostConnection && hostConnection.open) {
-                                hostConnection.send({ type: 'place_block', key: k, block: worldBlocks[k] || null });
-                            }
-                        } else {
-                            showNotificationBox('Get closer to mine block!');
-                        }
-                        break;
-                    }
-                }
-                actionCdAttack = true;
-                setTimeout(() => { actionCdAttack = false; }, 300);
-            }
-
-            else if (activeHotbar === 2 && !actionCdBuild) {
-                const targetX = posX + (clickX - canvas.width/2);
-                const targetY = posY + (clickY - canvas.height/2);
-                const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-                const activeMode = isHosting ? currentMode : hostGameMode;
-                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
-                worldBlocks[bKey] = newBlock;
-
-                if (isHosting) {
-                    broadcastStateToClients();
-                } else if (hostConnection && hostConnection.open) {
-                    hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
-                }
-
-                actionCdBuild = true;
-                setTimeout(() => { actionCdBuild = false; }, 300);
-            }
-
-            else if (activeHotbar === 6) {
-                if (grenadesCount <= 0) {
-                    showNotificationBox('No grenades remaining!');
-                    return;
-                }
-                grenadesCount--;
-                refreshHotbarUI();
-
-                const targetWorldX = posX + (clickX - canvas.width/2);
-                const targetWorldY = posY + (clickY - canvas.height/2);
-                const distToTarget = Math.hypot(targetWorldX - posX, targetWorldY - posY);
-                const speedFactor = Math.min(35, Math.max(12, distToTarget / 8));
-                const throwAngle = Math.atan2(targetWorldY - posY, targetWorldX - posX);
-
-                activeGrenades.push({
-                    startX: posX,
-                    startY: posY,
-                    x: posX,
-                    y: posY,
-                    targetX: targetWorldX,
-                    targetY: targetWorldY,
-                    vx: Math.cos(throwAngle) * speedFactor,
-                    vy: Math.sin(throwAngle) * speedFactor,
-                    fuseTime: Math.max(10, Math.floor(distToTarget / speedFactor))
-                });
-                showNotificationBox('Grenade thrown!');
-            }
-
-            else if (activeHotbar === 7) {
-                if (bandagesCount <= 0) {
-                    showNotificationBox('No bandages remaining!');
-                    return;
-                }
-                if (currentHp >= 100) {
-                    showNotificationBox('Health is already full!');
-                    return;
-                }
-                bandagesCount--;
-                currentHp = Math.min(100, currentHp + 40);
-                refreshHotbarUI();
-                showNotificationBox('Used bandage (+40 HP)!');
-            }
-
-            else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                const gunEquipped = weaponBarSlots[activeHotbar - 3];
-                if (!gunEquipped) {
-                    showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
-                    return;
-                }
-                if (currentAmmo <= 0) {
-                    showNotificationBox('Out of ammo! Press SPACE to reload.');
-                    return;
-                }
-                if (!actionCdAttack) {
-                    currentAmmo--;
-                    document.getElementById('ammo-count').innerText = currentAmmo;
-
-                    let bulletCount = 1;
-                    if (gunEquipped === 'shotgun') bulletCount = 5;
-
-                    for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
-                        let spread = (bIdx - 2) * 0.08;
-                        if (bulletCount === 1) spread = 0;
-
-                        bulletsList.push({
-                            x: posX,
-                            y: posY,
-                            vx: Math.cos(aimAngle + spread) * 18,
-                            vy: Math.sin(aimAngle + spread) * 18,
-                            type: gunEquipped,
-                            team: playerTeam
-                        });
-                    }
-
-                    actionCdAttack = true;
-                    let cdTime = 250;
-                    if (gunEquipped === 'sniper') cdTime = 800;
-                    if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
-                    if (gunEquipped === 'laser' || gunEquipped === 'plasma') cdTime = 200;
-                    if (gunEquipped === 'rocket') cdTime = 600;
-
-                    setTimeout(() => { actionCdAttack = false; }, cdTime);
-                }
-            }
-        }
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (!inGameActive) return;
-            const rect = canvas.getBoundingClientRect();
-            triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
-        });
-
-        function updateGameLogic() {
-            if (!inGameActive) return;
-
-            const activeMode = isHosting ? currentMode : hostGameMode;
-            if (activeMode === 'creative') {
-                playerCoins = 999999;
-                document.getElementById('coin-num').innerText = playerCoins;
-            }
-
-            if (currentHp <= 0) {
-                document.getElementById('death-modal').style.display = 'flex';
-                return;
-            }
-
-            if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
-                const eq = weaponBarSlots[activeHotbar - 3];
-                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser') {
-                    triggerWeaponAttack(mouseXCoord, mouseYCoord);
-                }
-            }
-
-            let moveSpeed = 3.8;
-            let sprintMultiplier = 1.0;
-            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
-                if (currentStamina > 2) {
-                    sprintMultiplier = 1.75;
-                    currentStamina -= 0.5;
-                }
-            } else {
-                currentStamina = Math.min(100, currentStamina + 0.3);
-            }
-
-            if (boardedVehicle) {
-                sprintMultiplier = 1.95;
-            }
-
-            let dx = 0, dy = 0;
-            if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
-            if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
-            if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
-            if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
-
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
-            }
-
-            let nextX = posX + dx * moveSpeed * sprintMultiplier;
-            let nextY = posY + dy * moveSpeed * sprintMultiplier;
-
-            nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
-            nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
-
-            if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
-                showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
-                nextX = posX;
-                nextY = posY;
-            }
-
-            const currentlyInBase = checkInsideBase(nextX, nextY, playerTeam);
-            const wasInBase = checkInsideBase(posX, posY, playerTeam);
-
-            if (wasInBase && !currentlyInBase && !baseLockedOut) {
-                executeSelfDestruct();
-            }
-
-            if (baseLockedOut && currentlyInBase) {
-                showNotificationBox('Base re-entry locked! Wait timer or kill an enemy.');
-            } else {
-                posX = nextX;
-                posY = nextY;
-                if (boardedVehicle) {
-                    boardedVehicle.x = posX;
-                    boardedVehicle.y = posY;
-                }
-            }
-
-            if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
-                currentHp = Math.min(100, currentHp + 0.2);
-            }
-
-            const screenCenterX = canvas.width / 2;
-            const screenCenterY = canvas.height / 2;
-            aimAngle = Math.atan2(mouseYCoord - screenCenterY, mouseXCoord - screenCenterX);
-
-            for (let i = activeGrenades.length - 1; i >= 0; i--) {
-                const g = activeGrenades[i];
-                g.x += g.vx;
-                g.y += g.vy;
-                g.fuseTime--;
-
-                let hitWall = false;
-                for (let k in worldBlocks) {
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-                    if (g.x >= bx && g.x <= bx + 40 && g.y >= by && g.y <= by + 40) {
-                        worldBlocks[k].hp -= 70;
-                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
-                        hitWall = true;
-                        break;
-                    }
-                }
-
-                if (hitWall || g.fuseTime <= 0 || Math.hypot(g.x - g.targetX, g.y - g.targetY) < 15) {
-                    const explRadius = 100;
-                    if (isPractice) {
-                        aiBots.forEach(bot => {
-                            if (bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
-                                bot.hp -= 80;
-                                if (bot.hp <= 0) onEnemyEliminated();
-                            }
-                        });
-                    }
-                    if (Math.hypot(g.x - posX, g.y - posY) < explRadius) {
-                        currentHp -= 50;
-                        if (currentHp <= 0) showNotificationBox('You were blown up by a grenade!');
-                    }
-
-                    floatingParticles.push({
-                        x: g.x,
-                        y: g.y,
-                        radius: 10,
-                        maxRadius: explRadius,
-                        alpha: 1.0,
-                        isShockwave: true
-                    });
-
-                    activeGrenades.splice(i, 1);
-                }
-            }
-
-            for (let i = floatingParticles.length - 1; i >= 0; i--) {
-                const fp = floatingParticles[i];
-                if (fp.isShockwave) {
-                    fp.radius += 6;
-                    fp.alpha -= 0.05;
-                    if (fp.alpha <= 0 || fp.radius >= fp.maxRadius) floatingParticles.splice(i, 1);
-                } else {
-                    if (fp.vx) fp.x += fp.vx;
-                    if (fp.vy) fp.y += fp.vy;
-                    fp.alpha -= 0.02;
-                    if (fp.alpha <= 0) floatingParticles.splice(i, 1);
-                }
-            }
-
-            for (let i = bulletsList.length - 1; i >= 0; i--) {
-                const b = bulletsList[i];
-                b.x += b.vx;
-                b.y += b.vy;
-
-                let hitObs = false;
-                for (let k in worldBlocks) {
-                    const parts = k.split(',');
-                    const bx = parseInt(parts[0]) * 40;
-                    const by = parseInt(parts[1]) * 40;
-
-                    if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
-                        let dmg = 25;
-                        if (b.type === 'sniper') dmg = 70;
-                        if (b.type === 'rocket') dmg = 90;
-                        if (b.type === 'plasma') dmg = 45;
-                        worldBlocks[k].hp -= dmg;
-                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
-
-                        if (b.type === 'rocket') {
-                            floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
-                        }
-
-                        hitObs = true;
-                        break;
-                    }
-                }
-
-                if (hitObs) {
-                    bulletsList.splice(i, 1);
-                    continue;
-                }
-
-                if (isPractice) {
-                    aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 4) {
-                            if (b.team !== bot.team) {
-                                let hitDmg = 35;
-                                if (b.type === 'sniper') hitDmg = 75;
-                                if (b.type === 'rocket') {
-                                    hitDmg = 100;
-                                    floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
-                                }
-                                if (b.type === 'laser') hitDmg = 40;
-                                bot.hp -= hitDmg;
-                                if (bot.hp <= 0) onEnemyEliminated();
-                                bulletsList.splice(i, 1);
-                                hitObs = true;
-                            }
-                        }
-                    });
-                }
-
-                if (hitObs) continue;
-
-                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
-                    if (b.type === 'rocket') {
-                        floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
-                    }
-                    bulletsList.splice(i, 1);
-                }
-            }
-
-            if (isPractice) {
-                aiBots.forEach(bot => {
-                    if (bot.hp > 0) {
-                        bot.x += (Math.random() - 0.5) * 2;
-                        bot.y += (Math.random() - 0.5) * 2;
-                    }
-                });
-            }
-
-            if (isHosting) {
-                broadcastStateToClients();
-            } else if (hostConnection && hostConnection.open) {
-                hostConnection.send({
-                    type: 'player_update',
-                    username: myUsername,
-                    team: playerTeam,
-                    color: playerColor,
-                    x: posX,
-                    y: posY,
-                    hp: currentHp,
-                    coins: playerCoins
-                });
-            }
-
-            document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-            document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
-            document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
-            document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
-        }
-
-        function renderGameScene() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!inGameActive) return;
-
-            ctx.save();
-            let camX = posX - canvas.width / 2;
-            let camY = posY - canvas.height / 2;
-            if (cameraScoped) {
-                camX += (mouseXCoord - canvas.width / 2) * 0.35;
-                camY += (mouseYCoord - canvas.height / 2) * 0.35;
-            }
-            ctx.translate(-camX, -camY);
-
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-            ctx.lineWidth = 1;
-            const gridSize = 80;
-            for (let gx = 0; gx <= MAP_SIZE; gx += gridSize) {
-                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, MAP_SIZE); ctx.stroke();
-            }
-            for (let gy = 0; gy <= MAP_SIZE; gy += gridSize) {
-                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(MAP_SIZE, gy); ctx.stroke();
-            }
-
-            const bases = [
-                { name: 'Red Base', x1: 0, y1: 0, color: 'rgba(229, 57, 53, 0.25)' },
-                { name: 'Blue Base', x1: MAP_SIZE - ZONE_SIZE, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(30, 136, 229, 0.25)' },
-                { name: 'Green Base', x1: 0, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(67, 160, 71, 0.25)' },
-                { name: 'Yellow Base', x1: MAP_SIZE - ZONE_SIZE, y1: 0, color: 'rgba(251, 192, 45, 0.25)' }
-            ];
-            bases.forEach(b => {
-                ctx.fillStyle = b.color;
-                ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 20px sans-serif';
-                ctx.fillText(b.name, b.x1 + 35, b.y1 + 45);
-            });
-
-            for (let k in worldBlocks) {
-                const blk = worldBlocks[k];
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
-                ctx.fillStyle = '#795548';
-                ctx.fillRect(bx, by, 40, 40);
-                ctx.strokeStyle = '#3e2723';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(bx, by, 40, 40);
-
-                if (blk.hp < 100) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                    ctx.fillRect(bx, by - 8, 40, 5);
-                    ctx.fillStyle = '#4caf50';
-                    ctx.fillRect(bx, by - 8, (Math.max(0, blk.hp) / 100) * 40, 5);
-                }
-            }
-
-            for (let lid in droppedLoot) {
-                const item = droppedLoot[lid];
-                const lootImg = assetRegistry[item.type === 'coin' ? 'coin' : (item.subtype || item.type)];
-                if (lootImg && lootImg.complete && lootImg.naturalWidth > 0) {
-                    ctx.drawImage(lootImg, item.x - 10, item.y - 10, 20, 20);
-                } else {
-                    ctx.fillStyle = item.type === 'coin' ? '#ffd700' : '#00e5ff';
-                    ctx.beginPath(); ctx.arc(item.x, item.y, 8, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
-                }
-            }
-
-            supplyCrates.forEach(crate => {
-                const crateImg = assetRegistry['crate'];
-                if (crateImg && crateImg.complete && crateImg.naturalWidth > 0) {
-                    ctx.drawImage(crateImg, crate.x - 16, crate.y - 16, 32, 32);
-                } else {
-                    ctx.fillStyle = '#ab47bc';
-                    ctx.fillRect(crate.x - 16, crate.y - 16, 32, 32);
-                    ctx.strokeStyle = '#ffeb3b';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(crate.x - 16, crate.y - 16, 32, 32);
-                }
-            });
-
-            activeVehiclesList.forEach(veh => {
-                ctx.save();
-                ctx.translate(veh.x, veh.y);
-                const vehImg = assetRegistry[veh.type];
-                if (vehImg && vehImg.complete && vehImg.naturalWidth > 0) {
-                    ctx.drawImage(vehImg, -20, -14, 40, 28);
-                } else {
-                    ctx.fillStyle = veh.color || '#333';
-                    ctx.fillRect(-20, -14, 40, 28);
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-                    ctx.strokeRect(-20, -14, 40, 28);
-                }
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 10px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${veh.type.toUpperCase()} [${veh.passengers.length}/${veh.capacity}]`, 0, -20);
-                ctx.restore();
-            });
-
-            for (let pid in remotePlayers) {
-                if (peerInstance && pid === peerInstance.id) continue;
-                const rp = remotePlayers[pid];
-                if (!rp || rp.hp <= 0) continue;
-                ctx.save();
-                ctx.translate(rp.x, rp.y);
-
-                const remoteSkinImg = assetRegistry['skin'];
-                if (remoteSkinImg && remoteSkinImg.complete && remoteSkinImg.naturalWidth > 0) {
-                    ctx.drawImage(remoteSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
-                } else {
-                    ctx.fillStyle = rp.color || '#e53935';
-                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                }
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(rp.username || 'Enemy', 0, -26);
-
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(-18, -20, 36, 4);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(-18, -20, (Math.max(0, rp.hp) / 100) * 36, 4);
-                ctx.restore();
-            }
-
-            aiBots.forEach(bot => {
-                if (!bot || bot.hp <= 0) return;
-                ctx.save();
-                ctx.translate(bot.x, bot.y);
-
-                const botSkinImg = assetRegistry['skin'];
-                if (botSkinImg && botSkinImg.complete && botSkinImg.naturalWidth > 0) {
-                    ctx.drawImage(botSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
-                } else {
-                    ctx.fillStyle = bot.color || '#ff9800';
-                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                }
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(bot.username, 0, -26);
-
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(-18, -20, 36, 4);
-                ctx.fillStyle = '#e53935';
-                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / 100) * 36, 4);
-                ctx.restore();
-            });
-
-            if (currentHp > 0) {
-                ctx.save();
-                ctx.translate(posX, posY);
-                ctx.rotate(aimAngle);
-
-                const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : 'bandage'))));
-                const itemPng = assetRegistry[activeKey];
-                if (itemPng && itemPng.complete && itemPng.naturalWidth > 0) {
-                    ctx.drawImage(itemPng, 6, -10, 24, 24);
-                } else {
-                    if (activeHotbar === 0) {
-                        ctx.fillStyle = '#b0bec5'; ctx.fillRect(10, 4, 18, 3);
-                    } else if (activeHotbar === 1) {
-                        ctx.fillStyle = '#8d6e63'; ctx.fillRect(10, 2, 14, 4);
-                        ctx.fillStyle = '#424242'; ctx.fillRect(22, -4, 4, 16);
-                    } else if (activeHotbar === 6) {
-                        ctx.fillStyle = '#388e3c'; ctx.beginPath(); ctx.arc(14, 4, 6, 0, Math.PI * 2); ctx.fill();
-                    } else if (activeHotbar === 7) {
-                        ctx.fillStyle = '#ffffff'; ctx.fillRect(10, 3, 14, 8);
-                        ctx.fillStyle = '#e53935'; ctx.fillRect(14, 5, 6, 4);
-                    } else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                        ctx.fillStyle = '#37474f'; ctx.fillRect(8, -3, 18, 6);
-                    }
-                }
-                ctx.restore();
-
-                const activePlayerSkin = customPlayerSkinImg || assetRegistry['skin'];
-                if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
-                    ctx.drawImage(activePlayerSkin, posX - RADIUS_PLAYER, posY - RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
-                } else {
-                    ctx.fillStyle = playerColor;
-                    ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-                }
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
-            }
-
-            activeGrenades.forEach(g => {
-                const grenadePng = assetRegistry['grenade'];
-                if (grenadePng && grenadePng.complete && grenadePng.naturalWidth > 0) {
-                    ctx.drawImage(grenadePng, g.x - 8, g.y - 8, 16, 16);
-                } else {
-                    ctx.fillStyle = '#388e3c';
-                    ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
-                }
-            });
-
-            floatingParticles.forEach(fp => {
-                ctx.save();
-                ctx.globalAlpha = fp.alpha;
-                if (fp.isShockwave) {
-                    ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                } else {
-                    ctx.fillStyle = '#4caf50';
-                    ctx.font = 'bold 14px sans-serif';
-                    ctx.fillText(fp.text, fp.x, fp.y);
-                }
-                ctx.restore();
-            });
-
-            bulletsList.forEach(b => {
-                ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
-                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = 'rgba(255,202,40,0.5)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(b.x, b.y);
-                ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
-                ctx.stroke();
-            });
-
-            ctx.restore();
-        }
-
-        function renderMinimapScene() {
-            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
-            if (!inGameActive) return;
-            const scale = mCanvas.width / MAP_SIZE;
-            
-            mCtx.fillStyle = '#112218';
-            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-
-            mCtx.fillStyle = 'rgba(229, 57, 53, 0.4)';
-            mCtx.fillRect(0, 0, ZONE_SIZE * scale, ZONE_SIZE * scale);
-            mCtx.fillStyle = 'rgba(30, 136, 229, 0.4)';
-            mCtx.fillRect((MAP_SIZE - ZONE_SIZE) * scale, (MAP_SIZE - ZONE_SIZE) * scale, ZONE_SIZE * scale, ZONE_SIZE * scale);
-
-            for (let pid in remotePlayers) {
-                if (peerInstance && pid === peerInstance.id) continue;
-                const rp = remotePlayers[pid];
-                mCtx.fillStyle = rp.color || '#e53935';
-                mCtx.beginPath();
-                mCtx.arc(rp.x * scale, rp.y * scale, 3.5, 0, Math.PI * 2);
-                mCtx.fill();
-            }
-
-            mCtx.fillStyle = playerColor;
-            mCtx.beginPath();
-            mCtx.arc(posX * scale, posY * scale, 5, 0, Math.PI * 2);
-            mCtx.fill();
-            mCtx.strokeStyle = '#fff';
-            mCtx.lineWidth = 1;
-            mCtx.stroke();
-        }
-
-        function gameLoop() {
-            updateGameLogic();
-            renderGameScene();
-            renderMinimapScene();
-            requestAnimationFrame(gameLoop);
-        }
-
-        requestAnimationFrame(gameLoop);
-    </script>
-</body>
-</html>
+                        playerCoins += item.value
