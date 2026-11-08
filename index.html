@@ -166,6 +166,8 @@
                 <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -186,6 +188,16 @@
             <input type="number" id="coin-drop-amt" min="1" value="10">
             <button style="background:#4caf50; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:6px;" onclick="executeCoinDrop()">Drop</button>
             <button style="background:#e53935; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="closeCoinModal()">Cancel</button>
+        </div>
+
+        <!-- Death Screen Modal -->
+        <div id="death-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(229,57,53,0.3); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 70;">
+            <div class="modal-card" style="border-color: #e53935; background: rgba(20,14,14,0.96);">
+                <h3 style="color: #e53935; font-size: 24px;">💀 YOU DIED</h3>
+                <p style="font-size: 13px; color: #ccc; margin-bottom: 16px;">You were eliminated in the battlefield.</p>
+                <button class="btn-team-red" onclick="respawnPlayer()" style="background:#4caf50; margin-bottom: 8px;">Respawn at Base</button>
+                <button class="btn-team-blue" onclick="exitToLobby()" style="background:#e53935;">Leave Room</button>
+            </div>
         </div>
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
@@ -227,7 +239,7 @@
                 <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
                 <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
                 <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
-                <button id="btn-bot-mode" onclick="initPracticeMode()">🤖 Practice vs Bots</button>
+                <button id="btn-bot-mode" onclick="promptLocalPlayMode()" style="background:#ff9800;">🎮 Play Locally</button>
             </div>
 
             <div id="lobby-tab-globals" class="lobby-content">
@@ -363,6 +375,18 @@
 
                 document.getElementById('input-room').value = room;
                 
+                // If opening a global server hash (e.g. #ffaglobal), auto route to global join
+                if (GLOBAL_ROOMS.includes(room)) {
+                    let mode = 'ffa';
+                    if (room === '4global') mode = '4team';
+                    else if (room === '2global') mode = '2team';
+                    
+                    setTimeout(() => {
+                        joinGlobalServer(room, mode);
+                    }, 300);
+                    return;
+                }
+                
                 // Prompt user for their name before joining via direct link
                 const modal = document.getElementById('modal-screen');
                 const title = document.getElementById('modal-title');
@@ -446,7 +470,7 @@
         }
 
         function joinGlobalServer(serverCode, gameMode) {
-            myUsername = document.getElementById('input-username-global').value.trim() || 'Combatant';
+            myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || 'Combatant';
             roomCode = serverCode;
             currentMode = gameMode;
             hostGameMode = gameMode;
@@ -691,6 +715,11 @@
                 } else {
                     weaponBarSlots[emptyIdx] = subtypeName;
                 }
+            } else if (itemType === 'consumable') {
+                if (subtypeName === 'grenade') grenadesCount += 3;
+                if (subtypeName === 'bandage') bandagesCount += 2;
+                refreshHotbarUI();
+                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
@@ -806,6 +835,33 @@
             promptTeamSelection();
         }
 
+        function promptLocalPlayMode() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Select Local Play Mode';
+            opts.innerHTML = `
+                <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP, 1-Hit Mine)</button>
+                <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function selectLocalMode(localMode) {
+            myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
+            isHosting = false;
+            isPractice = (localMode === 'pvp');
+            currentMode = localMode === 'creative' ? 'creative' : '4team';
+            if (localMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
+        }
+
         function promptGameModeSelection() {
             const modal = document.getElementById('modal-screen');
             const title = document.getElementById('modal-title');
@@ -815,6 +871,7 @@
                 <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
                 <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
                 <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
+                <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Server (Inf Coins, 300 HP, 1-Hit Mine)</button>
             `;
             modal.style.display = 'flex';
         }
@@ -822,6 +879,11 @@
         function selectGameModeAndTeam(mode) {
             currentMode = mode;
             hostGameMode = mode;
+            if (mode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -864,16 +926,14 @@
             playerColor = hexColor;
             document.getElementById('modal-screen').style.display = 'none';
 
-            const b = getTeamBaseRegion(playerTeam);
-            if (b) {
-                posX = (b.x1 + b.x2) / 2;
-                posY = (b.y1 + b.y2) / 2;
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') {
+                playerCoins = 999999;
+                currentHp = 300;
             } else {
-                posX = MAP_SIZE / 2;
-                posY = MAP_SIZE / 2;
+                currentHp = 100;
             }
 
-            currentHp = 100;
             currentStamina = 100;
             baseLockedOut = false;
             inGameActive = true;
@@ -899,6 +959,8 @@
         }
 
         function executeSelfDestruct() {
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') return; // No self destruct cooldowns in Creative mode
             if (selfDestructCountdown > 0) return;
             selfDestructCountdown = 30;
             baseLockedOut = true;
@@ -1385,7 +1447,8 @@
                 const targetX = posX + (clickX - canvas.width/2);
                 const targetY = posY + (clickY - canvas.height/2);
                 const bKey = `${Math.floor(targetX / 40)},${Math.floor(targetY / 40)}`;
-                const newBlock = { type: 'wood', hp: 100 };
+                const activeMode = isHosting ? currentMode : hostGameMode;
+                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
                 worldBlocks[bKey] = newBlock;
 
                 if (isHosting) {
@@ -1401,7 +1464,7 @@
             // Grenade Throwing (Slot 7)
             else if (activeHotbar === 6) {
                 if (grenadesCount <= 0) {
-                    showNotificationBox('No grenades remaining! Buy more from Shop (B).');
+                    showNotificationBox('No grenades remaining!');
                     return;
                 }
                 grenadesCount--;
@@ -1483,24 +1546,30 @@
         function updateGameLogic() {
             if (!inGameActive) return;
 
-            let moveSpeed = 3.8;
-            if (activeRide === 'bike') moveSpeed = 4.4;
-            if (activeRide === 'car') moveSpeed = 5.2;
-            if (activeRide === 'tank') moveSpeed = 3.2;
-            if (activeRide === 'hovercraft') moveSpeed = 4.8;
-            if (activeRide === 'mech') moveSpeed = 3.0;
-
-            if (boardedVehicle) {
-                moveSpeed *= 1.25;
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode === 'creative') {
+                playerCoins = 999999;
+                document.getElementById('coin-num').innerText = playerCoins;
             }
 
+            if (currentHp <= 0) {
+                document.getElementById('death-modal').style.display = 'flex';
+                return;
+            }
+
+            let moveSpeed = 3.8;
+            let sprintMultiplier = 1.0;
             if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
                 if (currentStamina > 2) {
-                    moveSpeed *= 1.5;
-                    currentStamina -= 0.6;
+                    sprintMultiplier = 1.75;
+                    currentStamina -= 0.5;
                 }
             } else {
-                if (currentStamina < 100) currentStamina = Math.min(100, currentStamina + 0.3);
+                currentStamina = Math.min(100, currentStamina + 0.3);
+            }
+
+            if (boardedVehicle) {
+                sprintMultiplier = 1.95;
             }
 
             let dx = 0, dy = 0;
@@ -1514,26 +1583,11 @@
                 dy *= 0.7071;
             }
 
-            let nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX + dx * moveSpeed));
-            let nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY + dy * moveSpeed));
+            let nextX = posX + dx * moveSpeed * sprintMultiplier;
+            let nextY = posY + dy * moveSpeed * sprintMultiplier;
 
-            for (let k in worldBlocks) {
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
-
-                const closestX = Math.max(bx, Math.min(nextX, bx + 40));
-                const closestY = Math.max(by, Math.min(nextY, by + 40));
-                const distX = nextX - closestX;
-                const distY = nextY - closestY;
-                const distanceSq = (distX * distX) + (distY * distY);
-
-                if (distanceSq < (RADIUS_PLAYER * RADIUS_PLAYER)) {
-                    nextX = posX;
-                    nextY = posY;
-                    break;
-                }
-            }
+            nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
+            nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
 
             if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
                 showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
@@ -1714,16 +1768,14 @@
             ctx.translate(-camX, -camY);
 
             // Draw World Grid Lines
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 1;
             const gridSize = 80;
-            const startX = Math.floor(camX / gridSize) * gridSize;
-            const startY = Math.floor(camY / gridSize) * gridSize;
-            for (let gx = startX; gx < camX + canvas.width + gridSize; gx += gridSize) {
-                ctx.beginPath(); ctx.moveTo(gx, camY); ctx.lineTo(gx, camY + canvas.height); ctx.stroke();
+            for (let gx = 0; gx <= MAP_SIZE; gx += gridSize) {
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, MAP_SIZE); ctx.stroke();
             }
-            for (let gy = startY; gy < camY + canvas.height + gridSize; gy += gridSize) {
-                ctx.beginPath(); ctx.moveTo(camX, gy); ctx.lineTo(camX + canvas.width, gy); ctx.stroke();
+            for (let gy = 0; gy <= MAP_SIZE; gy += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(MAP_SIZE, gy); ctx.stroke();
             }
 
             // Draw Team Bases (Corners)
@@ -1737,11 +1789,11 @@
                 ctx.fillStyle = b.color;
                 ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
                 ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.strokeRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 16px sans-serif';
-                ctx.fillText(b.name, b.x1 + 30, b.y1 + 40);
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText(b.name, b.x1 + 35, b.y1 + 45);
             });
 
             // Draw World Blocks
@@ -1755,6 +1807,14 @@
                 ctx.strokeStyle = '#3e2723';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(bx, by, 40, 40);
+
+                // Draw Block HP bar if damaged
+                if (blk.hp < 100) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(bx, by - 8, 40, 5);
+                    ctx.fillStyle = '#4caf50';
+                    ctx.fillRect(bx, by - 8, (Math.max(0, blk.hp) / 100) * 40, 5);
+                }
             }
 
             // Draw Dropped Loot
