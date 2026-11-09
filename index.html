@@ -177,6 +177,7 @@
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-traps" class="shop-content">
@@ -331,6 +332,7 @@
             <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="34" height="34"></canvas></div>
         </div>
     </div>
 
@@ -381,6 +383,8 @@
         let weaponBarSlots = [null, null, null];
         let grenadesCount = 3;
         let bandagesCount = 2;
+        let smokeBombsCount = 2;
+        let activeSmokeClouds = [];
         let trapsCount = 2;
         let backpackInventory = new Array(32).fill(null);
 
@@ -511,7 +515,7 @@
         const assetKeysList = [
             'skin', 'avatar', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
             'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
-            'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate'
+            'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate', 'smoke_bomb'
         ];
 
         function initializeAssets() {
@@ -599,6 +603,7 @@
 
             drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'grenade', null);
             drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-8'), 'smoke_bomb', null);
         }
 
         function selectHotbarSlot(idx) {
@@ -1053,11 +1058,15 @@
                 bandagesCount--;
                 spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
                 refreshHotbarUI();
+            } else if (activeHotbar === 8 && smokeBombsCount > 0) {
+                smokeBombsCount--;
+                spawnWorldLoot('smoke_bomb', null, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
             }
         }
 
         function buyStoreItem(itemType, subtypeName, price) {
-            const activeMode = isHosting ? currentMode : hostGameMode;
+            const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode !== 'creative' && playerCoins < price) {
                 showNotificationBox('Insufficient coins!');
                 return;
@@ -1076,6 +1085,7 @@
             } else if (itemType === 'consumable') {
                 if (subtypeName === 'grenade') grenadesCount += 3;
                 if (subtypeName === 'bandage') bandagesCount += 2;
+                if (subtypeName === 'smoke_bomb') smokeBombsCount += 2;
                 refreshHotbarUI();
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'trap') {
@@ -1216,13 +1226,13 @@
             isPractice = (localMode === 'pvp');
             currentMode = localMode === 'creative' ? 'creative' : '4team';
             if (localMode === 'creative') {
-                playerCoins = 999999;
+                playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = playerCoins;
+            document.getElementById('coin-num').innerText = localMode === 'creative' ? '∞' : playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -1279,7 +1289,7 @@
                 playerCoins = 999999;
                 currentHp = 300;
             } else {
-                if (playerCoins === 999999) playerCoins = 100;
+                if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
             document.getElementById('coin-num').innerText = playerCoins;
@@ -1310,7 +1320,8 @@
 
         function respawnPlayer() {
             document.getElementById('death-modal').style.display = 'none';
-            currentHp = 100;
+            currentHp = (currentMode === 'creative' || hostGameMode === 'creative') ? 300 : 100;
+            currentStamina = 100;
             const spawnCoords = getTeamSpawnCoords(playerTeam);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
@@ -1888,6 +1899,14 @@
                 showNotificationBox('Grenade thrown!');
             }
 
+            else if (activeHotbar === 8) {
+                if (smokeBombsCount <= 0) { showNotificationBox('No smoke bombs remaining!'); return; }
+                smokeBombsCount--;
+                activeSmokeClouds.push({ x: targetWorldX, y: targetWorldY, expiresAt: Date.now() + 7000 });
+                refreshHotbarUI();
+                showNotificationBox('Smoke bomb deployed!');
+            }
+
             else if (activeHotbar === 7) {
                 if (bandagesCount <= 0) {
                     showNotificationBox('No bandages remaining!');
@@ -1973,8 +1992,9 @@
 
             const activeMode = isHosting ? currentMode : hostGameMode;
             if (activeMode === 'creative') {
-                playerCoins = 999999;
-                currentHp = Math.max(currentHp, 300);
+                playerCoins = Number.MAX_SAFE_INTEGER;
+                currentHp = 300;
+                currentStamina = 100;
             }
 
             if (currentHp <= 0) {
@@ -1999,6 +2019,7 @@
             } else {
                 currentStamina = Math.min(100, currentStamina + 0.3);
             }
+            if (activeMode === 'creative') currentStamina = 100;
 
             if (boardedVehicle) {
                 sprintMultiplier = 1.95;
@@ -2226,7 +2247,7 @@
             }
 
             document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-            document.getElementById('hp-bar-fill').style.width = Math.max(0, currentHp) + '%';
+            document.getElementById('hp-bar-fill').style.width = Math.min(100, Math.max(0, currentHp) / (activeMode === 'creative' ? 300 : 100) * 100) + '%';
             document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
             document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
         }
@@ -2440,6 +2461,18 @@
                 ctx.textAlign = 'center';
                 ctx.fillText(myUsername + ' (You)', posX, posY - 28);
             }
+
+            activeSmokeClouds = activeSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
+            activeSmokeClouds.forEach(cloud => {
+                const fade = Math.min(1, (cloud.expiresAt - Date.now()) / 1200);
+                ctx.save(); ctx.globalAlpha = 0.62 * fade;
+                for (let i = 0; i < 10; i++) {
+                    const a = i * Math.PI * 2 / 10, d = i % 2 ? 42 : 25;
+                    ctx.fillStyle = i % 2 ? '#737b82' : '#a0a6ab';
+                    ctx.beginPath(); ctx.arc(cloud.x + Math.cos(a) * d, cloud.y + Math.sin(a) * d, 38, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.fillStyle = '#899198'; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, 45, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            });
 
             activeGrenades.forEach(g => {
                 const grenadePng = assetRegistry['grenade'];
