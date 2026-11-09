@@ -156,17 +156,12 @@
         <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
         <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
         <button id="skin-toggle-btn" onclick="toggleSkinModal()">🎨 Custom PNG Skin</button>
-        <div id="ammo-hud-badge">Ammo: <span id="ammo-count">10</span>/10<br><span style="font-size:9px; color:#aaa;">[SPACE to Reload]</span></div>
-
-        <div id="minimap-box">
-            <canvas id="canvas-minimap" width="160" height="160"></canvas>
-        </div>
-
-        <!-- Shop Modal -->
+        <!-- Shop Panel -->
         <div id="shop-panel">
             <h3>🛒 ARENA OUTFITTER & VEHICLES</h3>
             <div class="shop-tabs-row">
                 <button class="shop-tab active" onclick="switchShopTab('gear', this)">Weapons</button>
+                <button class="shop-tab" onclick="switchShopTab('traps', this)">🪤 Traps</button>
                 <button class="shop-tab" onclick="switchShopTab('rides', this)">🚗 Vehicles</button>
             </div>
 
@@ -182,7 +177,12 @@
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Spike Trap (+2)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
+            </div>
+
+            <div id="shop-tab-traps" class="shop-content">
+                <div class="shop-item-card"><span>Spike Trap Pack (+2)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -402,7 +402,7 @@
             return PEER_PREFIX + code.trim().toLowerCase();
         }
 
-        // Generated Pink-Black Checkerboard Fallback Canvas for Missing Assets
+        // Generated Pink-Black Checkerboard Fallback Canvas for Missing Assets as Base64 Data URI
         function createCheckerboardAssetCanvas(text) {
             const pc = document.createElement('canvas');
             pc.width = 32;
@@ -424,7 +424,7 @@
             pctx.font = 'bold 8px sans-serif';
             pctx.textAlign = 'center';
             pctx.fillText(text || 'ERR', 16, 18);
-            return pc;
+            return pc.toDataURL('image/png');
         }
 
         // Process Image to Remove White Background and Replace Pure Red (#FF0000) with Team Color
@@ -459,7 +459,7 @@
                 }
                 tCtx.putImageData(imgData, 0, 0);
                 const processedImg = new Image();
-                processedImg.src = tempCanvas.toDataURL();
+                processedImg.src = tempCanvas.toDataURL('image/png');
                 return processedImg;
             } catch (e) {
                 return imgElement;
@@ -467,9 +467,10 @@
         }
 
         function loadTrackedImage(url, fallbackText, registryKey) {
-            const checkerboardCanvas = createCheckerboardAssetCanvas(fallbackText);
+            const checkerboardDataUrl = createCheckerboardAssetCanvas(fallbackText);
+            
             const checkerboardImg = new Image();
-            checkerboardImg.src = checkerboardCanvas.toDataURL();
+            checkerboardImg.src = checkerboardDataUrl;
 
             if (registryKey) assetRegistry[registryKey] = checkerboardImg;
 
@@ -478,16 +479,15 @@
                 const processed = processImageTransparencyAndTeamColor(img, playerColor);
                 if (registryKey) assetRegistry[registryKey] = processed;
             };
-            // Suppress error logging to keep console clean when local/repository PNG files are absent
-            img.onerror = () => {
-                // Asset falls back cleanly to procedural checkerboard canvas without console error logs
+            img.onerror = (e) => {
+                // Silently catch and suppress missing image network errors and MIME warnings
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
             };
 
             img.src = url;
             return checkerboardImg;
         }
 
-        // Initialize standard assets with quiet fallback initialization
         const assetKeysList = [
             'skin', 'avatar', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
             'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
@@ -501,9 +501,12 @@
         }
         initializeAssets();
 
-        // Re-tint skin asset whenever player team changes
         function refreshTeamSkinColors() {
-            assetRegistry['skin'] = createFallbackAssetCanvas('skin', playerColor);
+            const checkerboardDataUrl = createCheckerboardAssetCanvas('skin');
+            const checkerboardImg = new Image();
+            checkerboardImg.src = checkerboardDataUrl;
+            assetRegistry['skin'] = checkerboardImg;
+
             const skinUrl = document.getElementById('skin-url-input')?.value.trim();
             if (skinUrl) {
                 customPlayerSkinImg = loadTrackedImage(skinUrl, 'Custom Skin', 'skin');
@@ -582,7 +585,6 @@
 
             drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'grenade', null);
             drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
-            document.getElementById('ammo-count').innerText = currentAmmo;
         }
 
         function selectHotbarSlot(idx) {
@@ -941,7 +943,8 @@
         }
 
         function buyStoreItem(itemType, subtypeName, price) {
-            if (playerCoins < price) {
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (activeMode !== 'creative' && playerCoins < price) {
                 showNotificationBox('Insufficient coins!');
                 return;
             }
@@ -985,8 +988,10 @@
                 activeVehiclesList.push(newVeh);
                 showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
             }
-            playerCoins -= price;
-            document.getElementById('coin-num').innerText = playerCoins;
+            if (activeMode !== 'creative') {
+                playerCoins -= price;
+                document.getElementById('coin-num').innerText = playerCoins;
+            }
         }
 
         function showNotificationBox(msg) {
@@ -1043,7 +1048,7 @@
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
-                promptGameModeSelection();
+                promptTeamSelection();
             });
             peerInstance.on('error', (err) => {
                 document.getElementById('net-status').innerText = `Host Error: ${err.type}`;
@@ -1108,35 +1113,6 @@
             promptTeamSelection();
         }
 
-        function promptGameModeSelection() {
-            const modal = document.getElementById('modal-screen');
-            const title = document.getElementById('modal-title');
-            const opts = document.getElementById('modal-options');
-            title.innerText = 'Select Game Mode';
-            opts.innerHTML = `
-                <button class="btn-team-red" onclick="selectGameModeAndTeam('2team')">2 Teams (Red vs Blue)</button>
-                <button class="btn-team-blue" onclick="selectGameModeAndTeam('4team')">4 Teams (Red/Blue/Green/Yellow)</button>
-                <button class="btn-team-ffa" onclick="selectGameModeAndTeam('ffa')">Free For All (FFA)</button>
-                <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Server (Inf Coins, 300 HP, 1-Hit Mine)</button>
-            `;
-            modal.style.display = 'flex';
-        }
-
-        function selectGameModeAndTeam(mode) {
-            currentMode = mode;
-            hostGameMode = mode;
-            if (mode === 'creative') {
-                playerCoins = 999999;
-                currentHp = 300;
-            } else {
-                playerCoins = 100;
-                currentHp = 100;
-            }
-            document.getElementById('coin-num').innerText = playerCoins;
-            document.getElementById('modal-screen').style.display = 'none';
-            promptTeamSelection();
-        }
-
         function promptTeamSelection() {
             if (preselectedTeam) {
                 assignTeamAndSpawn(preselectedTeam.name, preselectedTeam.color);
@@ -1189,7 +1165,6 @@
                 playerCoins = 999999;
                 currentHp = 300;
             } else {
-                // Keep existing coins if already playing, or start at 100
                 if (playerCoins === 999999) playerCoins = 100;
                 currentHp = 100;
             }
@@ -1547,7 +1522,6 @@
             setTimeout(() => {
                 currentAmmo = maxAmmo;
                 isReloading = false;
-                document.getElementById('ammo-count').innerText = currentAmmo;
                 showNotificationBox('Reload complete!');
             }, 800);
         }
@@ -1631,9 +1605,12 @@
 
         function executeCoinDrop() {
             const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
-            if (amountVal > 0 && amountVal <= playerCoins) {
-                playerCoins -= amountVal;
-                document.getElementById('coin-num').innerText = playerCoins;
+            const activeMode = isHosting ? currentMode : hostGameMode;
+            if (amountVal > 0 && (activeMode === 'creative' || amountVal <= playerCoins)) {
+                if (activeMode !== 'creative') {
+                    playerCoins -= amountVal;
+                    document.getElementById('coin-num').innerText = playerCoins;
+                }
                 spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
             }
             closeCoinModal();
@@ -1810,7 +1787,6 @@
                 }
                 if (!actionCdAttack) {
                     currentAmmo--;
-                    document.getElementById('ammo-count').innerText = currentAmmo;
 
                     let bulletCount = 1;
                     if (gunEquipped === 'shotgun') bulletCount = 5;
@@ -1847,7 +1823,6 @@
             triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
         });
 
-        // Strict Hitbox collision check against world blocks
         function checkCollisionWithBlocks(x, y, radius) {
             for (let k in worldBlocks) {
                 const parts = k.split(',');
@@ -1871,7 +1846,6 @@
             const activeMode = isHosting ? currentMode : hostGameMode;
             if (activeMode === 'creative') {
                 playerCoins = 999999;
-                document.getElementById('coin-num').innerText = playerCoins;
             }
 
             if (currentHp <= 0) {
@@ -1924,11 +1898,9 @@
                 nextY = posY;
             }
 
-            // Check obstacle collisions
             if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER)) posX = nextX;
             if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER)) posY = nextY;
 
-            // Check trap collision
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
                 if (tr && tr.team !== playerTeam && Math.hypot(posX - tr.x, posY - tr.y) < 25) {
@@ -1939,7 +1911,7 @@
             }
 
             const currentlyInBase = checkInsideBase(posX, posY, playerTeam);
-            const wasInBase = checkInsideBase(posX, posY, playerTeam);
+            const wasInBase = currentlyInBase;
 
             if (wasInBase && !currentlyInBase && !baseLockedOut) {
                 executeSelfDestruct();
@@ -2047,7 +2019,6 @@
                     continue;
                 }
 
-                // Hit detection against AI Bots (Practice Mode)
                 if (isPractice) {
                     aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 6) {
@@ -2068,7 +2039,6 @@
                     });
                 }
 
-                // Hit detection against Multiplayer Remote Players
                 for (let pid in remotePlayers) {
                     const rp = remotePlayers[pid];
                     if (rp && rp.hp > 0 && Math.hypot(b.x - rp.x, b.y - rp.y) < RADIUS_PLAYER + 6) {
@@ -2424,7 +2394,6 @@
             mCtx.stroke();
         }
 
-        // Optimized 60 FPS Fixed Time-step Game Loop
         let lastTime = performance.now();
         let accumulator = 0;
         const timeStep = 1000 / 60;
