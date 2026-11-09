@@ -1870,10 +1870,10 @@
 
             else if (activeHotbar === 2 && !actionCdBuild) {
                 // If traps are selected/available or building block
-                if (trapsCount > 0 && Math.random() > 0.5) {
+                if (trapsCount > 0) {
                     trapsCount--;
                     const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                    const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam };
+                    const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType };
                     activeTraps[tKey] = newTrap;
                     if (isHosting) {
                         broadcastStateToClients();
@@ -1960,28 +1960,23 @@
                 if (!actionCdAttack) {
                     currentAmmo--;
 
-                    let bulletCount = 1;
+                    let bulletCount = gunEquipped === 'burst' ? 3 : 1;
                     if (gunEquipped === 'shotgun') bulletCount = 5;
 
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let spread = (bIdx - 2) * 0.08;
                         if (bulletCount === 1) spread = 0;
 
-                        bulletsList.push({
-                            x: posX,
-                            y: posY,
-                            vx: Math.cos(aimAngle + spread) * 18,
-                            vy: Math.sin(aimAngle + spread) * 18,
-                            type: gunEquipped,
-                            team: playerTeam
-                        });
+                        const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : 18;
+                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(aimAngle + spread) * projectileSpeed, vy: Math.sin(aimAngle + spread) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 145 : 900 });
                     }
 
                     actionCdAttack = true;
                     let cdTime = 250;
                     if (gunEquipped === 'sniper') cdTime = 800;
                     if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
-                    if (gunEquipped === 'laser' || gunEquipped === 'plasma') cdTime = 200;
+                    if (gunEquipped === 'laser' || gunEquipped === 'plasma' || gunEquipped === 'freeze') cdTime = 200;
+                    if (gunEquipped === 'burst') cdTime = 420;
                     if (gunEquipped === 'rocket') cdTime = 600;
 
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
@@ -2029,12 +2024,12 @@
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
-                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser') {
+                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst') {
                     triggerWeaponAttack(mouseXCoord, mouseYCoord);
                 }
             }
 
-            let moveSpeed = 3.8;
+            let moveSpeed = Date.now() < playerSlowUntil ? 1.8 : 3.8;
             let sprintMultiplier = 1.0;
             if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
                 if (activeMode === 'creative' || currentStamina > 2) {
@@ -2080,9 +2075,10 @@
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
                 if (tr && tr.team !== playerTeam && Math.hypot(posX - tr.x, posY - tr.y) < 25) {
-                    currentHp -= 20;
+                    if (tr.type === 'glue') { playerSlowUntil = Date.now() + 2500; showNotificationBox('Glue trap! Movement slowed.'); }
+                    else if (tr.type === 'bounce') { const a = Math.atan2(posY - tr.y, posX - tr.x); posX += Math.cos(a) * 55; posY += Math.sin(a) * 55; showNotificationBox('Bounce trap!'); }
+                    else { currentHp -= tr.type === 'mine' ? 35 : tr.type === 'bear' ? 28 : 20; showNotificationBox(`Triggered ${String(tr.type || 'spike').toUpperCase()} trap!`); }
                     delete activeTraps[tk];
-                    showNotificationBox('⚠️ Triggered Spike Trap! (-20 HP)');
                 }
             }
 
@@ -2166,6 +2162,8 @@
                 const b = bulletsList[i];
                 b.x += b.vx;
                 b.y += b.vy;
+                b.distanceTravelled = (b.distanceTravelled || 0) + Math.hypot(b.vx, b.vy);
+                if (b.distanceTravelled > (b.maxDistance || 900)) { bulletsList.splice(i, 1); continue; }
 
                 let hitObs = false;
                 for (let k in worldBlocks) {
@@ -2178,6 +2176,10 @@
                         if (b.type === 'sniper') dmg = 70;
                         if (b.type === 'rocket') dmg = 90;
                         if (b.type === 'plasma') dmg = 45;
+                        if (b.type === 'laser') dmg = 40;
+                        if (b.type === 'freeze') dmg = 22;
+                        if (b.type === 'burst') dmg = 30;
+                        if (b.type === 'flame') dmg = 18;
                         worldBlocks[k].hp -= dmg;
                         if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
 
@@ -2206,6 +2208,14 @@
                                     floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
                                 }
                                 if (b.type === 'laser') hitDmg = 40;
+                            if (b.type === 'plasma') { hitDmg = 45; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true }); }
+                            if (b.type === 'freeze') hitDmg = 22;
+                            if (b.type === 'burst') hitDmg = 30;
+                            if (b.type === 'flame') hitDmg = 18;
+                                if (b.type === 'plasma') { hitDmg = 45; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true }); }
+                                if (b.type === 'freeze') hitDmg = 22;
+                                if (b.type === 'burst') hitDmg = 30;
+                                if (b.type === 'flame') hitDmg = 18;
                                 bot.hp -= hitDmg;
                                 showNotificationBox(`Hit ${bot.username}! HP: ${Math.max(0, Math.floor(bot.hp))}`);
                                 if (bot.hp <= 0) onEnemyEliminated();
@@ -2338,11 +2348,11 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                ctx.fillStyle = '#b71c1c';
+                ctx.fillStyle = tr.type === 'glue' ? '#6d4c41' : tr.type === 'bounce' ? '#00acc1' : tr.type === 'mine' ? '#ef6c00' : '#b71c1c';
                 ctx.beginPath();
                 ctx.arc(tr.x, tr.y, 14, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#ffeb3b';
+                ctx.strokeStyle = tr.type === 'glue' ? '#d7ccc8' : tr.type === 'bounce' ? '#b2ebf2' : '#ffeb3b';
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
