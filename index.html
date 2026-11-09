@@ -2208,12 +2208,20 @@
                                     floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
                                 }
                                 if (b.type === 'laser') hitDmg = 40;
-                            if (b.type === 'plasma') { hitDmg = 45; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true }); }
+                            if (b.type === 'plasma') {
+                                hitDmg = 45;
+                                floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true });
+                                for (const otherId in remotePlayers) { const other = remotePlayers[otherId]; if (other && other !== rp && other.hp > 0 && Math.hypot(other.x - b.x, other.y - b.y) < 58 && (b.team === 'FFA' || b.team !== other.team)) other.hp -= 18; }
+                            }
                             if (b.type === 'freeze') hitDmg = 22;
                             if (b.type === 'burst') hitDmg = 30;
                             if (b.type === 'flame') hitDmg = 18;
-                                if (b.type === 'plasma') { hitDmg = 45; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true }); }
-                                if (b.type === 'freeze') hitDmg = 22;
+                                if (b.type === 'plasma') {
+                                    hitDmg = 45;
+                                    floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true });
+                                    aiBots.forEach(other => { if (other !== bot && other.hp > 0 && Math.hypot(other.x - b.x, other.y - b.y) < 58) other.hp -= 18; });
+                                }
+                                if (b.type === 'freeze') { hitDmg = 22; bot.frozenUntil = Date.now() + 1800; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true }); }
                                 if (b.type === 'burst') hitDmg = 30;
                                 if (b.type === 'flame') hitDmg = 18;
                                 bot.hp -= hitDmg;
@@ -2259,7 +2267,7 @@
 
             if (isPractice) {
                 aiBots.forEach(bot => {
-                    if (bot.hp > 0) {
+                    if (bot.hp > 0 && Date.now() >= (bot.frozenUntil || 0)) {
                         bot.x += (Math.random() - 0.5) * 2;
                         bot.y += (Math.random() - 0.5) * 2;
                     }
