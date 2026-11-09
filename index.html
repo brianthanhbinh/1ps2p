@@ -196,12 +196,23 @@
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
         </div>
 
-        <!-- Custom PNG Skin Modal -->
+        <!-- Custom PNG Skin / Icon Editor -->
         <div id="skin-modal">
-            <h3>🎨 Load GitHub PNG Skin</h3>
-            <p style="font-size:11px; color:#aaa; margin-bottom:6px;">Paste direct image URL (PNG/JPG) for your avatar:</p>
-            <input type="text" id="skin-url-input" placeholder="https://raw.githubusercontent.com/.../skin.png">
-            <button style="background:#4caf50; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:8px;" onclick="applyCustomSkinUrl()">Load Skin</button>
+            <h3>🎨 Custom Player Icon</h3>
+            <p style="font-size:11px; color:#aaa; margin-bottom:6px;">Upload an image, paste an image URL, or draw your own icon.</p>
+            <input type="file" id="skin-file-input" accept="image/png,image/jpeg,image/webp">
+            <input type="text" id="skin-url-input" placeholder="Image URL (PNG, JPG, WebP)">
+            <button style="background:#4caf50; color:#fff; border:none; padding:9px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:8px;" onclick="applyCustomSkinUrl()">Load Image URL</button>
+            <p style="font-size:11px; color:#aaa; margin:6px 0;">Or draw below (drag inside the square):</p>
+            <div style="display:flex; justify-content:center;">
+                <canvas id="skin-draw-canvas" width="160" height="160" style="width:160px;height:160px;background:#fff;border:2px solid #888;border-radius:6px;touch-action:none;cursor:crosshair;"></canvas>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <input type="color" id="skin-draw-color" value="#222222" aria-label="Brush color" style="width:55px;height:38px;padding:2px;">
+                <input type="range" id="skin-draw-size" min="1" max="24" value="5" aria-label="Brush size" style="flex:1;">
+                <button onclick="clearSkinDrawing()" style="background:#555;color:white;border:0;border-radius:6px;padding:7px;">Clear</button>
+            </div>
+            <button style="background:#7e57c2;color:#fff;border:0;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin:8px 0;" onclick="useSkinDrawing()">Use Drawing</button>
             <button style="background:#e53935; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;" onclick="toggleSkinModal()">Close</button>
         </div>
 
@@ -606,6 +617,94 @@
             m.style.display = m.style.display === 'block' ? 'none' : 'block';
         }
 
+        let isDrawingSkin = false;
+        let lastSkinDrawPoint = null;
+
+        function getSkinDrawContext() {
+            const drawCanvas = document.getElementById('skin-draw-canvas');
+            return drawCanvas ? { canvas: drawCanvas, context: drawCanvas.getContext('2d') } : null;
+        }
+
+        function clearSkinDrawing() {
+            const drawing = getSkinDrawContext();
+            if (!drawing) return;
+            drawing.context.clearRect(0, 0, drawing.canvas.width, drawing.canvas.height);
+            drawing.context.fillStyle = '#ffffff';
+            drawing.context.fillRect(0, 0, drawing.canvas.width, drawing.canvas.height);
+        }
+
+        function useSkinDrawing() {
+            const drawing = getSkinDrawContext();
+            if (!drawing) return;
+            customPlayerSkinImg = loadTrackedImage(drawing.canvas.toDataURL('image/png'), 'Drawn Icon', 'skin');
+            showNotificationBox('Your drawn player icon is ready!');
+            toggleSkinModal();
+        }
+
+        function setupSkinDrawing() {
+            const drawing = getSkinDrawContext();
+            if (!drawing || drawing.canvas.dataset.ready) return;
+            const { canvas, context } = drawing;
+            canvas.dataset.ready = 'true';
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            const pointFromEvent = (event) => {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (event.clientX - rect.left) * canvas.width / rect.width,
+                    y: (event.clientY - rect.top) * canvas.height / rect.height
+                };
+            };
+            canvas.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                isDrawingSkin = true;
+                lastSkinDrawPoint = pointFromEvent(event);
+                canvas.setPointerCapture(event.pointerId);
+            });
+            canvas.addEventListener('pointermove', (event) => {
+                if (!isDrawingSkin) return;
+                event.preventDefault();
+                const point = pointFromEvent(event);
+                context.strokeStyle = document.getElementById('skin-draw-color').value;
+                context.lineWidth = Number(document.getElementById('skin-draw-size').value);
+                context.lineCap = 'round';
+                context.lineJoin = 'round';
+                context.beginPath();
+                context.moveTo(lastSkinDrawPoint.x, lastSkinDrawPoint.y);
+                context.lineTo(point.x, point.y);
+                context.stroke();
+                lastSkinDrawPoint = point;
+            });
+            const stopDrawing = () => { isDrawingSkin = false; lastSkinDrawPoint = null; };
+            canvas.addEventListener('pointerup', stopDrawing);
+            canvas.addEventListener('pointercancel', stopDrawing);
+            canvas.addEventListener('lostpointercapture', stopDrawing);
+        }
+
+        function setupSkinFileUpload() {
+            const input = document.getElementById('skin-file-input');
+            if (!input || input.dataset.ready) return;
+            input.dataset.ready = 'true';
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    showNotificationBox('Please choose an image file.');
+                    input.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    customPlayerSkinImg = loadTrackedImage(reader.result, 'Uploaded Icon', 'skin');
+                    showNotificationBox('Uploaded player icon loaded!');
+                    toggleSkinModal();
+                };
+                reader.onerror = () => showNotificationBox('Could not read that image file.');
+                reader.readAsDataURL(file);
+            });
+        }
+
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
             if (!urlInput) return;
@@ -615,6 +714,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            setupSkinDrawing();
+            setupSkinFileUpload();
             const hash = window.location.hash.substring(1);
             if (hash) {
                 const parts = hash.split('%');
@@ -1899,66 +2000,16 @@
 
             let dx = 0, dy = 0;
             if (keyboardInput['KeyW'] || keyboardInput['ArrowUp']) dy -= 1;
-        function assignTeamAndSpawn(teamName, hexColor) {
-            playerTeam = teamName;
-            playerColor = hexColor;
-            document.getElementById('modal-screen').style.display = 'none';
+            if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
+            if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
+            if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
 
-            const spawnCoords = getTeamSpawnCoords(teamName);
-            posX = spawnCoords.x;
-            posY = spawnCoords.y;
-
-            refreshTeamSkinColors();
-
-            if (customPlayerSkinImg && customPlayerSkinImg.complete) {
-                customPlayerSkinImg = processImageTransparencyAndTeamColor(customPlayerSkinImg, playerColor);
+            // Keep diagonal movement at the same speed as straight movement.
+            if (dx !== 0 || dy !== 0) {
+                const length = Math.hypot(dx, dy);
+                dx /= length;
+                dy /= length;
             }
-
-            const activeMode = isHosting ? currentMode : hostGameMode;
-            if (activeMode === 'creative') {
-                playerCoins = 999999;
-                currentHp = 300;
-            } else {
-                if (playerCoins === 999999) playerCoins = 100;
-                currentHp = 100;
-            }
-            document.getElementById('coin-num').innerText = playerCoins;
-
-            currentStamina = 100;
-            baseLockedOut = false;
-            inGameActive = true;
-            showUIInGame(true);
-
-            if (isPractice) {
-                spawnPracticeBots();
-            }
-
-            if (!isHosting && hostConnection && hostConnection.open) {
-                hostConnection.send({
-                    type: 'client_join',
-                    username: myUsername,
-                    team: playerTeam,
-                    color: playerColor,
-                    x: posX,
-                    y: posY
-                });
-            }
-
-            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
-            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
-        }
-
-        function respawnPlayer() {
-            document.getElementById('death-modal').style.display = 'none';
-            const activeMode = isHosting ? currentMode : hostGameMode;
-            currentHp = (activeMode === 'creative') ? 300 : 100;
-            const spawnCoords = getTeamSpawnCoords(playerTeam);
-            posX = spawnCoords.x;
-            posY = spawnCoords.y;
-            baseLockedOut = false;
-            showNotificationBox(`Respawned at ${playerTeam} Base!`);
-        }
-
             let nextX = posX + dx * moveSpeed * sprintMultiplier;
             let nextY = posY + dy * moveSpeed * sprintMultiplier;
 
