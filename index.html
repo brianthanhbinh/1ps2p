@@ -484,26 +484,27 @@
         }
 
         function loadTrackedImage(url, fallbackText, registryKey) {
-            const checkerboardDataUrl = createCheckerboardAssetCanvas(fallbackText);
-            
-            const checkerboardImg = new Image();
-            checkerboardImg.src = checkerboardDataUrl;
-
-            if (registryKey) assetRegistry[registryKey] = checkerboardImg;
+            const fallback = new Image();
+            fallback.src = createCheckerboardAssetCanvas(fallbackText);
+            if (registryKey) assetRegistry[registryKey] = fallback;
 
             const img = new Image();
             img.onload = () => {
-                const processed = processImageTransparencyAndTeamColor(img, playerColor);
-                if (registryKey) assetRegistry[registryKey] = processed;
+                // Only the player skin is team-tinted. Item art keeps its original pixel colors.
+                const loaded = registryKey === 'skin'
+                    ? processImageTransparencyAndTeamColor(img, playerColor)
+                    : img;
+                if (registryKey) assetRegistry[registryKey] = loaded;
+                if (registryKey === 'skin') customPlayerSkinImg = loaded;
+                if (typeof refreshAllItemArt === 'function') refreshAllItemArt();
             };
             img.onerror = (e) => {
-                // Log missing asset info quietly without triggering console error styling
                 if (e && typeof e.preventDefault === 'function') e.preventDefault();
-                console.log(`[Asset Info] Missing optional sprite "${url}". Using procedural checkerboard fallback.`);
+                if (registryKey === 'skin') customPlayerSkinImg = null;
+                console.warn(`[Asset] Could not load "${url}". Showing fallback art.`);
             };
-
             img.src = url;
-            return checkerboardImg;
+            return img;
         }
 
         const assetKeysList = [
@@ -520,15 +521,9 @@
         initializeAssets();
 
         function refreshTeamSkinColors() {
-            const checkerboardDataUrl = createCheckerboardAssetCanvas('skin');
-            const checkerboardImg = new Image();
-            checkerboardImg.src = checkerboardDataUrl;
-            assetRegistry['skin'] = checkerboardImg;
-
+            customPlayerSkinImg = null;
             const skinUrl = document.getElementById('skin-url-input')?.value.trim();
-            if (skinUrl) {
-                customPlayerSkinImg = loadTrackedImage(skinUrl, 'Custom Skin', 'skin');
-            }
+            loadTrackedImage(skinUrl || './skin.png', skinUrl ? 'Custom Skin' : 'Player Skin', 'skin');
         }
 
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
@@ -636,8 +631,9 @@
         function useSkinDrawing() {
             const drawing = getSkinDrawContext();
             if (!drawing) return;
-            customPlayerSkinImg = loadTrackedImage(drawing.canvas.toDataURL('image/png'), 'Drawn Icon', 'skin');
-            showNotificationBox('Your drawn player icon is ready!');
+            customPlayerSkinImg = null;
+            loadTrackedImage(drawing.canvas.toDataURL('image/png'), 'Drawn Icon', 'skin');
+            showNotificationBox('Applying your drawn player icon...');
             toggleSkinModal();
         }
 
@@ -696,8 +692,10 @@
                 }
                 const reader = new FileReader();
                 reader.onload = () => {
-                    customPlayerSkinImg = loadTrackedImage(reader.result, 'Uploaded Icon', 'skin');
-                    showNotificationBox('Uploaded player icon loaded!');
+                    document.getElementById('skin-url-input').value = '';
+                    customPlayerSkinImg = null;
+                    loadTrackedImage(reader.result, 'Uploaded Icon', 'skin');
+                    showNotificationBox('Loading uploaded player icon...');
                     toggleSkinModal();
                 };
                 reader.onerror = () => showNotificationBox('Could not read that image file.');
@@ -707,9 +705,13 @@
 
         function applyCustomSkinUrl() {
             const urlInput = document.getElementById('skin-url-input').value.trim();
-            if (!urlInput) return;
-            customPlayerSkinImg = loadTrackedImage(urlInput, 'Custom Skin', 'skin');
-            showNotificationBox('Loaded custom player skin!');
+            if (!urlInput) {
+                showNotificationBox('Paste an image URL first.');
+                return;
+            }
+            customPlayerSkinImg = null;
+            loadTrackedImage(urlInput, 'Custom Skin', 'skin');
+            showNotificationBox('Loading custom player icon...');
             toggleSkinModal();
         }
 
