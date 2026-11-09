@@ -175,6 +175,8 @@
                 <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Burst Carbine</span><div><b style="color:#ffca28;">850 🪙</b> <button onclick="buyStoreItem('gun', 'burst', 850)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Freeze Blaster</span><div><b style="color:#ffca28;">950 🪙</b> <button onclick="buyStoreItem('gun', 'freeze', 950)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div>
@@ -184,6 +186,8 @@
                 <div class="shop-item-card"><span>Spike Trap Pack (+2)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -383,9 +387,11 @@
         let weaponBarSlots = [null, null, null];
         let grenadesCount = 3;
         let bandagesCount = 2;
-        let smokeBombsCount = 2;
+        let smokeBombsCount = 0;
         let activeSmokeClouds = [];
         let trapsCount = 2;
+        let selectedTrapType = 'spike';
+        let playerSlowUntil = 0;
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10;
@@ -567,6 +573,12 @@
                 cxt.fillStyle = '#ffffff'; cxt.fillRect(-12, -8, 24, 16);
                 cxt.strokeStyle = '#b0bec5'; cxt.lineWidth = 1; cxt.strokeRect(-12, -8, 24, 16);
                 cxt.fillStyle = '#e53935'; cxt.fillRect(-3, -7, 6, 14); cxt.fillRect(-7, -3, 14, 6);
+            } else if (itemType === 'smoke_bomb') {
+                cxt.fillStyle = '#263238'; cxt.fillRect(-6, -5, 12, 14);
+                cxt.fillStyle = '#87939a'; cxt.fillRect(-5, -4, 10, 12);
+                cxt.fillStyle = '#cfd8dc'; cxt.fillRect(-3, -2, 4, 3);
+                cxt.fillStyle = '#455a64'; cxt.fillRect(-3, -9, 6, 4);
+                cxt.fillStyle = '#b0bec5'; cxt.fillRect(1, -12, 2, 3);
             } else if (itemType === 'gun') {
                 if (subType === 'pistol') {
                     cxt.fillStyle = '#455a64'; cxt.fillRect(-10, -2, 14, 6);
@@ -578,6 +590,16 @@
                     cxt.fillStyle = '#4e342e'; cxt.fillRect(-14, -2, 12, 6);
                 } else if (subType === 'rocket') {
                     cxt.fillStyle = '#33691e'; cxt.fillRect(-14, -5, 26, 10);
+                } else if (subType === 'laser') {
+                    cxt.fillStyle = '#00bcd4'; cxt.fillRect(-13, -3, 25, 6); cxt.fillStyle = '#e0f7fa'; cxt.fillRect(8, -2, 5, 4);
+                } else if (subType === 'plasma') {
+                    cxt.fillStyle = '#673ab7'; cxt.fillRect(-12, -5, 20, 10); cxt.fillStyle = '#b388ff'; cxt.fillRect(5, -4, 7, 8);
+                } else if (subType === 'flame') {
+                    cxt.fillStyle = '#bf360c'; cxt.fillRect(-12, -4, 18, 8); cxt.fillStyle = '#ff9800'; cxt.fillRect(5, -3, 8, 6);
+                } else if (subType === 'burst') {
+                    cxt.fillStyle = '#455a64'; cxt.fillRect(-12, -4, 24, 8); cxt.fillStyle = '#ffca28'; cxt.fillRect(4, -2, 8, 4);
+                } else if (subType === 'freeze') {
+                    cxt.fillStyle = '#1565c0'; cxt.fillRect(-12, -4, 24, 8); cxt.fillStyle = '#b3e5fc'; cxt.fillRect(5, -3, 8, 6);
                 } else {
                     cxt.fillStyle = '#37474f'; cxt.fillRect(-10, -3, 20, 6);
                 }
@@ -603,7 +625,9 @@
 
             drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'grenade', null);
             drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
-            drawItemArtOnCanvas(document.getElementById('hcanvas-8'), 'smoke_bomb', null);
+            const smokeCanvas = document.getElementById('hcanvas-8');
+            if (smokeBombsCount > 0) drawItemArtOnCanvas(smokeCanvas, 'smoke_bomb', null);
+            else if (smokeCanvas) smokeCanvas.getContext('2d').clearRect(0, 0, 34, 34);
         }
 
         function selectHotbarSlot(idx) {
@@ -1089,8 +1113,9 @@
                 refreshHotbarUI();
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'trap') {
+                selectedTrapType = subtypeName;
                 trapsCount += (subtypeName === 'mine' ? 1 : 2);
-                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${subtypeName === 'mine' ? 1 : 2})`);
+                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${subtypeName === 'mine' ? 1 : 2}). Next placed trap: ${selectedTrapType.toUpperCase()}`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
