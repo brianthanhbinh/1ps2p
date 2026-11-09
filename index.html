@@ -402,50 +402,28 @@
             return PEER_PREFIX + code.trim().toLowerCase();
         }
 
-        // Generate Procedural Canvas Fallbacks for Missing Assets
-        function createFallbackAssetCanvas(key, colorHex) {
+        // Generated Pink-Black Checkerboard Fallback Canvas for Missing Assets
+        function createCheckerboardAssetCanvas(text) {
             const pc = document.createElement('canvas');
             pc.width = 32;
             pc.height = 32;
             const pctx = pc.getContext('2d');
-
-            pctx.save();
-            pctx.translate(16, 16);
-            pctx.fillStyle = colorHex || '#ff9800';
-
-            if (key === 'skin' || key === 'avatar') {
-                pctx.beginPath(); pctx.arc(0, 0, 14, 0, Math.PI * 2); pctx.fill();
-                pctx.strokeStyle = '#ffffff'; pctx.lineWidth = 2; pctx.stroke();
-            } else if (key === 'bullet') {
-                pctx.fillStyle = '#ffca28';
-                pctx.beginPath(); pctx.arc(0, 0, 6, 0, Math.PI * 2); pctx.fill();
-            } else if (key === 'sword') {
-                pctx.fillStyle = '#b0bec5'; pctx.fillRect(-2, -12, 4, 18);
-                pctx.fillStyle = '#8d6e63'; pctx.fillRect(-5, 6, 10, 3);
-            } else if (key === 'pickaxe') {
-                pctx.fillStyle = '#8d6e63'; pctx.fillRect(-1.5, -4, 3, 16);
-                pctx.fillStyle = '#37474f'; pctx.fillRect(-11, -10, 22, 6);
-            } else if (key === 'block') {
-                pctx.fillStyle = '#795548'; pctx.fillRect(-12, -12, 24, 24);
-                pctx.strokeStyle = '#3e2723'; pctx.lineWidth = 2; pctx.strokeRect(-12, -12, 24, 24);
-            } else if (key === 'grenade') {
-                pctx.fillStyle = '#388e3c'; pctx.beginPath(); pctx.arc(0, 2, 9, 0, Math.PI * 2); pctx.fill();
-            } else if (key === 'bandage') {
-                pctx.fillStyle = '#ffffff'; pctx.fillRect(-12, -8, 24, 16);
-                pctx.fillStyle = '#e53935'; pctx.fillRect(-3, -7, 6, 14); pctx.fillRect(-7, -3, 14, 6);
-            } else if (key === 'trap') {
-                pctx.fillStyle = '#b71c1c'; pctx.beginPath(); pctx.arc(0, 0, 10, 0, Math.PI * 2); pctx.fill();
-            } else if (key === 'coin') {
-                pctx.fillStyle = '#ffd700'; pctx.beginPath(); pctx.arc(0, 0, 10, 0, Math.PI * 2); pctx.fill();
-            } else if (key === 'crate') {
-                pctx.fillStyle = '#ab47bc'; pctx.fillRect(-12, -12, 24, 24);
-            } else if (['bike', 'car', 'tank', 'hovercraft', 'mech'].includes(key)) {
-                pctx.fillStyle = '#2196f3'; pctx.fillRect(-14, -8, 28, 16);
-            } else {
-                pctx.fillStyle = '#78909c'; pctx.fillRect(-12, -4, 24, 8);
+            
+            const size = 8;
+            for (let x = 0; x < 32; x += size) {
+                for (let y = 0; y < 32; y += size) {
+                    pctx.fillStyle = ((x / size + y / size) % 2 === 0) ? '#ff00ff' : '#000000';
+                    pctx.fillRect(x, y, size, size);
+                }
             }
+            pctx.strokeStyle = '#ffff00';
+            pctx.lineWidth = 1.5;
+            pctx.strokeRect(0, 0, 32, 32);
 
-            pctx.restore();
+            pctx.fillStyle = '#ffffff';
+            pctx.font = 'bold 8px sans-serif';
+            pctx.textAlign = 'center';
+            pctx.fillText(text || 'ERR', 16, 18);
             return pc;
         }
 
@@ -489,31 +467,24 @@
         }
 
         function loadTrackedImage(url, fallbackText, registryKey) {
+            const checkerboardCanvas = createCheckerboardAssetCanvas(fallbackText);
+            const checkerboardImg = new Image();
+            checkerboardImg.src = checkerboardCanvas.toDataURL();
+
+            if (registryKey) assetRegistry[registryKey] = checkerboardImg;
+
             const img = new Image();
-            
-            // Set up fallback canvas instantly
-            const fallbackCanvas = createFallbackAssetCanvas(registryKey, playerColor);
-            const fallbackImg = new Image();
-            fallbackImg.src = fallbackCanvas.toDataURL();
-
-            if (!url || url.trim() === '') {
-                if (registryKey) assetRegistry[registryKey] = fallbackImg;
-                return fallbackImg;
-            }
-
             img.onload = () => {
                 const processed = processImageTransparencyAndTeamColor(img, playerColor);
                 if (registryKey) assetRegistry[registryKey] = processed;
             };
-
+            // Suppress error logging to keep console clean when local/repository PNG files are absent
             img.onerror = () => {
-                // Silently fallback to procedural sprite without logging standard 404 network errors
-                if (registryKey) assetRegistry[registryKey] = fallbackImg;
+                // Asset falls back cleanly to procedural checkerboard canvas without console error logs
             };
 
             img.src = url;
-            if (registryKey) assetRegistry[registryKey] = fallbackImg;
-            return img;
+            return checkerboardImg;
         }
 
         // Initialize standard assets with quiet fallback initialization
