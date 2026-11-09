@@ -358,6 +358,7 @@
         let playerColor = '#8e24aa';
 
         let customPlayerSkinImg = null;
+        let customSkinSource = null;
 
         let peerConnections = {};
         let hostConnection = null;
@@ -496,7 +497,7 @@
                     : img;
                 if (registryKey) assetRegistry[registryKey] = loaded;
                 if (registryKey === 'skin') customPlayerSkinImg = loaded;
-                if (typeof refreshAllItemArt === 'function') refreshAllItemArt();
+                if (typeof refreshHotbarUI === 'function') refreshHotbarUI();
             };
             img.onerror = (e) => {
                 if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -522,7 +523,7 @@
 
         function refreshTeamSkinColors() {
             customPlayerSkinImg = null;
-            const skinUrl = document.getElementById('skin-url-input')?.value.trim();
+            const skinUrl = customSkinSource || document.getElementById('skin-url-input')?.value.trim();
             loadTrackedImage(skinUrl || './skin.png', skinUrl ? 'Custom Skin' : 'Player Skin', 'skin');
         }
 
@@ -631,8 +632,9 @@
         function useSkinDrawing() {
             const drawing = getSkinDrawContext();
             if (!drawing) return;
+            customSkinSource = drawing.canvas.toDataURL('image/png');
             customPlayerSkinImg = null;
-            loadTrackedImage(drawing.canvas.toDataURL('image/png'), 'Drawn Icon', 'skin');
+            loadTrackedImage(customSkinSource, 'Drawn Icon', 'skin');
             showNotificationBox('Applying your drawn player icon...');
             toggleSkinModal();
         }
@@ -693,6 +695,7 @@
                 const reader = new FileReader();
                 reader.onload = () => {
                     document.getElementById('skin-url-input').value = '';
+                    customSkinSource = reader.result;
                     customPlayerSkinImg = null;
                     loadTrackedImage(reader.result, 'Uploaded Icon', 'skin');
                     showNotificationBox('Loading uploaded player icon...');
@@ -709,6 +712,7 @@
                 showNotificationBox('Paste an image URL first.');
                 return;
             }
+            customSkinSource = urlInput;
             customPlayerSkinImg = null;
             loadTrackedImage(urlInput, 'Custom Skin', 'skin');
             showNotificationBox('Loading custom player icon...');
