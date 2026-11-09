@@ -523,14 +523,19 @@
             'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate'
         ];
 
-        assetKeysList.forEach(key => {
-            loadTrackedImage(`${key}.png`, key.toUpperCase(), key);
-        });
+        function initializeAssets() {
+            assetKeysList.forEach(key => {
+                loadTrackedImage(`${key}.png`, key.toUpperCase(), key);
+            });
+        }
+        initializeAssets();
 
         // Re-tint skin asset whenever player team changes
         function refreshTeamSkinColors() {
-            if (assetRegistry['skin'] && assetRegistry['skin'].naturalWidth > 0) {
-                assetRegistry['skin'] = processImageTransparencyAndTeamColor(assetRegistry['skin'], playerColor);
+            assetRegistry['skin'] = createFallbackAssetCanvas('skin', playerColor);
+            const skinUrl = document.getElementById('skin-url-input')?.value.trim();
+            if (skinUrl) {
+                customPlayerSkinImg = loadTrackedImage(skinUrl, 'Custom Skin', 'skin');
             }
         }
 
