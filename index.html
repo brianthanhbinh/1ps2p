@@ -1128,8 +1128,11 @@
             if (localMode === 'creative') {
                 playerCoins = 999999;
                 currentHp = 300;
-                document.getElementById('coin-num').innerText = playerCoins;
+            } else {
+                playerCoins = 100;
+                currentHp = 100;
             }
+            document.getElementById('coin-num').innerText = playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -1154,8 +1157,11 @@
             if (mode === 'creative') {
                 playerCoins = 999999;
                 currentHp = 300;
-                document.getElementById('coin-num').innerText = playerCoins;
+            } else {
+                playerCoins = 100;
+                currentHp = 100;
             }
+            document.getElementById('coin-num').innerText = playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -1212,8 +1218,11 @@
                 playerCoins = 999999;
                 currentHp = 300;
             } else {
+                // Keep existing coins if already playing, or start at 100
+                if (playerCoins === 999999) playerCoins = 100;
                 currentHp = 100;
             }
+            document.getElementById('coin-num').innerText = playerCoins;
 
             currentStamina = 100;
             baseLockedOut = false;
