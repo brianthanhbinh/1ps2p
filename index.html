@@ -1280,19 +1280,15 @@
 
             refreshTeamSkinColors();
 
-            if (customPlayerSkinImg && customPlayerSkinImg.complete) {
-                customPlayerSkinImg = processImageTransparencyAndTeamColor(customPlayerSkinImg, playerColor);
-            }
-
-            const activeMode = isHosting ? currentMode : hostGameMode;
+            const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'creative') {
-                playerCoins = 999999;
+                playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = playerCoins;
+            document.getElementById('coin-num').innerText = activeMode === 'creative' ? '∞' : playerCoins;
 
             currentStamina = 100;
             baseLockedOut = false;
@@ -1606,6 +1602,7 @@
             if (e.code === 'Digit6') selectHotbarSlot(5);
             if (e.code === 'Digit7') selectHotbarSlot(6);
             if (e.code === 'Digit8') selectHotbarSlot(7);
+            if (e.code === 'Digit9') selectHotbarSlot(8);
             if (e.code === 'KeyB') toggleShopPanel();
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
             if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
@@ -1749,6 +1746,9 @@
                     if (item.type === 'coin') {
                         playerCoins += item.value;
                         document.getElementById('coin-num').innerText = playerCoins;
+                    } else if (item.type === 'smoke_bomb') {
+                        smokeBombsCount += 1;
+                        refreshHotbarUI();
                     } else if (item.type === 'gun') {
                         const emptyIdx = weaponBarSlots.findIndex(w => w === null);
                         if (emptyIdx !== -1) {
@@ -1990,7 +1990,7 @@
         function updateGameLogic() {
             if (!inGameActive) return;
 
-            const activeMode = isHosting ? currentMode : hostGameMode;
+            const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
