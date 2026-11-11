@@ -2678,25 +2678,23 @@
             });
 
             if (currentHp > 0) {
+                // Camera transform is already active: draw the player in local coordinates.
                 ctx.save();
                 ctx.translate(posX, posY);
                 ctx.rotate(aimAngle);
 
                 const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
-
                 const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
-                    ctx.drawImage(activePlayerSkin, posX - RADIUS_PLAYER, posY - RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                    ctx.drawImage(activePlayerSkin, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
                 } else {
                     ctx.fillStyle = playerColor;
-                    ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
                 }
 
-                // Draw the equipped tool over the player skin with the same detailed icon art.
+                // Draw the equipped item relative to the player, not a second time in world space.
                 ctx.save();
-                ctx.translate(posX, posY);
-                ctx.rotate(aimAngle);
                 ctx.translate(13, 0);
                 ctx.scale(1.5, 1.5);
                 const heldCanvas = document.createElement('canvas');
@@ -2708,7 +2706,8 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(myUsername + ' (You)', posX, posY - 28);
+                ctx.fillText(myUsername + ' (You)', 0, -28);
+                ctx.restore();
             }
 
             activeSmokeClouds = activeSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
