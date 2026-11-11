@@ -338,6 +338,7 @@
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span>0</span><canvas class="hotbar-canvas" id="hcanvas-9" width="34" height="34"></canvas></div>
         </div>
     </div>
 
@@ -394,6 +395,9 @@
         let trapsCount = 2;
         let selectedTrapType = 'spike';
         let playerSlowUntil = 0;
+        let ctfFlags = null;
+        let ctfScores = { Red: 0, Blue: 0 };
+        let ctfActionPending = false;
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10;
@@ -548,73 +552,17 @@
         }
 
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
-            if (!canvasEl) return;
-            const cxt = canvasEl.getContext('2d');
-            cxt.clearRect(0, 0, 34, 34);
-
-            const activeKey = (itemType === 'gun' ? subType : itemType);
-            const itemSprite = assetRegistry[activeKey];
-            if (itemSprite && itemSprite.complete && itemSprite.naturalWidth > 0) {
-                cxt.drawImage(itemSprite, 3, 3, 28, 28);
-                return;
-            }
-
-            cxt.save();
-            cxt.translate(17, 17);
-
-            if (itemType === 'sword') {
-                cxt.fillStyle = '#b0bec5'; cxt.fillRect(-2, -12, 4, 18);
-                cxt.fillStyle = '#78909c'; cxt.fillRect(-1, -14, 2, 4);
-                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-5, 6, 10, 3);
-                cxt.fillStyle = '#d7ccc8'; cxt.fillRect(-2, 9, 4, 5);
-            } else if (itemType === 'pickaxe') {
-                cxt.fillStyle = '#8d6e63'; cxt.fillRect(-1.5, -4, 3, 16);
-                cxt.fillStyle = '#37474f'; cxt.fillRect(-11, -10, 22, 6);
-                cxt.fillStyle = '#cfd8dc'; cxt.fillRect(-11, -10, 8, 3);
-            } else if (itemType === 'block') {
-                cxt.fillStyle = '#795548'; cxt.fillRect(-12, -12, 24, 24);
-                cxt.strokeStyle = '#3e2723'; cxt.lineWidth = 2; cxt.strokeRect(-12, -12, 24, 24);
-                cxt.fillStyle = '#5d4037'; cxt.fillRect(-8, -8, 8, 8); cxt.fillRect(2, 2, 8, 8);
-            } else if (itemType === 'grenade') {
-                cxt.fillStyle = '#388e3c'; cxt.beginPath(); cxt.arc(0, 2, 9, 0, Math.PI * 2); cxt.fill();
-                cxt.fillStyle = '#212121'; cxt.fillRect(-2, -9, 4, 5);
-                cxt.fillStyle = '#ffeb3b'; cxt.fillRect(-1, -11, 2, 3);
-            } else if (itemType === 'bandage') {
-                cxt.fillStyle = '#ffffff'; cxt.fillRect(-12, -8, 24, 16);
-                cxt.strokeStyle = '#b0bec5'; cxt.lineWidth = 1; cxt.strokeRect(-12, -8, 24, 16);
-                cxt.fillStyle = '#e53935'; cxt.fillRect(-3, -7, 6, 14); cxt.fillRect(-7, -3, 14, 6);
-            } else if (itemType === 'smoke_bomb') {
-                cxt.fillStyle = '#263238'; cxt.fillRect(-6, -5, 12, 14);
-                cxt.fillStyle = '#87939a'; cxt.fillRect(-5, -4, 10, 12);
-                cxt.fillStyle = '#cfd8dc'; cxt.fillRect(-3, -2, 4, 3);
-                cxt.fillStyle = '#455a64'; cxt.fillRect(-3, -9, 6, 4);
-                cxt.fillStyle = '#b0bec5'; cxt.fillRect(1, -12, 2, 3);
-            } else if (itemType === 'gun') {
-                if (subType === 'pistol') {
-                    cxt.fillStyle = '#455a64'; cxt.fillRect(-10, -2, 14, 6);
-                } else if (subType === 'smg') {
-                    cxt.fillStyle = '#263238'; cxt.fillRect(-12, -3, 20, 6);
-                } else if (subType === 'shotgun') {
-                    cxt.fillStyle = '#5d4037'; cxt.fillRect(-14, -2, 10, 6);
-                } else if (subType === 'sniper') {
-                    cxt.fillStyle = '#4e342e'; cxt.fillRect(-14, -2, 12, 6);
-                } else if (subType === 'rocket') {
-                    cxt.fillStyle = '#33691e'; cxt.fillRect(-14, -5, 26, 10);
-                } else if (subType === 'laser') {
-                    cxt.fillStyle = '#00bcd4'; cxt.fillRect(-13, -3, 25, 6); cxt.fillStyle = '#e0f7fa'; cxt.fillRect(8, -2, 5, 4);
-                } else if (subType === 'plasma') {
-                    cxt.fillStyle = '#673ab7'; cxt.fillRect(-12, -5, 20, 10); cxt.fillStyle = '#b388ff'; cxt.fillRect(5, -4, 7, 8);
-                } else if (subType === 'flame') {
-                    cxt.fillStyle = '#bf360c'; cxt.fillRect(-12, -4, 18, 8); cxt.fillStyle = '#ff9800'; cxt.fillRect(5, -3, 8, 6);
-                } else if (subType === 'burst') {
-                    cxt.fillStyle = '#455a64'; cxt.fillRect(-12, -4, 24, 8); cxt.fillStyle = '#ffca28'; cxt.fillRect(4, -2, 8, 4);
-                } else if (subType === 'freeze') {
-                    cxt.fillStyle = '#1565c0'; cxt.fillRect(-12, -4, 24, 8); cxt.fillStyle = '#b3e5fc'; cxt.fillRect(5, -3, 8, 6);
-                } else {
-                    cxt.fillStyle = '#37474f'; cxt.fillRect(-10, -3, 20, 6);
-                }
-            }
-            cxt.restore();
+            if(!canvasEl)return;const c=canvasEl.getContext('2d');c.clearRect(0,0,34,34);c.save();c.translate(17,17);c.lineCap='round';c.lineJoin='round';
+            const poly=(pts,fill,stroke='#263238')=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=1.6;c.stroke();};
+            if(itemType==='sword'){poly([[-2,8],[2,8],[4,-9],[0,-14],[-4,-9]],'#dce7ed','#78909c');c.strokeStyle='#795548';c.lineWidth=4;c.beginPath();c.moveTo(0,8);c.lineTo(0,14);c.stroke();c.strokeStyle='#cfd8dc';c.lineWidth=2;c.beginPath();c.moveTo(-7,7);c.lineTo(7,7);c.stroke();}
+            else if(itemType==='pickaxe'){c.strokeStyle='#8d6e63';c.lineWidth=4;c.beginPath();c.moveTo(0,-7);c.lineTo(0,13);c.stroke();c.strokeStyle='#cfd8dc';c.lineWidth=5;c.beginPath();c.moveTo(-12,-8);c.quadraticCurveTo(0,-14,12,-8);c.stroke();}
+            else if(itemType==='block'){poly([[-12,-7],[0,-13],[12,-7],[12,7],[0,13],[-12,7]],'#a8794f','#e0bd91');poly([[-12,-7],[0,-13],[0,1],[-12,7]],'#c39462','#e0bd91');poly([[0,-13],[12,-7],[12,7],[0,1]],'#8d633f','#e0bd91');}
+            else if(itemType==='trap'){c.fillStyle='#b71c1c';c.strokeStyle='#ffcdd2';c.lineWidth=2;c.beginPath();c.arc(0,1,10,0,Math.PI*2);c.fill();c.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4;c.strokeStyle='#eceff1';c.lineWidth=2.5;c.beginPath();c.moveTo(Math.cos(a)*8,Math.sin(a)*8);c.lineTo(Math.cos(a)*15,Math.sin(a)*15);c.stroke();}}
+            else if(itemType==='grenade'){c.fillStyle='#388e3c';c.strokeStyle='#c8e6c9';c.lineWidth=2;c.beginPath();c.ellipse(0,3,8,10,0,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#263238';c.beginPath();c.roundRect(-3,-10,6,5,2);c.fill();}
+            else if(itemType==='bandage'){c.fillStyle='#f5f5f5';c.strokeStyle='#b0bec5';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-7,24,14,5);c.fill();c.stroke();c.fillStyle='#e53935';c.beginPath();c.roundRect(-2,-6,4,12,1);c.roundRect(-6,-2,12,4,1);c.fill();}
+            else if(itemType==='smoke_bomb'){c.fillStyle='#607d8b';c.strokeStyle='#cfd8dc';c.lineWidth=1.5;c.beginPath();c.roundRect(-8,-6,16,16,5);c.fill();c.stroke();c.fillStyle='#b0bec5';c.beginPath();c.arc(0,-8,3,0,Math.PI*2);c.fill();}
+            else if(itemType==='gun'){const colors={pistol:'#607d8b',smg:'#455a64',shotgun:'#795548',sniper:'#546e7a',rocket:'#558b2f',laser:'#00bcd4',plasma:'#7e57c2',flame:'#ef6c00',burst:'#607d8b',freeze:'#42a5f5',minigun:'#455a64'};c.fillStyle=colors[subType]||'#455a64';c.strokeStyle='#cfd8dc';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-4,24,8,3);c.fill();c.stroke();c.fillStyle='#263238';c.beginPath();c.roundRect(-3,3,6,8,2);c.fill();c.fillStyle='#eceff1';c.beginPath();c.roundRect(7,-2,5,4,2);c.fill();}
+            c.restore();
         }
 
         function refreshHotbarUI() {
@@ -638,6 +586,7 @@
             const smokeCanvas = document.getElementById('hcanvas-8');
             if (smokeBombsCount > 0) drawItemArtOnCanvas(smokeCanvas, 'smoke_bomb', null);
             else if (smokeCanvas) smokeCanvas.getContext('2d').clearRect(0, 0, 34, 34);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-9'), 'trap', null);
         }
 
         function selectHotbarSlot(idx) {
@@ -818,6 +767,10 @@
         function selectGameModeAndTeam(mode) {
             currentMode = mode;
             hostGameMode = mode;
+            if (mode === 'ctf') {
+                ctfFlags = { Red: { x: 250, y: 250, homeX: 250, homeY: 250, carrier: null }, Blue: { x: MAP_SIZE - 250, y: MAP_SIZE - 250, homeX: MAP_SIZE - 250, homeY: MAP_SIZE - 250, carrier: null } };
+                ctfScores = { Red: 0, Blue: 0 };
+            } else { ctfFlags = null; ctfScores = { Red: 0, Blue: 0 }; }
             if (mode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
@@ -1271,6 +1224,10 @@
                 smokeBombsCount--;
                 spawnWorldLoot('smoke_bomb', null, posX + 30, posY + 30, 1);
                 refreshHotbarUI();
+            } else if (activeHotbar === 9 && trapsCount > 0) {
+                trapsCount--;
+                spawnWorldLoot('trap', selectedTrapType, posX + 30, posY + 30, 1);
+                refreshHotbarUI();
             }
         }
 
@@ -1444,6 +1401,47 @@
             }
         }
 
+        function getCtfActor(actorId) {
+            if (peerInstance && actorId === peerInstance.id) return { team: playerTeam, x: posX, y: posY };
+            const p = remotePlayers[actorId];
+            return p ? { team: p.team, x: p.x, y: p.y } : null;
+        }
+        function handleCtfAction(actorId, action, flagTeam) {
+            if (!ctfFlags || !['Red','Blue'].includes(flagTeam)) return;
+            const actor = getCtfActor(actorId);
+            if (!actor || !['Red','Blue'].includes(actor.team)) return;
+            const flag = ctfFlags[flagTeam];
+            if (action === 'pickup' && flagTeam !== actor.team && !flag.carrier && Math.hypot(actor.x-flag.x,actor.y-flag.y)<60) {
+                flag.carrier = actorId;
+                showNotificationBox(`🚩 ${actor.team} stole the ${flagTeam} flag!`);
+            } else if (action === 'score' && flagTeam !== actor.team && flag.carrier === actorId && checkInsideBase(actor.x,actor.y,actor.team)) {
+                ctfScores[actor.team]=(ctfScores[actor.team]||0)+1;
+                flag.carrier=null; flag.x=flag.homeX; flag.y=flag.homeY;
+                showNotificationBox(`🏆 ${actor.team} scored! ${ctfScores[actor.team]} / 3`);
+                if(ctfScores[actor.team]>=3) showNotificationBox(`🏆 ${actor.team} wins Capture the Flag!`);
+            }
+        }
+        function updateCtfObjective() {
+            const mode=isHosting?currentMode:hostGameMode;
+            if(mode!=='ctf'||!ctfFlags||!['Red','Blue'].includes(playerTeam)) return;
+            for(const team of ['Red','Blue']) {
+                const flag=ctfFlags[team];
+                if(team===playerTeam) continue;
+                if(isHosting) {
+                    if(!flag.carrier&&Math.hypot(posX-flag.x,posY-flag.y)<42) handleCtfAction(peerInstance.id,'pickup',team);
+                    if(flag.carrier===peerInstance.id&&checkInsideBase(posX,posY,playerTeam)) handleCtfAction(peerInstance.id,'score',team);
+                } else if(hostConnection&&hostConnection.open&&!ctfActionPending) {
+                    if(!flag.carrier&&Math.hypot(posX-flag.x,posY-flag.y)<42) {
+                        ctfActionPending=true; hostConnection.send({type:'ctf_action',action:'pickup',flagTeam:team});
+                        setTimeout(()=>{ctfActionPending=false;},400);
+                    } else if(flag.carrier===peerInstance?.id&&checkInsideBase(posX,posY,playerTeam)) {
+                        ctfActionPending=true; hostConnection.send({type:'ctf_action',action:'score',flagTeam:team});
+                        setTimeout(()=>{ctfActionPending=false;},400);
+                    }
+                }
+            }
+        }
+
         function exitToLobby() {
             inGameActive = false;
             showUIInGame(false);
@@ -1466,7 +1464,9 @@
                     traps: activeTraps,
                     loot: droppedLoot,
                     crates: supplyCrates,
-                    vehicles: activeVehiclesList
+                    vehicles: activeVehiclesList,
+                    ctfFlags,
+                    ctfScores
                 });
             });
             conn.on('data', (data) => {
@@ -1511,6 +1511,9 @@
                 } else if (data.type === 'update_vehicles') {
                     activeVehiclesList = data.vehicles;
                     broadcastStateToClients();
+                } else if (data.type === 'ctf_action') {
+                    handleCtfAction(conn.peer, data.action, data.flagTeam);
+                    broadcastStateToClients();
                 }
             });
             conn.on('close', () => {
@@ -1532,6 +1535,8 @@
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
+                    if (data.ctfFlags) ctfFlags = data.ctfFlags;
+                    if (data.ctfScores) ctfScores = data.ctfScores;
                     promptTeamSelection();
                 } else if (data.type === 'server_state') {
                     if (data.players) {
@@ -1546,6 +1551,8 @@
                     if (data.loot) droppedLoot = data.loot;
                     if (data.crates) supplyCrates = data.crates;
                     if (data.vehicles) activeVehiclesList = data.vehicles;
+                    if (data.ctfFlags) ctfFlags = data.ctfFlags;
+                    if (data.ctfScores) ctfScores = data.ctfScores;
                 }
             });
             conn.on('close', () => {
@@ -1583,7 +1590,9 @@
                 traps: activeTraps,
                 loot: droppedLoot,
                 crates: supplyCrates,
-                vehicles: activeVehiclesList
+                vehicles: activeVehiclesList,
+                ctfFlags,
+                ctfScores
             };
             for (let pid in peerConnections) {
                 if (peerConnections[pid].open) {
@@ -1648,6 +1657,7 @@
             const id = 'loot-' + Math.random().toString(36).substr(2, 9);
             const item = { type, subtype, x, y, value };
             droppedLoot[id] = item;
+            updateCtfObjective();
             if (isHosting) {
                 broadcastStateToClients();
             } else if (hostConnection && hostConnection.open) {
@@ -1706,6 +1716,7 @@
             if (e.code === 'Digit7') selectHotbarSlot(6);
             if (e.code === 'Digit8') selectHotbarSlot(7);
             if (e.code === 'Digit9') selectHotbarSlot(8);
+            if (e.code === 'Digit0') selectHotbarSlot(9);
             if (e.code === 'KeyB') toggleShopPanel();
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = true; }
             if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
@@ -1912,7 +1923,22 @@
             }
 
             else if (activeHotbar === 1 && !actionCdAttack) {
-                for (let k in worldBlocks) {
+                if (ctfFlags) {
+                for (const team of ['Red','Blue']) {
+                    const flag=ctfFlags[team]; let fx=flag.x, fy=flag.y;
+                    if(flag.carrier) {
+                        const carrier=flag.carrier===peerInstance?.id?{x:posX,y:posY}:remotePlayers[flag.carrier];
+                        if(carrier){fx=carrier.x+20;fy=carrier.y-24;}
+                    }
+                    ctx.save(); ctx.strokeStyle='#d7ccc8'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(fx,fy+20); ctx.lineTo(fx,fy-22); ctx.stroke();
+                    ctx.fillStyle=team==='Red'?'#ef5350':'#42a5f5'; ctx.beginPath(); ctx.moveTo(fx,fy-22); ctx.lineTo(fx+25,fy-14); ctx.lineTo(fx,fy-6); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.fillText(team+' FLAG',fx,fy+34); ctx.restore();
+                }
+                ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
+                ctx.fillText(`CTF  Red ${ctfScores.Red||0} - ${ctfScores.Blue||0} Blue | Steal enemy flag, return to your base (first to 3)`,posX,posY+58); ctx.restore();
+            }
+
+            for (let k in worldBlocks) {
                     const blk = worldBlocks[k];
                     const parts = k.split(',');
                     const bx = parseInt(parts[0]) * 40;
@@ -1946,30 +1972,25 @@
             }
 
             else if (activeHotbar === 2 && !actionCdBuild) {
-                if (trapsCount > 0) {
-                    trapsCount--;
-                    const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                    const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType };
-                    activeTraps[tKey] = newTrap;
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'place_trap', key: tKey, trap: newTrap });
-                    }
-                    showNotificationBox(`Trap deployed! Remaining: ${trapsCount}`);
-                } else {
-                    const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                    const activeMode = isHosting ? currentMode : hostGameMode;
-                    const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
-                    worldBlocks[bKey] = newBlock;
-
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
-                    }
-                }
-
+                const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
+                const activeMode = isHosting ? currentMode : hostGameMode;
+                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
+                worldBlocks[bKey] = newBlock;
+                if (isHosting) broadcastStateToClients();
+                else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
+                showNotificationBox('🧱 Block placed!');
+                actionCdBuild = true;
+                setTimeout(() => { actionCdBuild = false; }, 300);
+            }
+            else if (activeHotbar === 9 && !actionCdBuild) {
+                if (trapsCount <= 0) { showNotificationBox('No traps remaining! Buy more in the Shop.'); return; }
+                trapsCount--;
+                const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
+                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType };
+                activeTraps[tKey] = newTrap;
+                if (isHosting) broadcastStateToClients();
+                else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_trap', key: tKey, trap: newTrap });
+                showNotificationBox(`🪤 Trap deployed! Remaining: ${trapsCount}`);
                 actionCdBuild = true;
                 setTimeout(() => { actionCdBuild = false; }, 300);
             }
@@ -2138,7 +2159,8 @@
             nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
             nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
 
-            if (isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
+            const movementMode = isHosting ? currentMode : hostGameMode;
+            if (movementMode !== 'ctf' && isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
                 showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
                 nextX = posX;
                 nextY = posY;
@@ -2436,11 +2458,9 @@
                 const parts = k.split(',');
                 const bx = parseInt(parts[0]) * 40;
                 const by = parseInt(parts[1]) * 40;
-                ctx.fillStyle = '#795548';
-                ctx.fillRect(bx, by, 40, 40);
-                ctx.strokeStyle = '#3e2723';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(bx, by, 40, 40);
+                ctx.save(); ctx.fillStyle='#a8794f'; ctx.strokeStyle='#e0bd91'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.roundRect(bx+2,by+2,36,36,7); ctx.fill(); ctx.stroke();
+                ctx.fillStyle='rgba(255,255,255,0.14)'; ctx.beginPath(); ctx.roundRect(bx+7,by+6,26,5,3); ctx.fill(); ctx.restore();
 
                 if (blk.hp < 100) {
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -2452,13 +2472,11 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                ctx.fillStyle = tr.type === 'glue' ? '#6d4c41' : tr.type === 'bounce' ? '#00acc1' : tr.type === 'mine' ? '#ef6c00' : '#b71c1c';
-                ctx.beginPath();
-                ctx.arc(tr.x, tr.y, 14, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = tr.type === 'glue' ? '#d7ccc8' : tr.type === 'bounce' ? '#b2ebf2' : '#ffeb3b';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                ctx.save(); ctx.fillStyle=tr.type==='glue'?'#8d6e63':tr.type==='bounce'?'#00acc1':tr.type==='mine'?'#ef6c00':'#c62828'; ctx.strokeStyle='#fff3e0'; ctx.lineWidth=2; ctx.beginPath();
+                if(tr.type==='mine'||tr.type==='bounce') ctx.arc(tr.x,tr.y,13,0,Math.PI*2);
+                else if(tr.type==='glue') ctx.roundRect(tr.x-13,tr.y-9,26,18,8);
+                else { for(let p=0;p<8;p++){const a=p*Math.PI/4,r=p%2?9:16,x=tr.x+Math.cos(a)*r,y=tr.y+Math.sin(a)*r;if(!p)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath(); }
+                ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.arc(tr.x-4,tr.y-4,3,0,Math.PI*2);ctx.fill();ctx.restore();
             }
 
             for (let lid in droppedLoot) {
@@ -2565,7 +2583,7 @@
                 ctx.translate(posX, posY);
                 ctx.rotate(aimAngle);
 
-                const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : 'bandage'))));
+                const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
                 const itemPng = assetRegistry[activeKey];
                 if (itemPng && itemPng.complete && itemPng.naturalWidth > 0) {
                     ctx.drawImage(itemPng, 6, -10, 24, 24);
