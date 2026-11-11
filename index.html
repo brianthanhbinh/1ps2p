@@ -1657,7 +1657,6 @@
             const id = 'loot-' + Math.random().toString(36).substr(2, 9);
             const item = { type, subtype, x, y, value };
             droppedLoot[id] = item;
-            updateCtfObjective();
             if (isHosting) {
                 broadcastStateToClients();
             } else if (hostConnection && hostConnection.open) {
@@ -1923,22 +1922,7 @@
             }
 
             else if (activeHotbar === 1 && !actionCdAttack) {
-                if (ctfFlags) {
-                for (const team of ['Red','Blue']) {
-                    const flag=ctfFlags[team]; let fx=flag.x, fy=flag.y;
-                    if(flag.carrier) {
-                        const carrier=flag.carrier===peerInstance?.id?{x:posX,y:posY}:remotePlayers[flag.carrier];
-                        if(carrier){fx=carrier.x+20;fy=carrier.y-24;}
-                    }
-                    ctx.save(); ctx.strokeStyle='#d7ccc8'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(fx,fy+20); ctx.lineTo(fx,fy-22); ctx.stroke();
-                    ctx.fillStyle=team==='Red'?'#ef5350':'#42a5f5'; ctx.beginPath(); ctx.moveTo(fx,fy-22); ctx.lineTo(fx+25,fy-14); ctx.lineTo(fx,fy-6); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.fillText(team+' FLAG',fx,fy+34); ctx.restore();
-                }
-                ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
-                ctx.fillText(`CTF  Red ${ctfScores.Red||0} - ${ctfScores.Blue||0} Blue | Steal enemy flag, return to your base (first to 3)`,posX,posY+58); ctx.restore();
-            }
-
-            for (let k in worldBlocks) {
+                for (let k in worldBlocks) {
                     const blk = worldBlocks[k];
                     const parts = k.split(',');
                     const bx = parseInt(parts[0]) * 40;
@@ -2392,6 +2376,7 @@
                 });
             }
 
+            updateCtfObjective();
             if (isHosting) {
                 broadcastStateToClients();
             } else if (hostConnection && hostConnection.open) {
@@ -2452,6 +2437,21 @@
                 ctx.font = 'bold 20px sans-serif';
                 ctx.fillText(b.name, b.x1 + 35, b.y1 + 45);
             });
+
+            if (ctfFlags) {
+                for (const team of ['Red','Blue']) {
+                    const flag=ctfFlags[team]; let fx=flag.x, fy=flag.y;
+                    if(flag.carrier) {
+                        const carrier=flag.carrier===peerInstance?.id?{x:posX,y:posY}:remotePlayers[flag.carrier];
+                        if(carrier){fx=carrier.x+20;fy=carrier.y-24;}
+                    }
+                    ctx.save(); ctx.strokeStyle='#d7ccc8'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(fx,fy+20); ctx.lineTo(fx,fy-22); ctx.stroke();
+                    ctx.fillStyle=team==='Red'?'#ef5350':'#42a5f5'; ctx.beginPath(); ctx.moveTo(fx,fy-22); ctx.lineTo(fx+25,fy-14); ctx.lineTo(fx,fy-6); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.fillText(team+' FLAG',fx,fy+34); ctx.restore();
+                }
+                ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
+                ctx.fillText(`CTF  Red ${ctfScores.Red||0} - ${ctfScores.Blue||0} Blue | Steal enemy flag, return to your base (first to 3)`,posX,posY+58); ctx.restore();
+            }
 
             for (let k in worldBlocks) {
                 const blk = worldBlocks[k];
