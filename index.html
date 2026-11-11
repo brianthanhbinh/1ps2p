@@ -494,6 +494,19 @@
             }
         }
 
+        // Cache a separately team-tinted copy of the original skin for each player color.
+        const teamSkinCache = new Map();
+        function getTeamSkinImage(teamHexColor) {
+            const source = customPlayerSkinImg || assetRegistry['skin'];
+            if (!source || !source.complete || !source.naturalWidth) return source;
+            const color = teamHexColor || '#e53935';
+            if (!teamSkinCache.has(color)) {
+                teamSkinCache.set(color, processImageTransparencyAndTeamColor(source, color));
+            }
+            const tinted = teamSkinCache.get(color);
+            return tinted && tinted.complete && tinted.naturalWidth > 0 ? tinted : source;
+        }
+
         function loadTrackedImage(url, fallbackText, registryKey) {
             const fallback = new Image();
             fallback.src = createCheckerboardAssetCanvas(fallbackText);
@@ -502,11 +515,12 @@
             const img = new Image();
             img.onload = () => {
                 // Only the player skin is team-tinted. Item art keeps its original pixel colors.
-                const loaded = registryKey === 'skin'
-                    ? processImageTransparencyAndTeamColor(img, playerColor)
-                    : img;
+                const loaded = img;
                 if (registryKey) assetRegistry[registryKey] = loaded;
-                if (registryKey === 'skin') customPlayerSkinImg = loaded;
+                if (registryKey === 'skin') {
+                    customPlayerSkinImg = loaded;
+                    teamSkinCache.clear();
+                }
                 if (typeof refreshHotbarUI === 'function') refreshHotbarUI();
             };
             img.onerror = (e) => {
@@ -2417,7 +2431,7 @@
                 ctx.save();
                 ctx.translate(rp.x, rp.y);
 
-                const remoteSkinImg = assetRegistry['skin'];
+                const remoteSkinImg = getTeamSkinImage(rp.color || '#e53935');
                 if (remoteSkinImg && remoteSkinImg.complete && remoteSkinImg.naturalWidth > 0) {
                     ctx.drawImage(remoteSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
                 } else {
@@ -2490,7 +2504,7 @@
                 }
                 ctx.restore();
 
-                const activePlayerSkin = customPlayerSkinImg || assetRegistry['skin'];
+                const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
                     ctx.drawImage(activePlayerSkin, posX - RADIUS_PLAYER, posY - RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
                 } else {
