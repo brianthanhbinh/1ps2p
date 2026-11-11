@@ -552,16 +552,43 @@
         }
 
         function drawItemArtOnCanvas(canvasEl, itemType, subType) {
-            if(!canvasEl)return;const c=canvasEl.getContext('2d');c.clearRect(0,0,34,34);c.save();c.translate(17,17);c.lineCap='round';c.lineJoin='round';
-            const poly=(pts,fill,stroke='#263238')=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=1.6;c.stroke();};
-            if(itemType==='sword'){poly([[-2,8],[2,8],[4,-9],[0,-14],[-4,-9]],'#dce7ed','#78909c');c.strokeStyle='#795548';c.lineWidth=4;c.beginPath();c.moveTo(0,8);c.lineTo(0,14);c.stroke();c.strokeStyle='#cfd8dc';c.lineWidth=2;c.beginPath();c.moveTo(-7,7);c.lineTo(7,7);c.stroke();}
-            else if(itemType==='pickaxe'){c.strokeStyle='#8d6e63';c.lineWidth=4;c.beginPath();c.moveTo(0,-7);c.lineTo(0,13);c.stroke();c.strokeStyle='#cfd8dc';c.lineWidth=5;c.beginPath();c.moveTo(-12,-8);c.quadraticCurveTo(0,-14,12,-8);c.stroke();}
-            else if(itemType==='block'){poly([[-12,-7],[0,-13],[12,-7],[12,7],[0,13],[-12,7]],'#a8794f','#e0bd91');poly([[-12,-7],[0,-13],[0,1],[-12,7]],'#c39462','#e0bd91');poly([[0,-13],[12,-7],[12,7],[0,1]],'#8d633f','#e0bd91');}
-            else if(itemType==='trap'){c.fillStyle='#b71c1c';c.strokeStyle='#ffcdd2';c.lineWidth=2;c.beginPath();c.arc(0,1,10,0,Math.PI*2);c.fill();c.stroke();for(let i=0;i<8;i++){const a=i*Math.PI/4;c.strokeStyle='#eceff1';c.lineWidth=2.5;c.beginPath();c.moveTo(Math.cos(a)*8,Math.sin(a)*8);c.lineTo(Math.cos(a)*15,Math.sin(a)*15);c.stroke();}}
-            else if(itemType==='grenade'){c.fillStyle='#388e3c';c.strokeStyle='#c8e6c9';c.lineWidth=2;c.beginPath();c.ellipse(0,3,8,10,0,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#263238';c.beginPath();c.roundRect(-3,-10,6,5,2);c.fill();}
-            else if(itemType==='bandage'){c.fillStyle='#f5f5f5';c.strokeStyle='#b0bec5';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-7,24,14,5);c.fill();c.stroke();c.fillStyle='#e53935';c.beginPath();c.roundRect(-2,-6,4,12,1);c.roundRect(-6,-2,12,4,1);c.fill();}
-            else if(itemType==='smoke_bomb'){c.fillStyle='#607d8b';c.strokeStyle='#cfd8dc';c.lineWidth=1.5;c.beginPath();c.roundRect(-8,-6,16,16,5);c.fill();c.stroke();c.fillStyle='#b0bec5';c.beginPath();c.arc(0,-8,3,0,Math.PI*2);c.fill();}
-            else if(itemType==='gun'){const colors={pistol:'#607d8b',smg:'#455a64',shotgun:'#795548',sniper:'#546e7a',rocket:'#558b2f',laser:'#00bcd4',plasma:'#7e57c2',flame:'#ef6c00',burst:'#607d8b',freeze:'#42a5f5',minigun:'#455a64'};c.fillStyle=colors[subType]||'#455a64';c.strokeStyle='#cfd8dc';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-4,24,8,3);c.fill();c.stroke();c.fillStyle='#263238';c.beginPath();c.roundRect(-3,3,6,8,2);c.fill();c.fillStyle='#eceff1';c.beginPath();c.roundRect(7,-2,5,4,2);c.fill();}
+            if (!canvasEl) return;
+            const c = canvasEl.getContext('2d');
+            c.clearRect(0, 0, 34, 34);
+            c.save(); c.translate(17,17); c.scale(1.12,1.12); c.lineCap='round'; c.lineJoin='round';
+            const metal=c.createLinearGradient(-8,-12,8,12); metal.addColorStop(0,'#f8fcff'); metal.addColorStop(.45,'#9eafb9'); metal.addColorStop(1,'#465966');
+            const wood=c.createLinearGradient(-5,-8,6,12); wood.addColorStop(0,'#d6a36d'); wood.addColorStop(1,'#684329');
+            const path=(pts,fill,stroke='#17232b',width=1.5)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=width;c.stroke();};
+            if(itemType==='sword'){
+                path([[-3,7],[0,-13],[3,-16],[5,-12],[2,8]],metal);c.strokeStyle='#eaf5fa';c.lineWidth=1;c.beginPath();c.moveTo(1,-10);c.lineTo(2,3);c.stroke();
+                path([[-8,7],[8,7],[7,10],[-7,10]],'#d69b43');c.fillStyle=wood;c.beginPath();c.roundRect(-2,9,4,9,2);c.fill();c.strokeStyle='#17232b';c.stroke();c.beginPath();c.arc(0,18,2,0,Math.PI*2);c.fillStyle='#d8b078';c.fill();
+            } else if(itemType==='pickaxe'){
+                c.strokeStyle=wood;c.lineWidth=5;c.beginPath();c.moveTo(0,-4);c.lineTo(1,17);c.stroke();c.strokeStyle='#17232b';c.lineWidth=1;c.stroke();
+                path([[-13,-7],[-10,-12],[-4,-14],[3,-13],[11,-10],[14,-5],[10,-3],[5,-7],[0,-8],[-7,-5],[-11,-3]],metal);
+                c.strokeStyle='#f4fbff';c.lineWidth=1.2;c.beginPath();c.moveTo(-8,-9);c.quadraticCurveTo(0,-15,9,-9);c.stroke();
+            } else if(itemType==='block'){
+                path([[-13,-6],[0,-13],[13,-6],[0,1]],'#d5a36d');path([[-13,-6],[0,1],[0,14],[-13,7]],'#a66c3f');path([[0,1],[13,-6],[13,7],[0,14]],'#75472e');
+                c.strokeStyle='rgba(255,235,205,.7)';c.lineWidth=1;c.beginPath();c.moveTo(-9,-5);c.lineTo(0,0);c.lineTo(9,-5);c.stroke();
+            } else if(itemType==='trap'){
+                path([[-12,-5],[-8,-10],[8,-10],[12,-5],[8,8],[-8,8]],'#303d46','#101820');
+                for(let i=0;i<5;i++){const x=-9+i*4.5;path([[x,-7],[x+2,-7],[x+1,3]],metal);}
+                c.strokeStyle='#e35b4f';c.lineWidth=2;c.beginPath();c.moveTo(-11,10);c.lineTo(11,10);c.stroke();
+            } else if(itemType==='grenade'){
+                path([[-6,-5],[-4,-11],[4,-11],[7,-5],[8,7],[4,12],[-4,12],[-8,7]],'#477d43');c.strokeStyle='#b7d69a';c.lineWidth=1.2;c.beginPath();c.moveTo(-4,-5);c.lineTo(-3,7);c.stroke();
+                path([[-3,-12],[-2,-16],[3,-16],[4,-11]],'#c4cdd1');c.strokeStyle='#d5b35d';c.lineWidth=2;c.beginPath();c.moveTo(3,-15);c.lineTo(8,-18);c.stroke();
+            } else if(itemType==='bandage'){
+                c.save();c.rotate(-.35);c.fillStyle='#f1e8d7';c.strokeStyle='#a8a39b';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-7,24,14,3);c.fill();c.stroke();c.fillStyle='#d64c4c';c.fillRect(-2,-6,4,12);c.fillRect(-6,-2,12,4);
+                for(let x=-8;x<=8;x+=5){c.fillStyle='#d1c7b7';c.beginPath();c.arc(x,0,.8,0,Math.PI*2);c.fill();}c.restore();
+            } else if(itemType==='smoke_bomb'){
+                path([[-7,-8],[6,-8],[9,-4],[8,10],[-7,10],[-9,6],[-9,-4]],'#405965');c.fillStyle='#aab8bf';c.beginPath();c.roundRect(-3,-13,7,5,2);c.fill();c.strokeStyle='#17232b';c.stroke();
+                c.strokeStyle='#d4e0e5';c.lineWidth=1;c.beginPath();c.moveTo(-5,-3);c.lineTo(4,-3);c.stroke();
+            } else if(itemType==='gun'){
+                const body=({pistol:'#566d7b',smg:'#435d6d',shotgun:'#805b3d',sniper:'#566d7b',rocket:'#607d42',laser:'#287e91',plasma:'#7555a5',flame:'#a84e2b',burst:'#536c7c',freeze:'#4b83a8',minigun:'#455968'})[subType]||'#536c7c';
+                path([[-13,-4],[-8,-7],[8,-7],[12,-4],[12,1],[-13,1]],body);c.fillStyle=metal;c.beginPath();c.roundRect(2,-5,8,2,1);c.fill();path([[-4,1],[3,1],[2,9],[-2,9]],wood);
+                c.fillStyle='#25343d';c.beginPath();c.roundRect(-13,-3,5,3,1);c.fill();c.strokeStyle='#d8e5eb';c.lineWidth=1;c.beginPath();c.moveTo(-7,-6);c.lineTo(7,-6);c.stroke();
+                if(subType==='sniper'){c.fillStyle='#25343d';c.beginPath();c.roundRect(-2,-10,7,3,1);c.fill();}
+                if(subType==='laser'||subType==='plasma'){c.fillStyle=subType==='laser'?'#67eaff':'#d5a7ff';c.beginPath();c.arc(11,-2,2.2,0,Math.PI*2);c.fill();}
+            }
             c.restore();
         }
 
@@ -2362,8 +2389,26 @@
                     if (bot.hp > 0 && Date.now() >= (bot.frozenUntil || 0)) {
                         if (bot.isZombie) {
                             const angle = Math.atan2(posY - bot.y, posX - bot.x);
-                            bot.x += Math.cos(angle) * 2.6;
-                            bot.y += Math.sin(angle) * 2.6;
+                            const zombieSpeed = 2.6;
+                            const zombieRadius = 13;
+                            const tryX = bot.x + Math.cos(angle) * zombieSpeed;
+                            const tryY = bot.y + Math.sin(angle) * zombieSpeed;
+                            // Zombie movement uses the same solid-block collision as the player.
+                            if (!checkCollisionWithBlocks(tryX, bot.y, zombieRadius)) bot.x = tryX;
+                            if (!checkCollisionWithBlocks(bot.x, tryY, zombieRadius)) bot.y = tryY;
+                            // Enemy traps trigger on contact and can eliminate a zombie.
+                            for (const trapKey in activeTraps) {
+                                const trap = activeTraps[trapKey];
+                                if (!trap || Math.hypot(bot.x - trap.x, bot.y - trap.y) > 23) continue;
+                                bot.hp -= trap.type === 'mine' ? 80 : trap.type === 'bear' ? 65 : 60;
+                                if (trap.type === 'glue') bot.frozenUntil = Date.now() + 1800;
+                                delete activeTraps[trapKey];
+                                if (bot.hp <= 0) {
+                                    bot.hp = 0;
+                                    bot.respawnAt = Date.now() + 5000;
+                                }
+                                break;
+                            }
                             if (Math.hypot(posX - bot.x, posY - bot.y) < RADIUS_PLAYER * 1.8) {
                                 currentHp -= 0.6;
                                 showNotificationBox('🧟 Zombie horde is attacking you!');
@@ -2584,25 +2629,6 @@
                 ctx.rotate(aimAngle);
 
                 const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
-                const itemPng = assetRegistry[activeKey];
-                if (itemPng && itemPng.complete && itemPng.naturalWidth > 0) {
-                    ctx.drawImage(itemPng, 6, -10, 24, 24);
-                } else {
-                    if (activeHotbar === 0) {
-                        ctx.fillStyle = '#b0bec5'; ctx.fillRect(10, 4, 18, 3);
-                    } else if (activeHotbar === 1) {
-                        ctx.fillStyle = '#8d6e63'; ctx.fillRect(10, 2, 14, 4);
-                        ctx.fillStyle = '#424242'; ctx.fillRect(22, -4, 4, 16);
-                    } else if (activeHotbar === 6) {
-                        ctx.fillStyle = '#388e3c'; ctx.beginPath(); ctx.arc(14, 4, 6, 0, Math.PI * 2); ctx.fill();
-                    } else if (activeHotbar === 7) {
-                        ctx.fillStyle = '#ffffff'; ctx.fillRect(10, 3, 14, 8);
-                        ctx.fillStyle = '#e53935'; ctx.fillRect(14, 5, 6, 4);
-                    } else if (activeHotbar >= 3 && activeHotbar <= 5) {
-                        ctx.fillStyle = '#37474f'; ctx.fillRect(8, -3, 18, 6);
-                    }
-                }
-                ctx.restore();
 
                 const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
@@ -2612,6 +2638,18 @@
                     ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
                 }
+
+                // Draw the equipped tool over the player skin with the same detailed icon art.
+                ctx.save();
+                ctx.translate(posX, posY);
+                ctx.rotate(aimAngle);
+                ctx.translate(13, 0);
+                ctx.scale(1.5, 1.5);
+                const heldCanvas = document.createElement('canvas');
+                heldCanvas.width = 34; heldCanvas.height = 34;
+                drawItemArtOnCanvas(heldCanvas, activeKey, (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : null);
+                ctx.drawImage(heldCanvas, -13, -17, 34, 34);
+                ctx.restore();
 
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
