@@ -9,7 +9,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #0a0a0e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #arena-viewport { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
-        #canvas-main { width: 1200px; height: 800px; display: block; background: #1e362c; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+        #canvas-main { width: 1200px; height: 800px; display: block; background: #1e362c; box-shadow: 0 0 40px rgba(0,0,0,0.9); outline: none; }
 
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
@@ -138,7 +138,7 @@
 <body>
 
     <div id="arena-viewport">
-        <canvas id="canvas-main" width="1200" height="800"></canvas>
+        <canvas id="canvas-main" width="1200" height="800" tabindex="0" aria-label="Game arena. Click here and use WASD to move."></canvas>
     </div>
 
     <div id="hud-layer">
@@ -332,9 +332,9 @@
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="34" height="34"></canvas></div>
-            <div class="hotbar-slot" id="hslot-3" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="34" height="34"></canvas></div>
-            <div class="hotbar-slot" id="hslot-4" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="34" height="34"></canvas></div>
-            <div class="hotbar-slot" id="hslot-5" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="34" height="34"></canvas></div>
+            <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="34" height="34"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="34" height="34"></canvas></div>
@@ -1105,6 +1105,7 @@
             document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
             document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
+            document.getElementById('room-notification').style.display = active ? 'none' : 'block';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
             document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
             if (!active) document.getElementById('self-destruct-banner').style.display = 'none';
@@ -1160,7 +1161,7 @@
             if (!gridContainer) return;
             let htmlStr = '';
             for (let i = 0; i < 32; i++) {
-                htmlStr += `<div class="inventory-slot" draggable="true" ondragstart="dragBackpack(event, ${i})" ondragover="allowDrop(event)" ondrop="dropToBackpack(event, ${i})" onclick="clickInventorySlot(${i})"><span>${i+1}</span><canvas class="inv-canvas" id="inv-canvas-${i}" width="26" height="26"></canvas></div>`;
+                htmlStr += `<div class="inventory-slot" draggable="true" ondragstart="dragBackpack(event, ${i})" ondragend="draggedData=null" ondragover="allowDrop(event)" ondrop="dropToBackpack(event, ${i})" onclick="clickInventorySlot(${i})"><span>${i+1}</span><canvas class="inv-canvas" id="inv-canvas-${i}" width="26" height="26"></canvas></div>`;
             }
             gridContainer.innerHTML = htmlStr;
 
@@ -1174,9 +1175,24 @@
 
         let draggedData = null;
         function dragBackpack(e, idx) {
-            draggedData = { source: 'backpack', index: idx, item: backpackInventory[idx] };
+            const item = backpackInventory[idx];
+            if (!item) { e.preventDefault(); return; }
+            draggedData = { source: 'backpack', index: idx, item };
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'backpack', index: idx }));
+            }
         }
-        function allowDrop(e) { e.preventDefault(); }
+        function allowDrop(e) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }
+        function dragHotbar(e, hotbarIdx) {
+            const subtype = weaponBarSlots[hotbarIdx - 3];
+            if (!subtype) { e.preventDefault(); return; }
+            draggedData = { source: 'hotbar', index: hotbarIdx - 3, item: { type: 'gun', subtype } };
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'hotbar', index: hotbarIdx - 3 }));
+            }
+        }
 
         function dropToBackpack(e, targetIdx) {
             e.preventDefault();
@@ -1198,13 +1214,24 @@
         function dropToHotbar(e, targetHIdx) {
             e.preventDefault();
             if (!draggedData) return;
-            if (targetHIdx >= 3 && targetHIdx <= 5) {
-                const gunSubtype = draggedData.item && draggedData.item.type === 'gun' ? draggedData.item.subtype : null;
-                weaponBarSlots[targetHIdx - 3] = gunSubtype;
-                if (draggedData.source === 'backpack') {
-                    backpackInventory[draggedData.index] = null;
-                }
+            if (targetHIdx < 3 || targetHIdx > 5) {
+                showNotificationBox('Guns go in hotbar slots 4, 5 or 6.');
+                draggedData = null;
+                return;
             }
+            const item = draggedData.item;
+            if (!item || item.type !== 'gun') {
+                showNotificationBox('Only guns can be equipped in weapon slots.');
+                draggedData = null;
+                return;
+            }
+            const oldGun = weaponBarSlots[targetHIdx - 3];
+            if (draggedData.source === 'backpack') {
+                backpackInventory[draggedData.index] = oldGun ? { type: 'gun', subtype: oldGun } : null;
+            } else if (draggedData.source === 'hotbar') {
+                weaponBarSlots[draggedData.index] = oldGun;
+            }
+            weaponBarSlots[targetHIdx - 3] = item.subtype;
             draggedData = null;
             refreshHotbarUI();
             renderBackpackGrid();
@@ -1532,9 +1559,16 @@
                 } else if (data.type === 'remove_loot') {
                     delete droppedLoot[data.id];
                     broadcastStateToClients();
-                } else if (data.type === 'remove_crate') {
-                    supplyCrates.splice(data.index, 1);
-                    broadcastStateToClients();
+                } else if (data.type === 'claim_crate') {
+                    const player = remotePlayers[conn.peer];
+                    const crateIndex = supplyCrates.findIndex(c => c && c.id === data.id);
+                    if (player && crateIndex !== -1 && Math.hypot(player.x - supplyCrates[crateIndex].x, player.y - supplyCrates[crateIndex].y) < 55) {
+                        const reward = Math.floor(Math.random() * 150) + 1;
+                        supplyCrates.splice(crateIndex, 1);
+                        player.coins = (player.coins || 0) + reward;
+                        conn.send({ type: 'crate_reward', id: data.id, reward });
+                        broadcastStateToClients();
+                    }
                 } else if (data.type === 'update_vehicles') {
                     activeVehiclesList = data.vehicles;
                     broadcastStateToClients();
@@ -1555,7 +1589,12 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'room_config') {
+                if (data.type === 'crate_reward') {
+                    pendingCrateClaims.delete(data.id);
+                    playerCoins += Number(data.reward) || 0;
+                    document.getElementById('coin-num').innerText = playerCoins;
+                    showNotificationBox(`Opened Airdrop Crate (+${data.reward} 🪙)!`);
+                } else if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
                     if (data.blocks) worldBlocks = data.blocks;
                     if (data.traps) activeTraps = data.traps;
@@ -1671,12 +1710,16 @@
         }
 
         function triggerAirdropSpawn() {
+            // Only the room host creates shared crates; solo practice creates its own.
+            if (!isHosting && !isPractice) return;
             const newCrate = {
+                id: 'crate-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
                 x: Math.random() * (MAP_SIZE - 600) + 300,
                 y: Math.random() * (MAP_SIZE - 600) + 300,
                 loot: 'gold'
             };
             supplyCrates.push(newCrate);
+            if (isHosting) broadcastStateToClients();
             showNotificationBox('✈️ Supply Airdrop has landed on the map!');
         }
 
@@ -1723,13 +1766,16 @@
 
         window.addEventListener('keydown', (e) => {
             if (!inGameActive) return;
-            if (document.getElementById('chat-text-input') === document.activeElement) {
-                if (e.code === 'Enter') sendChatMessage();
-                else if (e.code === 'Escape') {
-                    document.getElementById('chat-text-input').blur();
-                    document.getElementById('chat-text-input').style.display = 'none';
+            const chatInput = document.getElementById('chat-text-input');
+            const movementKeys = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'];
+            if (chatInput === document.activeElement) {
+                if (e.code === 'Enter') { sendChatMessage(); return; }
+                if (e.code === 'Escape') {
+                    chatInput.blur();
+                    return;
                 }
-                return;
+                if (!movementKeys.includes(e.code)) return;
+                chatInput.blur();
             }
 
             keyboardInput[e.code] = true;
@@ -1771,6 +1817,10 @@
             }
         });
 
+        canvas.addEventListener('pointerdown', () => {
+            if (inGameActive) canvas.focus({ preventScroll: true });
+        });
+        window.addEventListener('blur', () => { keyboardInput = {}; isMouseDown = false; });
         window.addEventListener('keyup', (e) => {
             keyboardInput[e.code] = false;
             if (e.code === 'Backquote') { e.preventDefault(); cameraScoped = false; }
@@ -1878,6 +1928,7 @@
             closeCoinModal();
         }
 
+        const pendingCrateClaims = new Set();
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
@@ -1909,21 +1960,24 @@
                 }
             }
 
-            supplyCrates.forEach((crate, idx) => {
-                const dist = Math.hypot(posX - crate.x, posY - crate.y);
-                if (dist < 50) {
-                    const randomCoinReward = Math.floor(Math.random() * 150) + 1;
-                    playerCoins += randomCoinReward;
-                    document.getElementById('coin-num').innerText = playerCoins;
-                    supplyCrates.splice(idx, 1);
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_crate', index: idx });
+            const nearbyCrate = supplyCrates.find(crate => crate && Math.hypot(posX - crate.x, posY - crate.y) < 50);
+            if (nearbyCrate && nearbyCrate.id && !pendingCrateClaims.has(nearbyCrate.id)) {
+                if (isHosting || isPractice) {
+                    const crateIndex = supplyCrates.findIndex(crate => crate && crate.id === nearbyCrate.id);
+                    if (crateIndex !== -1) {
+                        const randomCoinReward = Math.floor(Math.random() * 150) + 1;
+                        supplyCrates.splice(crateIndex, 1);
+                        playerCoins += randomCoinReward;
+                        document.getElementById('coin-num').innerText = playerCoins;
+                        if (isHosting) broadcastStateToClients();
+                        showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
                     }
-                    showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
+                } else if (hostConnection && hostConnection.open) {
+                    pendingCrateClaims.add(nearbyCrate.id);
+                    hostConnection.send({ type: 'claim_crate', id: nearbyCrate.id });
+                    setTimeout(() => pendingCrateClaims.delete(nearbyCrate.id), 5000);
                 }
-            });
+            }
         }
 
         function triggerWeaponAttack(clickX, clickY) {
