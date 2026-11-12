@@ -589,8 +589,40 @@
                 const body=({pistol:'#566d7b',smg:'#435d6d',shotgun:'#805b3d',sniper:'#566d7b',rocket:'#607d42',laser:'#287e91',plasma:'#7555a5',flame:'#a84e2b',burst:'#536c7c',freeze:'#4b83a8',minigun:'#455968'})[subType]||'#536c7c';
                 path([[-13,-4],[-8,-7],[8,-7],[12,-4],[12,1],[-13,1]],body);c.fillStyle=metal;c.beginPath();c.roundRect(2,-5,8,2,1);c.fill();path([[-4,1],[3,1],[2,9],[-2,9]],wood);
                 c.fillStyle='#25343d';c.beginPath();c.roundRect(-13,-3,5,3,1);c.fill();c.strokeStyle='#d8e5eb';c.lineWidth=1;c.beginPath();c.moveTo(-7,-6);c.lineTo(7,-6);c.stroke();
-                if(subType==='sniper'){c.fillStyle='#25343d';c.beginPath();c.roundRect(-2,-10,7,3,1);c.fill();}
-                if(subType==='laser'||subType==='plasma'){c.fillStyle=subType==='laser'?'#67eaff':'#d5a7ff';c.beginPath();c.arc(11,-2,2.2,0,Math.PI*2);c.fill();}
+                if (subType === 'pistol') {
+                    path([[-11,-4],[-6,-7],[5,-7],[10,-4],[10,1],[-11,1]],'#596f7d'); path([[-3,1],[3,1],[2,9],[-3,8]],'#35434a');
+                    c.fillStyle='#cbd8df';c.fillRect(4,-6,5,2);
+                } else if (subType === 'smg') {
+                    path([[-14,-5],[-9,-8],[8,-8],[13,-5],[13,2],[-14,2]],'#3f6574'); path([[-5,2],[2,2],[1,9],[-4,9]],'#263b45');
+                    c.fillStyle='#263b45';c.fillRect(-10,-2,5,5);c.fillStyle='#a8c3ce';c.fillRect(8,-6,7,2);
+                } else if (subType === 'shotgun') {
+                    path([[-15,-5],[-7,-7],[11,-7],[14,-4],[14,1],[-15,1]],'#8a5732'); path([[-12,-2],[-5,-2],[-4,8],[-10,8]],'#59391f');
+                    c.fillStyle='#b9c5ca';c.fillRect(1,-9,14,3);c.fillStyle='#e0bd85';c.fillRect(-7,-6,7,2);
+                } else if (subType === 'sniper') {
+                    path([[-15,-4],[-9,-6],[11,-6],[14,-3],[14,1],[-15,1]],'#53616d'); path([[-8,1],[-1,1],[0,10],[-6,10]],'#624b39');
+                    c.fillStyle='#1d2b34';c.fillRect(-3,-11,8,4);c.fillStyle='#9dd4ef';c.beginPath();c.arc(1,-9,1.5,0,Math.PI*2);c.fill();c.fillStyle=metal;c.fillRect(9,-5,9,2);
+                } else if (subType === 'rocket') {
+                    path([[-12,-5],[7,-5],[12,-2],[7,2],[-12,2]],'#55783d');path([[7,-5],[14,-2],[7,2]],'#d6dfe2');
+                    c.fillStyle='#d86b35';c.beginPath();c.moveTo(-12,-5);c.lineTo(-17,-9);c.lineTo(-16,0);c.lineTo(-17,9);c.lineTo(-12,2);c.fill();c.fillStyle='#263b27';c.fillRect(-4,-7,3,11);
+                } else if (subType === 'minigun') {
+                    path([[-11,-6],[7,-6],[10,-3],[7,3],[-11,3]],'#485963');for(let j=0;j<3;j++){c.fillStyle=metal;c.fillRect(5,-7+j*4,14,2);}
+                    c.fillStyle='#293740';c.fillRect(-7,3,5,7);c.fillRect(-2,-9,5,3);
+                } else if (subType === 'laser') {
+                    path([[-13,-5],[8,-5],[12,-2],[8,2],[-13,2]],'#237e91');c.fillStyle='#142f3b';c.fillRect(-5,-8,8,3);
+                    c.fillStyle='#68efff';c.beginPath();c.arc(12,-1.5,3,0,Math.PI*2);c.fill();c.fillStyle='#d6ffff';c.fillRect(10,-2,8,1);
+                } else if (subType === 'plasma') {
+                    path([[-13,-5],[6,-7],[12,-3],[9,3],[-13,2]],'#674a96');c.fillStyle='#302447';c.fillRect(-5,-9,7,3);
+                    c.fillStyle='#d6a7ff';c.beginPath();c.arc(12,-2,4,0,Math.PI*2);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(12,-2,1.5,0,Math.PI*2);c.fill();
+                } else if (subType === 'flame') {
+                    path([[-13,-5],[5,-5],[11,-2],[5,2],[-13,2]],'#a94f2c');path([[-5,2],[2,2],[1,9],[-4,9]],'#573b2d');
+                    c.fillStyle='#e58c32';c.fillRect(5,-7,6,3);c.fillStyle='#ffcb54';c.beginPath();c.arc(13,-2,3,0,Math.PI*2);c.fill();
+                } else if (subType === 'burst') {
+                    path([[-13,-5],[7,-7],[11,-3],[11,2],[-13,2]],'#526b7d');c.fillStyle='#263b4a';c.fillRect(-3,-10,7,3);c.fillRect(-9,3,4,5);
+                    c.fillStyle='#c2d6e2';c.fillRect(8,-5,8,2);
+                } else if (subType === 'freeze') {
+                    path([[-13,-5],[7,-5],[11,-2],[7,2],[-13,2]],'#4a83a8');c.fillStyle='#b9edff';c.fillRect(-3,-9,5,4);
+                    c.strokeStyle='#d8f8ff';c.lineWidth=1.5;c.beginPath();c.moveTo(12,-7);c.lineTo(12,4);c.moveTo(7,-2);c.lineTo(17,-2);c.stroke();
+                }
             }
             c.restore();
         }
@@ -1527,7 +1559,26 @@
                 });
             });
             conn.on('data', (data) => {
-                if (data.type === 'client_join') {
+                if (data.type === 'hit_request') {
+                    const shooter = remotePlayers[conn.peer];
+                    const targetIsHost = data.targetId === peerInstance.id;
+                    const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp } : remotePlayers[data.targetId];
+                    const hitX = Number(data.hitX), hitY = Number(data.hitY);
+                    const weapon = data.weapon;
+                    const damageByWeapon = { pistol:35, smg:22, shotgun:18, sniper:75, rocket:100, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
+                    const damage = damageByWeapon[weapon] || 0;
+                    const validHit = shooter && target && target.hp > 0 && damage > 0 &&
+                        Number.isFinite(hitX) && Number.isFinite(hitY) &&
+                        Math.hypot(shooter.x-hitX, shooter.y-hitY) < 1000 &&
+                        Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 12 &&
+                        (shooter.team === 'FFA' || shooter.team !== target.team);
+                    if (validHit) {
+                        if (targetIsHost) currentHp = Math.max(0, currentHp - damage);
+                        else target.hp = Math.max(0, target.hp - damage);
+                        conn.send({ type: 'hit_confirm', targetId: data.targetId, damage, hp: targetIsHost ? currentHp : target.hp });
+                        broadcastStateToClients();
+                    }
+                } else if (data.type === 'client_join') {
                     const spawnCoords = getTeamSpawnCoords(data.team);
                     remotePlayers[conn.peer] = {
                         username: data.username,
@@ -1592,7 +1643,9 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'crate_reward') {
+                if (data.type === 'hit_confirm') {
+                    showNotificationBox(`Hit confirmed! -${data.damage} HP`);
+                } else if (data.type === 'crate_reward') {
                     pendingCrateClaims.delete(data.id);
                     playerCoins += Number(data.reward) || 0;
                     document.getElementById('coin-num').innerText = playerCoins;
@@ -1610,7 +1663,9 @@
                 } else if (data.type === 'server_state') {
                     if (data.players) {
                         for (let pid in data.players) {
-                            if (peerInstance && pid !== peerInstance.id) {
+                            if (peerInstance && pid === peerInstance.id) {
+                                if (typeof data.players[pid].hp === 'number') currentHp = data.players[pid].hp;
+                            } else {
                                 remotePlayers[pid] = data.players[pid];
                             }
                         }
@@ -2407,9 +2462,14 @@
                             if (b.type === 'freeze') hitDmg = 22;
                             if (b.type === 'burst') hitDmg = 30;
                             if (b.type === 'flame') hitDmg = 18;
-                            rp.hp -= hitDmg;
-                            showNotificationBox(`Hit ${rp.username}! HP: ${Math.max(0, Math.floor(rp.hp))}`);
-                            if (rp.hp <= 0) onEnemyEliminated();
+                            if (isHosting) {
+                                rp.hp = Math.max(0, rp.hp - hitDmg);
+                                if (rp.hp <= 0) onEnemyEliminated();
+                                broadcastStateToClients();
+                            } else if (hostConnection && hostConnection.open) {
+                                hostConnection.send({ type: 'hit_request', targetId: pid, hitX: b.x, hitY: b.y, weapon: b.type });
+                            }
+                            showNotificationBox(`Hit ${rp.username}! Damage: ${hitDmg}`);
                             hitObs = true;
                         }
                     }
