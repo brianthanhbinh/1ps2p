@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>2D P2P Arena</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
@@ -100,6 +100,26 @@
 
         /* Hotbar with Unique Canvases for Icons */
         #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 30; }
+        #mobile-controls { display:none; position:absolute; inset:0; z-index:45; pointer-events:none; touch-action:none; }
+        #move-stick { position:absolute; left:max(18px,env(safe-area-inset-left)); bottom:calc(22px + env(safe-area-inset-bottom)); width:138px; height:138px; border:2px solid rgba(255,255,255,.48); border-radius:50%; background:rgba(8,15,20,.36); pointer-events:auto; touch-action:none; }
+        #move-knob { position:absolute; left:42px; top:42px; width:50px; height:50px; border-radius:50%; background:rgba(230,240,245,.65); border:2px solid #fff; box-shadow:0 2px 10px #0008; }
+        #aim-pad { position:absolute; right:145px; bottom:calc(28px + env(safe-area-inset-bottom)); width:105px; height:105px; border:2px solid rgba(255,255,255,.35); border-radius:50%; background:rgba(8,15,20,.22); pointer-events:auto; touch-action:none; }
+        #aim-knob { position:absolute; left:33px; top:33px; width:35px; height:35px; border-radius:50%; background:rgba(255,202,40,.65); border:2px solid #ffe082; }
+        .mobile-action { position:absolute; pointer-events:auto; touch-action:none; border:1px solid #ffffff88; border-radius:50%; color:#fff; background:rgba(22,30,42,.82); font-weight:800; box-shadow:0 3px 10px #0009; }
+        #mobile-fire { width:76px;height:76px;right:24px;bottom:calc(44px + env(safe-area-inset-bottom));background:rgba(183,48,48,.88);font-size:13px; }
+        #mobile-use { width:52px;height:52px;right:36px;bottom:calc(132px + env(safe-area-inset-bottom));font-size:11px; }
+        #mobile-inventory { width:48px;height:48px;right:98px;bottom:calc(145px + env(safe-area-inset-bottom));font-size:10px; }
+        #mobile-reload { width:48px;height:48px;right:112px;bottom:calc(40px + env(safe-area-inset-bottom));font-size:10px; }
+        #mobile-sprint { width:48px;height:48px;left:170px;bottom:calc(34px + env(safe-area-inset-bottom));font-size:10px; }
+        #mobile-hop { width:48px;height:48px;right:32px;bottom:calc(220px + env(safe-area-inset-bottom));font-size:10px; }
+        .mobile-action.active { background:rgba(255,183,0,.9);color:#171717; }
+        @media (hover:none) and (pointer:coarse) {
+            #mobile-controls.mobile-enabled { display:block; }
+            #hotbar-dock { bottom:calc(8px + env(safe-area-inset-bottom)); gap:3px; padding:5px; transform:translateX(-50%) scale(.78); transform-origin:bottom center; }
+            #arena-viewport { height:100dvh; }
+            #canvas-main { max-width:100vw; max-height:100dvh; touch-action:none; }
+            #inventory-panel,#shop-panel,#skin-modal { max-width:94vw; max-height:84dvh; overflow:auto; }
+        }
         .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
         .hotbar-slot.selected { border-color: #ffca28; background: #333; box-shadow: 0 0 12px rgba(255,202,40,0.5); }
         .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
@@ -341,6 +361,16 @@
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span>0</span><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas></div>
         </div>
+        <div id="mobile-controls" aria-label="Mobile game controls">
+            <div id="move-stick"><div id="move-knob"></div></div>
+            <div id="aim-pad"><div id="aim-knob"></div></div>
+            <button id="mobile-fire" class="mobile-action">FIRE</button>
+            <button id="mobile-use" class="mobile-action" onclick="pickupNearbyLoot()">USE</button>
+            <button id="mobile-inventory" class="mobile-action" onclick="toggleInventoryPanel()">BAG</button>
+            <button id="mobile-reload" class="mobile-action" onclick="reloadWeapon()">RELOAD</button>
+            <button id="mobile-sprint" class="mobile-action" onclick="toggleMobileSprint()">RUN</button>
+            <button id="mobile-hop" class="mobile-action" onclick="tryHopOnVehicle()">HOP</button>
+        </div>
     </div>
 
     <script>
@@ -350,6 +380,52 @@
         const mCtx = mCanvas ? mCanvas.getContext('2d') : null;
 
         const MAP_SIZE = 2600;
+        let mobileMoveX = 0, mobileMoveY = 0, mobileSprint = false;
+        const isTouchDevice = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+        function toggleMobileSprint() {
+            mobileSprint = !mobileSprint;
+            document.getElementById('mobile-sprint')?.classList.toggle('active', mobileSprint);
+            keyboardInput['ShiftLeft'] = mobileSprint;
+        }
+        function initMobileControls() {
+            if (!isTouchDevice()) return;
+            const controls = document.getElementById('mobile-controls');
+            controls.classList.add('mobile-enabled');
+            const stick = document.getElementById('move-stick'), knob = document.getElementById('move-knob');
+            let movePointer = null;
+            const moveStick = e => {
+                if (movePointer !== e.pointerId) return;
+                const r=stick.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+                let dx=e.clientX-cx, dy=e.clientY-cy, len=Math.hypot(dx,dy), max=43;
+                if(len>max){dx=dx/len*max;dy=dy/len*max;}
+                mobileMoveX=dx/max;mobileMoveY=dy/max;
+                knob.style.transform=`translate(${dx}px,${dy}px)`;
+            };
+            stick.addEventListener('pointerdown',e=>{e.preventDefault();movePointer=e.pointerId;stick.setPointerCapture(movePointer);moveStick(e);});
+            stick.addEventListener('pointermove',moveStick);
+            const releaseStick=e=>{if(movePointer!==e.pointerId)return;movePointer=null;mobileMoveX=mobileMoveY=0;knob.style.transform='';};
+            stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);
+            const aim=document.getElementById('aim-pad'), aimKnob=document.getElementById('aim-knob');
+            let aimPointer=null;
+            const moveAim=e=>{
+                if(aimPointer!==e.pointerId)return;
+                const r=aim.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+                let dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy),max=31;
+                if(len>max){dx=dx/len*max;dy=dy/len*max;}
+                aimKnob.style.transform=`translate(${dx}px,${dy}px)`;
+                const rect=canvas.getBoundingClientRect();
+                mouseXCoord=canvas.width/2+(dx/max)*260;mouseYCoord=canvas.height/2+(dy/max)*260;
+            };
+            aim.addEventListener('pointerdown',e=>{e.preventDefault();aimPointer=e.pointerId;aim.setPointerCapture(aimPointer);moveAim(e);});
+            aim.addEventListener('pointermove',moveAim);
+            const releaseAim=e=>{if(aimPointer!==e.pointerId)return;aimPointer=null;aimKnob.style.transform='';};
+            aim.addEventListener('pointerup',releaseAim);aim.addEventListener('pointercancel',releaseAim);
+            const fire=document.getElementById('mobile-fire');
+            fire.addEventListener('pointerdown',e=>{e.preventDefault();isMouseDown=true;fire.classList.add('active');});
+            const stopFire=()=>{isMouseDown=false;fire.classList.remove('active');};
+            fire.addEventListener('pointerup',stopFire);fire.addEventListener('pointercancel',stopFire);fire.addEventListener('pointerleave',stopFire);
+        }
+        window.addEventListener('DOMContentLoaded',initMobileControls);
         const RADIUS_PLAYER = 21;
         const ZONE_SIZE = 500;
 
@@ -2304,6 +2380,7 @@
             if (keyboardInput['KeyS'] || keyboardInput['ArrowDown']) dy += 1;
             if (keyboardInput['KeyA'] || keyboardInput['ArrowLeft']) dx -= 1;
             if (keyboardInput['KeyD'] || keyboardInput['ArrowRight']) dx += 1;
+            dx += mobileMoveX; dy += mobileMoveY;
 
             if (dx !== 0 || dy !== 0) {
                 const length = Math.hypot(dx, dy);
@@ -2784,7 +2861,8 @@
                 ctx.translate(posX, posY);
                 ctx.rotate(aimAngle);
 
-                const activeKey = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
+                const heldWeapon = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : null;
+                const activeKey = heldWeapon ? 'gun' : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
                 const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
                     ctx.drawImage(activePlayerSkin, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
@@ -2799,8 +2877,8 @@
                 ctx.translate(13, 0);
                 const heldCanvas = document.createElement('canvas');
                 heldCanvas.width = 102; heldCanvas.height = 102;
-                drawItemArtOnCanvas(heldCanvas, activeKey, (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : null);
-                ctx.drawImage(heldCanvas, -10, -13, 26, 26);
+                drawItemArtOnCanvas(heldCanvas, activeKey, heldWeapon);
+                ctx.drawImage(heldCanvas, 0, -19, 42, 42);
                 ctx.restore();
 
                 ctx.fillStyle = '#fff';
