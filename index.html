@@ -1570,7 +1570,7 @@
                     const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp } : remotePlayers[data.targetId];
                     const hitX = Number(data.hitX), hitY = Number(data.hitY);
                     const weapon = data.weapon;
-                    const damageByWeapon = { pistol:35, smg:22, shotgun:18, sniper:75, rocket:100, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
+                    const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
                     const damage = damageByWeapon[weapon] || 0;
                     const validHit = shooter && target && target.hp > 0 && damage > 0 &&
                         Number.isFinite(hitX) && Number.isFinite(hitY) &&
@@ -1580,7 +1580,17 @@
                     if (validHit) {
                         if (targetIsHost) currentHp = Math.max(0, currentHp - damage);
                         else target.hp = Math.max(0, target.hp - damage);
-                        conn.send({ type: 'hit_confirm', targetId: data.targetId, damage, hp: targetIsHost ? currentHp : target.hp });
+                        let splashDamage = 0;
+                        if (weapon === 'rocket') {
+                            const splashRadius = 120;
+                            const splash = p => p && p.hp > 0 && (p.team === 'FFA' || p.team !== shooter.team) && Math.hypot(p.x-hitX,p.y-hitY) < splashRadius;
+                            if (!targetIsHost && splash({x:posX,y:posY,hp:currentHp,team:playerTeam})) { splashDamage=Math.round(45*(1-Math.hypot(posX-hitX,posY-hitY)/splashRadius)); currentHp=Math.max(0,currentHp-splashDamage); }
+                            for (const otherId in remotePlayers) {
+                                const other=remotePlayers[otherId];
+                                if (otherId !== data.targetId && splash(other)) { const d=Math.hypot(other.x-hitX,other.y-hitY); other.hp=Math.max(0,other.hp-Math.round(45*(1-d/splashRadius))); }
+                            }
+                        }
+                        conn.send({ type: 'hit_confirm', targetId: data.targetId, damage, splashDamage, hp: targetIsHost ? currentHp : target.hp });
                         broadcastStateToClients();
                     }
                 } else if (data.type === 'client_join') {
@@ -2396,7 +2406,8 @@
                 } else {
                     if (fp.vx) fp.x += fp.vx;
                     if (fp.vy) fp.y += fp.vy;
-                    fp.alpha -= 0.02;
+                    if (fp.smoke) fp.radius += 0.06;
+                    fp.alpha -= fp.smoke ? 0.012 : 0.02;
                     if (fp.alpha <= 0) floatingParticles.splice(i, 1);
                 }
             }
@@ -2447,8 +2458,9 @@
                                 let hitDmg = 35;
                                 if (b.type === 'sniper') hitDmg = 75;
                                 if (b.type === 'rocket') {
-                                    hitDmg = 100;
-                                    floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
+                                    hitDmg = 65;
+                                    floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
+                                    aiBots.forEach(other => { if (other && other !== bot && other.hp > 0) { const d=Math.hypot(other.x-b.x,other.y-b.y); if(d<120) damagePracticeBot(other,Math.round(45*(1-d/120))); } });
                                 }
                                 if (b.type === 'laser') hitDmg = 40;
                                 if (b.type === 'plasma') {
@@ -2474,8 +2486,8 @@
                             let hitDmg = 35;
                             if (b.type === 'sniper') hitDmg = 75;
                             if (b.type === 'rocket') {
-                                hitDmg = 100;
-                                floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 90, alpha: 1.0, isShockwave: true });
+                                hitDmg = 65;
+                                floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
                             }
                             if (b.type === 'laser') hitDmg = 40;
                             if (b.type === 'plasma') {
@@ -2828,6 +2840,9 @@
                     ctx.beginPath();
                     ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
                     ctx.stroke();
+                } else if (fp.smoke) {
+                    ctx.fillStyle = '#aeb8bf';
+                    ctx.beginPath(); ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI*2); ctx.fill();
                 } else {
                     ctx.fillStyle = '#4caf50';
                     ctx.font = 'bold 14px sans-serif';
