@@ -169,6 +169,7 @@
             <div id="shop-tab-gear" class="shop-content active">
                 <div class="shop-item-card"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
                 <div class="shop-item-card"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
+                <div class="shop-item-card"><span>AK-47</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('gun', 'ak', 260)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 450)">Buy</button></div></div>
@@ -422,7 +423,7 @@
         let activeVehiclesList = [];
         let floatingParticles = [];
 
-        let airdropIntervalHandle = null;
+        let nextAirdropAt = 0;
 
         const PEER_PREFIX = 'arena-v5-net-';
         const GLOBAL_ROOMS = ['ffaglobal', '4global', '2global', 'pvpglobal'];
@@ -592,6 +593,9 @@
                 if (subType === 'pistol') {
                     path([[-11,-4],[-6,-7],[5,-7],[10,-4],[10,1],[-11,1]],'#596f7d'); path([[-3,1],[3,1],[2,9],[-3,8]],'#35434a');
                     c.fillStyle='#cbd8df';c.fillRect(4,-6,5,2);
+                } else if (subType === 'ak') {
+                    path([[-15,-5],[-10,-8],[8,-7],[14,-3],[13,2],[-12,2]],'#435d45');path([[-8,2],[-2,2],[1,11],[-5,10]],'#684329');
+                    c.fillStyle='#293b2d';c.fillRect(-2,-10,7,3);c.fillStyle=metal;c.fillRect(7,-5,10,2);c.fillStyle='#9b6a3c';c.fillRect(-13,0,5,3);
                 } else if (subType === 'smg') {
                     path([[-14,-5],[-9,-8],[8,-8],[13,-5],[13,2],[-14,2]],'#3f6574'); path([[-5,2],[2,2],[1,9],[-4,9]],'#263b45');
                     c.fillStyle='#263b45';c.fillRect(-10,-2,5,5);c.fillStyle='#a8c3ce';c.fillRect(8,-6,7,2);
@@ -918,8 +922,9 @@
                 });
             }
 
-            if (airdropIntervalHandle) clearInterval(airdropIntervalHandle);
-            airdropIntervalHandle = setInterval(triggerAirdropSpawn, 30000);
+            nextAirdropAt = Date.now() + 30000;
+            refreshAmmoHud();
+            updateAirdropHud();
         }
 
         function initHostRoom() {
@@ -1677,6 +1682,7 @@
                     if (data.vehicles) activeVehiclesList = data.vehicles;
                     if (data.ctfFlags) ctfFlags = data.ctfFlags;
                     if (data.ctfScores) ctfScores = data.ctfScores;
+                    if (typeof data.nextAirdropAt === 'number') nextAirdropAt = data.nextAirdropAt;
                 }
             });
             conn.on('close', () => {
@@ -1716,7 +1722,8 @@
                 crates: supplyCrates,
                 vehicles: activeVehiclesList,
                 ctfFlags,
-                ctfScores
+                ctfScores,
+                nextAirdropAt
             };
             for (let pid in peerConnections) {
                 if (peerConnections[pid].open) {
@@ -1770,6 +1777,7 @@
         function triggerAirdropSpawn() {
             // Only the room host creates shared crates; solo practice creates its own.
             if (!isHosting && !isPractice) return;
+            nextAirdropAt = Date.now() + 30000;
             const newCrate = {
                 id: 'crate-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
                 x: Math.random() * (MAP_SIZE - 600) + 300,
@@ -1885,6 +1893,16 @@
             if (e.code === 'Tab') toggleScoreboardDisplay(false);
         });
 
+        function refreshAmmoHud() {
+            const el = document.getElementById('ammo-num');
+            if (el) el.textContent = isReloading ? 'Reloading…' : String(currentAmmo);
+        }
+        function updateAirdropHud() {
+            const el = document.getElementById('airdrop-countdown');
+            if (!el) return;
+            if (!nextAirdropAt) nextAirdropAt = Date.now() + 30000;
+            el.textContent = Math.max(0, Math.ceil((nextAirdropAt - Date.now()) / 1000)) + 's';
+        }
         function reloadWeapon() {
             if (isReloading) return;
             isReloading = true;
@@ -1892,6 +1910,7 @@
             setTimeout(() => {
                 currentAmmo = maxAmmo;
                 isReloading = false;
+                refreshAmmoHud();
                 showNotificationBox('Reload complete!');
             }, 800);
         }
@@ -2173,22 +2192,23 @@
                     showNotificationBox('No gun equipped in this slot! Buy one from Shop (B).');
                     return;
                 }
+                if (isReloading) return;
                 if (currentAmmo <= 0) {
                     showNotificationBox('Out of ammo! Press SPACE to reload.');
                     return;
                 }
                 if (!actionCdAttack) {
                     currentAmmo--;
-
-                    let bulletCount = gunEquipped === 'burst' ? 3 : 1;
-                    if (gunEquipped === 'shotgun') bulletCount = 5;
-
+                    refreshAmmoHud();
+                    const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 4 + Math.floor(Math.random() * 3) : 1;
+                    const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : 18;
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
-                        let spread = (bIdx - 2) * 0.08;
-                        if (bulletCount === 1) spread = 0;
-
-                        const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : 18;
-                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(aimAngle + spread) * projectileSpeed, vy: Math.sin(aimAngle + spread) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 145 : 900 });
+                        let shotAngle = aimAngle;
+                        if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
+                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 145 : 900 });
+                    }
+                    if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
+                        for (let puff=0;puff<(gunEquipped==='shotgun'?3:2);puff++) floatingParticles.push({x:posX+Math.cos(aimAngle)*20,y:posY+Math.sin(aimAngle)*20,vx:-Math.cos(aimAngle)*(0.4+Math.random()),vy:-Math.sin(aimAngle)*(0.4+Math.random()),radius:3+Math.random()*3,alpha:0.32,smoke:true});
                     }
 
                     actionCdAttack = true;
@@ -2197,6 +2217,7 @@
                     if (gunEquipped === 'smg' || gunEquipped === 'minigun' || gunEquipped === 'flame') cdTime = 100;
                     if (gunEquipped === 'laser' || gunEquipped === 'plasma' || gunEquipped === 'freeze') cdTime = 200;
                     if (gunEquipped === 'burst') cdTime = 420;
+                    if (gunEquipped === 'ak') cdTime = 145;
                     if (gunEquipped === 'rocket') cdTime = 600;
 
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
@@ -2229,6 +2250,9 @@
 
         function updateGameLogic() {
             if (!inGameActive) return;
+            if ((isHosting || isPractice) && nextAirdropAt && Date.now() >= nextAirdropAt) triggerAirdropSpawn();
+            refreshAmmoHud();
+            updateAirdropHud();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'creative') {
@@ -2244,7 +2268,7 @@
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
-                if (eq === 'smg' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst') {
+                if (eq === 'smg' || eq === 'ak' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst') {
                     triggerWeaponAttack(mouseXCoord, mouseYCoord);
                 }
             }
@@ -2813,24 +2837,19 @@
             });
 
             bulletsList.forEach(b => {
-                const bulletPng = assetRegistry[b.type === 'flame' ? 'flame' : 'bullet'];
-                if (b.type === 'flame') {
-                    ctx.fillStyle = Math.random() > 0.5 ? '#ff5722' : '#ffeb3b';
-                    ctx.beginPath();
-                    ctx.arc(b.x + (Math.random() - 0.5) * 8, b.y + (Math.random() - 0.5) * 8, 8 + Math.random() * 6, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (bulletPng && bulletPng.complete && bulletPng.naturalWidth > 0) {
-                    ctx.drawImage(bulletPng, b.x - 6, b.y - 6, 12, 12);
+                const angle = Math.atan2(b.vy,b.vx);
+                ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(angle);
+                const color = ({shotgun:'#f5d06f',burst:'#d8e1e8',ak:'#e8c66a',rocket:'#f06b38',sniper:'#dce7ed',laser:'#56eaff',plasma:'#c58aff',freeze:'#a9edff',flame:'#ff8b35',minigun:'#d5b56a',smg:'#d9c38c',pistol:'#f2d58a'})[b.type] || '#f2d58a';
+                if (b.type === 'rocket') {
+                    ctx.fillStyle='#d85b36';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-5,-5);ctx.lineTo(-3,0);ctx.lineTo(-5,5);ctx.closePath();ctx.fill();ctx.fillStyle='#ffd18a';ctx.fillRect(-10,-2,5,4);
+                } else if (b.type === 'laser' || b.type === 'plasma') {
+                    ctx.shadowBlur=12;ctx.shadowColor=color;ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,8,3,0,0,Math.PI*2);ctx.fill();
+                } else if (b.type === 'flame') {
+                    ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,Math.PI*2);ctx.fill();
                 } else {
-                    ctx.fillStyle = b.type === 'laser' ? '#00e5ff' : b.type === 'plasma' ? '#76ff03' : '#ffca28';
-                    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = 'rgba(255,202,40,0.5)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(b.x, b.y);
-                    ctx.lineTo(b.x - b.vx * 1.5, b.y - b.vy * 1.5);
-                    ctx.stroke();
+                    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-6,-2.5,12,5,2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(-3,-1,5,1);
                 }
+                ctx.restore();
             });
 
             ctx.restore();
