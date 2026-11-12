@@ -2438,7 +2438,9 @@
                         if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
 
                         if (b.type === 'rocket') {
-                            floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
+                            floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
+                            if (isPractice) aiBots.forEach(bot => { if (bot && bot.hp > 0 && (b.team === 'FFA' || b.team !== bot.team)) { const d=Math.hypot(bot.x-b.x,bot.y-b.y); if(d<120) damagePracticeBot(bot,Math.round(65*(1-d/120))); } });
+                            if (isHosting) for (const pid in remotePlayers) { const p=remotePlayers[pid]; if (p && p.hp>0 && (b.team==='FFA'||b.team!==p.team)) { const d=Math.hypot(p.x-b.x,p.y-b.y); if(d<120) p.hp=Math.max(0,p.hp-Math.round(65*(1-d/120))); } }
                         }
 
                         hitObs = true;
