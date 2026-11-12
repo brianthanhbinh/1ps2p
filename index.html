@@ -1594,7 +1594,7 @@
                     if (remotePlayers[conn.peer]) {
                         remotePlayers[conn.peer].x = data.x;
                         remotePlayers[conn.peer].y = data.y;
-                        remotePlayers[conn.peer].hp = data.hp;
+                        // HP is host-authoritative; never overwrite it from movement packets.
                         remotePlayers[conn.peer].coins = data.coins;
                         remotePlayers[conn.peer].username = data.username;
                         remotePlayers[conn.peer].team = data.team;
