@@ -112,12 +112,19 @@
         #mobile-reload { width:48px;height:48px;right:112px;bottom:calc(40px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-sprint { width:48px;height:48px;left:170px;bottom:calc(34px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-hop { width:48px;height:48px;right:32px;bottom:calc(220px + env(safe-area-inset-bottom));font-size:10px; }
+        #mobile-action { width:54px;height:54px;right:92px;bottom:calc(215px + env(safe-area-inset-bottom));font-size:10px;background:rgba(46,125,50,.9); }
+        #mobile-drop { width:46px;height:46px;left:174px;bottom:calc(92px + env(safe-area-inset-bottom));font-size:10px; }
+        #mobile-scope { width:44px;height:44px;right:166px;bottom:calc(38px + env(safe-area-inset-bottom));font-size:10px; }
         .mobile-action.active { background:rgba(255,183,0,.9);color:#171717; }
         @media (hover:none) and (pointer:coarse) {
             #mobile-controls.mobile-enabled { display:block; }
             #hotbar-dock { bottom:calc(8px + env(safe-area-inset-bottom)); gap:3px; padding:5px; transform:translateX(-50%) scale(.78); transform-origin:bottom center; }
             #arena-viewport { height:100dvh; }
             #canvas-main { max-width:100vw; max-height:100dvh; touch-action:none; }
+            #hud-layer { height:100dvh; }
+            #hotbar-dock { max-width:96vw; }
+            #move-stick,#aim-pad { -webkit-user-select:none; user-select:none; }
+            .mobile-action { -webkit-tap-highlight-color:transparent; }
             #inventory-panel,#shop-panel,#skin-modal { max-width:94vw; max-height:84dvh; overflow:auto; }
         }
         .hotbar-slot { width: 54px; height: 54px; background: #222; border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 9px; position: relative; cursor: pointer; }
@@ -370,6 +377,9 @@
             <button id="mobile-reload" class="mobile-action" onclick="reloadWeapon()">RELOAD</button>
             <button id="mobile-sprint" class="mobile-action" onclick="toggleMobileSprint()">RUN</button>
             <button id="mobile-hop" class="mobile-action" onclick="tryHopOnVehicle()">HOP</button>
+            <button id="mobile-action" class="mobile-action" onclick="mobilePrimaryAction()">ACT</button>
+            <button id="mobile-drop" class="mobile-action" onclick="dropActiveItem()">DROP</button>
+            <button id="mobile-scope" class="mobile-action" onclick="toggleMobileScope()">SCOPE</button>
         </div>
     </div>
 
@@ -381,11 +391,22 @@
 
         const MAP_SIZE = 2600;
         let mobileMoveX = 0, mobileMoveY = 0, mobileSprint = false;
+        const heldItemCanvas = document.createElement('canvas');
+        heldItemCanvas.width = 68; heldItemCanvas.height = 68;
+        let heldItemCacheKey = '';
         const isTouchDevice = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches;
         function toggleMobileSprint() {
             mobileSprint = !mobileSprint;
             document.getElementById('mobile-sprint')?.classList.toggle('active', mobileSprint);
             keyboardInput['ShiftLeft'] = mobileSprint;
+        }
+        function mobilePrimaryAction() {
+            if (!inGameActive) return;
+            triggerWeaponAttack(mouseXCoord, mouseYCoord);
+        }
+        function toggleMobileScope() {
+            cameraScoped = !cameraScoped;
+            document.getElementById('mobile-scope')?.classList.toggle('active', cameraScoped);
         }
         function initMobileControls() {
             if (!isTouchDevice()) return;
@@ -2875,10 +2896,20 @@
                 // Draw the equipped item relative to the player, not a second time in world space.
                 ctx.save();
                 ctx.translate(13, 0);
-                const heldCanvas = document.createElement('canvas');
-                heldCanvas.width = 102; heldCanvas.height = 102;
-                drawItemArtOnCanvas(heldCanvas, activeKey, heldWeapon);
-                ctx.drawImage(heldCanvas, 0, -19, 42, 42);
+                const heldCacheKey = activeKey + ':' + (heldWeapon || '');
+                if (heldItemCacheKey !== heldCacheKey) {
+                    drawItemArtOnCanvas(heldItemCanvas, activeKey, heldWeapon);
+                    heldItemCacheKey = heldCacheKey;
+                }
+                // Draw a visible grip/hand, then the full-resolution held item on top.
+                ctx.fillStyle = '#d7a477';
+                ctx.strokeStyle = '#3a2922';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(13, 8, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 5;
+                ctx.drawImage(heldItemCanvas, 5, -27, 58, 58);
+                ctx.restore();
                 ctx.restore();
 
                 ctx.fillStyle = '#fff';
