@@ -119,7 +119,8 @@
         @media (hover:none) and (pointer:coarse) {
             #mobile-controls.mobile-enabled { display:block; }
             /* Keep the hotbar in its own clear strip; controls never cover its slots. */
-            #hotbar-dock { z-index:55; left:50%; bottom:calc(5px + env(safe-area-inset-bottom)); width:max-content; max-width:98vw; gap:2px; padding:4px; transform:translateX(-50%); overflow-x:auto; }
+            #hotbar-dock { position:fixed !important; z-index:9999 !important; left:50% !important; bottom:calc(5px + env(safe-area-inset-bottom)) !important; width:max-content; max-width:98vw; gap:2px; padding:4px; transform:translateX(-50%) !important; overflow-x:auto; display:flex; pointer-events:auto !important; isolation:isolate; }
+            #hotbar-dock .hotbar-slot { pointer-events:auto !important; touch-action:manipulation !important; position:relative; z-index:10000; }
             .hotbar-slot { flex:0 0 43px; width:43px; height:43px; border-width:1px; border-radius:6px; }
             .hotbar-canvas { width:29px; height:29px; margin-top:5px; }
             #arena-viewport { height:100dvh; }
@@ -771,11 +772,31 @@
         }
 
         function selectHotbarSlot(idx) {
+            if (!Number.isInteger(idx) || idx < 0 || idx > 9) return;
             activeHotbar = idx;
             document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('selected'));
             const el = document.getElementById(`hslot-${idx}`);
             if (el) el.classList.add('selected');
         }
+
+        /* iOS Safari: explicitly handle pointer/touch selection instead of relying on inline click. */
+        function bindMobileHotbarInput() {
+            const dock = document.getElementById('hotbar-dock');
+            if (!dock || dock.dataset.mobileInputBound) return;
+            dock.dataset.mobileInputBound = '1';
+            dock.querySelectorAll('.hotbar-slot').forEach((slot, index) => {
+                const choose = event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    selectHotbarSlot(index);
+                };
+                slot.addEventListener('pointerdown', choose, { passive: false });
+                slot.addEventListener('touchstart', choose, { passive: false });
+                slot.addEventListener('click', choose);
+            });
+        }
+        window.addEventListener('DOMContentLoaded', bindMobileHotbarInput);
+        bindMobileHotbarInput();
 
         function toggleSkinModal() {
             const m = document.getElementById('skin-modal');
