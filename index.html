@@ -1986,10 +1986,18 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        window.addEventListener('mousemove', (e) => {
+        function clientToCanvasPoint(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
-            mouseXCoord = e.clientX - rect.left;
-            mouseYCoord = e.clientY - rect.top;
+            return {
+                x: (clientX - rect.left) * canvas.width / Math.max(1, rect.width),
+                y: (clientY - rect.top) * canvas.height / Math.max(1, rect.height)
+            };
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            const point = clientToCanvasPoint(e.clientX, e.clientY);
+            mouseXCoord = point.x;
+            mouseYCoord = point.y;
         });
 
         window.addEventListener('mousedown', (e) => {
@@ -2396,8 +2404,8 @@
 
         canvas.addEventListener('mousedown', (e) => {
             if (!inGameActive) return;
-            const rect = canvas.getBoundingClientRect();
-            triggerWeaponAttack(e.clientX - rect.left, e.clientY - rect.top);
+            const point = clientToCanvasPoint(e.clientX, e.clientY);
+            triggerWeaponAttack(point.x, point.y);
         });
 
         function checkCollisionWithBlocks(x, y, radius) {
