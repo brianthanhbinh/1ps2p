@@ -1845,30 +1845,12 @@
                         remotePlayers[conn.peer].team = data.team;
                         remotePlayers[conn.peer].color = data.color;
                         remotePlayers[conn.peer].bullets = Array.isArray(data.bullets) ? data.bullets.slice(0, 120) : [];
-                        for(const bullet of remotePlayers[conn.peer].bullets){
-                            if(!bullet || !bullet.id || processedRemoteBulletIds.has(bullet.id)) continue;
-                            let target=null, targetId=null, targetIsHost=false;
-                            if(currentHp>0 && Math.hypot(posX-bullet.x,posY-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6) && (bullet.team==='FFA'||bullet.team!==playerTeam)){
-                                target={x:posX,y:posY,team:playerTeam,hp:currentHp};targetIsHost=true;
-                            } else {
-                                for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==conn.peer&&other&&other.hp>0&&Math.hypot(other.x-bullet.x,other.y-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6)&&(bullet.team==='FFA'||bullet.team!==other.team)){target=other;targetId=otherId;break;}}
-                            }
-                            if(!target && isPractice){const bot=aiBots.find(v=>v&&v.hp>0&&Math.hypot(v.x-bullet.x,v.y-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6)&&(bullet.team==='FFA'||bullet.team!==v.team));if(bot)target=bot;}
-                            if(target){
-                                const damage=({pistol:35,smg:22,ak:28,shotgun:18,sniper:75,rocket:65,minigun:16,laser:40,plasma:45,flame:18,burst:30,freeze:22})[bullet.type]||0;
-                                if(damage>0){
-                                    if(targetIsHost){currentHp=Math.max(0,currentHp-damage);if(bullet.type==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;}}
-                                    else {target.hp=Math.max(0,target.hp-damage);if(bullet.type==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;}}
-                                    processedRemoteBulletIds.add(bullet.id);
-                                    if(processedRemoteBulletIds.size>3000)processedRemoteBulletIds.clear();
-                                    if(targetId)remotePlayers[targetId].bullets=[];
-                                }
-                            }
-                        }
-                        remotePlayers[conn.peer].bullets = remotePlayers[conn.peer].bullets.filter(b=>b&&b.id&&!processedRemoteBulletIds.has(b.id));
+                        // Projectile damage is handled by the existing hit_request path.
+                        // Player updates carry bullet visuals only; do not re-process old bullets here.
                         remotePlayers[conn.peer].smokeClouds = Array.isArray(data.smokeClouds) ? data.smokeClouds.slice(0, 30) : [];
                     }
-                    broadcastStateToClients();
+                    // The host game loop already broadcasts authoritative state.
+                    // Avoid an extra full-room broadcast for every incoming player update.
                 } else if (data.type === 'place_block') {
                     worldBlocks[data.key] = data.block;
                     broadcastStateToClients();
