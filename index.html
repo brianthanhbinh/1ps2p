@@ -584,6 +584,8 @@
         let supplyCrates = [];
         let bulletsList = [];
         let hostRemoteBullets = [];
+        let processedRemoteBulletIds = new Set();
+        let nextBulletId = 1;
         let activeGrenades = [];
         let activeVehiclesList = [];
         let floatingParticles = [];
@@ -1843,6 +1845,27 @@
                         remotePlayers[conn.peer].team = data.team;
                         remotePlayers[conn.peer].color = data.color;
                         remotePlayers[conn.peer].bullets = Array.isArray(data.bullets) ? data.bullets.slice(0, 120) : [];
+                        for(const bullet of remotePlayers[conn.peer].bullets){
+                            if(!bullet || !bullet.id || processedRemoteBulletIds.has(bullet.id)) continue;
+                            let target=null, targetId=null, targetIsHost=false;
+                            if(currentHp>0 && Math.hypot(posX-bullet.x,posY-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6) && (bullet.team==='FFA'||bullet.team!==playerTeam)){
+                                target={x:posX,y:posY,team:playerTeam,hp:currentHp};targetIsHost=true;
+                            } else {
+                                for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==conn.peer&&other&&other.hp>0&&Math.hypot(other.x-bullet.x,other.y-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6)&&(bullet.team==='FFA'||bullet.team!==other.team)){target=other;targetId=otherId;break;}}
+                            }
+                            if(!target && isPractice){const bot=aiBots.find(v=>v&&v.hp>0&&Math.hypot(v.x-bullet.x,v.y-bullet.y)<RADIUS_PLAYER+(bullet.type==='flame'?20:6)&&(bullet.team==='FFA'||bullet.team!==v.team));if(bot)target=bot;}
+                            if(target){
+                                const damage=({pistol:35,smg:22,ak:28,shotgun:18,sniper:75,rocket:65,minigun:16,laser:40,plasma:45,flame:18,burst:30,freeze:22})[bullet.type]||0;
+                                if(damage>0){
+                                    if(targetIsHost){currentHp=Math.max(0,currentHp-damage);if(bullet.type==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;}}
+                                    else {target.hp=Math.max(0,target.hp-damage);if(bullet.type==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;}}
+                                    processedRemoteBulletIds.add(bullet.id);
+                                    if(processedRemoteBulletIds.size>3000)processedRemoteBulletIds.clear();
+                                    if(targetId)remotePlayers[targetId].bullets=[];
+                                }
+                            }
+                        }
+                        remotePlayers[conn.peer].bullets = remotePlayers[conn.peer].bullets.filter(b=>b&&b.id&&!processedRemoteBulletIds.has(b.id));
                         remotePlayers[conn.peer].smokeClouds = Array.isArray(data.smokeClouds) ? data.smokeClouds.slice(0, 30) : [];
                     }
                     broadcastStateToClients();
@@ -1952,7 +1975,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2464,7 +2487,7 @@
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let shotAngle = aimAngle;
                         if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
-                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
+                        bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
                     }
                     if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
                         for (let puff=0;puff<(gunEquipped==='shotgun'?3:2);puff++) floatingParticles.push({x:posX+Math.cos(aimAngle)*20,y:posY+Math.sin(aimAngle)*20,vx:-Math.cos(aimAngle)*(0.4+Math.random()),vy:-Math.sin(aimAngle)*(0.4+Math.random()),radius:3+Math.random()*3,alpha:0.32,smoke:true});
