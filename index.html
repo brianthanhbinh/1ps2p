@@ -1550,6 +1550,11 @@
                     passengers: []
                 };
                 activeVehiclesList.push(newVeh);
+                if (isHosting) {
+                    broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'update_vehicles', vehicles: activeVehiclesList });
+                }
                 showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
             }
             if (activeMode !== 'creative') {
@@ -3075,13 +3080,13 @@
             activeSmokeClouds = activeSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
             activeSmokeClouds.forEach(cloud => {
                 const fade = Math.min(1, (cloud.expiresAt - Date.now()) / 1200);
-                ctx.save(); ctx.globalAlpha = 0.62 * fade;
-                for (let i = 0; i < 10; i++) {
-                    const a = i * Math.PI * 2 / 10, d = i % 2 ? 42 : 25;
+                ctx.save(); ctx.globalAlpha = 0.48 * fade;
+                for (let i = 0; i < 7; i++) {
+                    const a = i * Math.PI * 2 / 7, d = i % 2 ? 25 : 16;
                     ctx.fillStyle = i % 2 ? '#737b82' : '#a0a6ab';
-                    ctx.beginPath(); ctx.arc(cloud.x + Math.cos(a) * d, cloud.y + Math.sin(a) * d, 38, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(cloud.x + Math.cos(a) * d, cloud.y + Math.sin(a) * d, 23, 0, Math.PI * 2); ctx.fill();
                 }
-                ctx.fillStyle = '#899198'; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, 45, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                ctx.fillStyle = '#899198'; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, 28, 0, Math.PI * 2); ctx.fill(); ctx.restore();
             });
 
             activeGrenades.forEach(g => {
