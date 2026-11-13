@@ -1805,7 +1805,7 @@
                     const validHit = shooter && target && target.hp > 0 && damage > 0 &&
                         Number.isFinite(hitX) && Number.isFinite(hitY) &&
                         Math.hypot(shooter.x-hitX, shooter.y-hitY) < 1000 &&
-                        Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 12 &&
+                        Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 48 &&
                         (shooter.team === 'FFA' || shooter.team !== target.team);
                     if (validHit) {
                         if (targetIsHost) { currentHp = Math.max(0, currentHp - damage); if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
