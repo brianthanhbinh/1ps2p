@@ -2208,8 +2208,13 @@
                         playerCoins += item.value;
                         document.getElementById('coin-num').innerText = playerCoins;
                     } else if (item.type === 'smoke_bomb') {
-                        smokeBombsCount += 1;
-                        refreshHotbarUI();
+                        smokeBombsCount += Number(item.value)||1; refreshHotbarUI();
+                    } else if (item.type === 'grenade') {
+                        grenadesCount += Number(item.value)||1; refreshHotbarUI();
+                    } else if (item.type === 'bandage') {
+                        bandagesCount += Number(item.value)||1; refreshHotbarUI();
+                    } else if (item.type === 'trap') {
+                        trapsCount += Number(item.value)||1; if(item.subtype)selectedTrapType=item.subtype; refreshHotbarUI();
                     } else if (item.type === 'gun') {
                         const emptyIdx = weaponBarSlots.findIndex(w => w === null);
                         if (emptyIdx !== -1) {
@@ -2986,6 +2991,7 @@
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
+                if(bot.burningUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=18;ctx.fillStyle='#ff6d00';for(let f=0;f<5;f++){const a=f*1.25+Date.now()/180;ctx.beginPath();ctx.ellipse(Math.cos(a)*13,Math.sin(a)*12,5,10,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
