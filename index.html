@@ -1860,6 +1860,8 @@
                         for (let pid in data.players) {
                             if (peerInstance && pid === peerInstance.id) {
                                 if (typeof data.players[pid].hp === 'number') currentHp = data.players[pid].hp;
+                                window.localBurnUntil = Number(data.players[pid].burningUntil) || 0;
+                                window.localBurnTick = Number(data.players[pid].nextBurnTick) || 0;
                             } else {
                                 remotePlayers[pid] = data.players[pid];
                             }
@@ -1898,7 +1900,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0 }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2732,7 +2734,7 @@
                 }
             };
             if(window.localBurnUntil>nowBurn){
-                if(nowBurn>=(window.localBurnTick||0)){currentHp=Math.max(0,currentHp-5);window.localBurnTick=nowBurn+1000;}
+                if(nowBurn>=(window.localBurnTick||0)){currentHp=Math.max(0,currentHp-5);window.localBurnTick=nowBurn+1000;if(isHosting)broadcastStateToClients();}
                 for(const pid in remotePlayers){const p=remotePlayers[pid];if(p&&p.hp>0&&Math.hypot(posX-p.x,posY-p.y)<RADIUS_PLAYER*1.8&&(playerTeam==='FFA'||playerTeam!==p.team))ignite(p);}
                 if(isPractice)aiBots.forEach(bot=>{if(bot&&bot.hp>0&&Math.hypot(posX-bot.x,posY-bot.y)<RADIUS_PLAYER*1.8)bot.burningUntil=nowBurn+5000;});
             }
@@ -3128,6 +3130,7 @@
             for (let pid in remotePlayers) {
                 if (peerInstance && pid === peerInstance.id) continue;
                 const rp = remotePlayers[pid];
+                if (!rp || rp.hp <= 0) continue;
                 mCtx.fillStyle = rp.color || '#e53935';
                 mCtx.beginPath();
                 mCtx.arc(rp.x * scale, rp.y * scale, 3.5, 0, Math.PI * 2);
