@@ -535,9 +535,22 @@
         let ctfActionPending = false;
         let backpackInventory = new Array(32).fill(null);
 
-        let currentAmmo = 10;
-        let maxAmmo = 10;
-        let isReloading = false;
+        let currentAmmo = 10, maxAmmo = 10, isReloading = false;
+        const ammoCapacity = {pistol:12,smg:30,ak:30,shotgun:8,sniper:5,rocket:4,minigun:100,laser:24,plasma:20,flame:60,burst:24,freeze:18};
+        const ammoByWeapon = {};
+        let deathLootDropped = false;
+        function getAmmoCapacity(w){return ammoCapacity[w]||10;}
+        function saveSelectedAmmo(){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;if(w)ammoByWeapon[w]=currentAmmo;}
+        function syncSelectedAmmo(){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;maxAmmo=w?getAmmoCapacity(w):0;if(w&&ammoByWeapon[w]===undefined)ammoByWeapon[w]=maxAmmo;currentAmmo=w?ammoByWeapon[w]:0;refreshAmmoHud();}
+        function dropAllPlayerLoot(){
+            if(deathLootDropped)return;deathLootDropped=true;
+            for(let i=0;i<weaponBarSlots.length;i++){const w=weaponBarSlots[i];if(w){spawnWorldLoot('gun',w,posX+(Math.random()-.5)*45,posY+(Math.random()-.5)*45,0);weaponBarSlots[i]=null;}}
+            for(let i=0;i<backpackInventory.length;i++){const it=backpackInventory[i];if(it){spawnWorldLoot(it.type,it.subtype||null,posX+(Math.random()-.5)*55,posY+(Math.random()-.5)*55,it.count||1);backpackInventory[i]=null;}}
+            for(const [type,count,sub] of [['grenade',grenadesCount,null],['bandage',bandagesCount,null],['smoke_bomb',smokeBombsCount,null],['trap',trapsCount,selectedTrapType]])if(count>0)spawnWorldLoot(type,sub,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            grenadesCount=0;bandagesCount=0;smokeBombsCount=0;trapsCount=0;
+            if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
+            refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
+        }
 
         let actionCdBuild = false;
         let actionCdAttack = false;
@@ -1597,6 +1610,8 @@
             document.getElementById('death-modal').style.display = 'none';
             currentHp = (currentMode === 'creative' || hostGameMode === 'creative') ? 300 : 100;
             currentStamina = 100;
+            deathLootDropped = false;
+            syncSelectedAmmo();
             const spawnCoords = getTeamSpawnCoords(playerTeam);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
@@ -2071,8 +2086,8 @@
         });
 
         function refreshAmmoHud() {
-            const el = document.getElementById('ammo-num');
-            if (el) el.textContent = isReloading ? 'Reloading…' : String(currentAmmo);
+            const el=document.getElementById('ammo-num');
+            if(el){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;el.textContent=isReloading?'Reloading…':w?`${currentAmmo}/${maxAmmo}`:'—';}
         }
         function updateAirdropHud() {
             const el = document.getElementById('airdrop-countdown');
@@ -2081,15 +2096,10 @@
             el.textContent = Math.max(0, Math.ceil((nextAirdropAt - Date.now()) / 1000)) + 's';
         }
         function reloadWeapon() {
-            if (isReloading) return;
-            isReloading = true;
-            showNotificationBox('Reloading weapon...');
-            setTimeout(() => {
-                currentAmmo = maxAmmo;
-                isReloading = false;
-                refreshAmmoHud();
-                showNotificationBox('Reload complete!');
-            }, 800);
+            const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
+            if(!w||isReloading)return;
+            isReloading=true;refreshAmmoHud();showNotificationBox('Reloading weapon...');
+            setTimeout(()=>{ammoByWeapon[w]=getAmmoCapacity(w);if(w===weaponBarSlots[activeHotbar-3]){currentAmmo=ammoByWeapon[w];maxAmmo=getAmmoCapacity(w);}isReloading=false;refreshAmmoHud();showNotificationBox('Reload complete!');},w==='rocket'||w==='sniper'?1300:900);
         }
 
         function tryHopOnVehicle() {
@@ -2376,13 +2386,14 @@
                 }
                 if (!actionCdAttack) {
                     currentAmmo--;
+                    saveSelectedAmmo();
                     refreshAmmoHud();
                     const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 4 + Math.floor(Math.random() * 3) : 1;
                     const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : 18;
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let shotAngle = aimAngle;
                         if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
-                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 145 : 900 });
+                        bulletsList.push({ x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
                     }
                     if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
                         for (let puff=0;puff<(gunEquipped==='shotgun'?3:2);puff++) floatingParticles.push({x:posX+Math.cos(aimAngle)*20,y:posY+Math.sin(aimAngle)*20,vx:-Math.cos(aimAngle)*(0.4+Math.random()),vy:-Math.sin(aimAngle)*(0.4+Math.random()),radius:3+Math.random()*3,alpha:0.32,smoke:true});
@@ -2439,6 +2450,7 @@
             }
 
             if (currentHp <= 0) {
+                dropAllPlayerLoot();
                 document.getElementById('death-modal').style.display = 'flex';
                 return;
             }
@@ -2623,7 +2635,7 @@
 
                 if (isPractice) {
                     aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < RADIUS_PLAYER + 6) {
+                        if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < (b.type === 'flame' ? RADIUS_PLAYER + 20 : RADIUS_PLAYER + 6)) {
                             if (b.team === 'FFA' || b.team !== bot.team) {
                                 let hitDmg = 35;
                                 if (b.type === 'sniper') hitDmg = 75;
@@ -2640,7 +2652,7 @@
                                 }
                                 if (b.type === 'freeze') { hitDmg = 22; bot.frozenUntil = Date.now() + 1800; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true }); }
                                 if (b.type === 'burst') hitDmg = 30;
-                                if (b.type === 'flame') hitDmg = 18;
+                                if (b.type === 'flame') { hitDmg = 18; bot.burningUntil=Date.now()+5000; bot.nextBurnTick=Date.now()+1000; }
                                 damagePracticeBot(bot, hitDmg);
                                 showNotificationBox(`Hit ${bot.username}! HP: ${Math.max(0, Math.floor(bot.hp))}`);
                                 hitObs = true;
@@ -2651,7 +2663,7 @@
 
                 for (let pid in remotePlayers) {
                     const rp = remotePlayers[pid];
-                    if (rp && rp.hp > 0 && Math.hypot(b.x - rp.x, b.y - rp.y) < RADIUS_PLAYER + 6) {
+                    if (rp && rp.hp > 0 && Math.hypot(b.x - rp.x, b.y - rp.y) < (b.type === 'flame' ? RADIUS_PLAYER + 20 : RADIUS_PLAYER + 6)) {
                         if (b.team === 'FFA' || b.team !== rp.team) {
                             let hitDmg = 35;
                             if (b.type === 'sniper') hitDmg = 75;
@@ -2669,6 +2681,7 @@
                             if (b.type === 'burst') hitDmg = 30;
                             if (b.type === 'flame') hitDmg = 18;
                             if (isHosting) {
+                                if(b.type==='flame'){rp.burningUntil=Date.now()+5000;rp.nextBurnTick=Date.now()+1000;}
                                 rp.hp = Math.max(0, rp.hp - hitDmg);
                                 if (rp.hp <= 0) onEnemyEliminated();
                                 broadcastStateToClients();
@@ -2908,6 +2921,7 @@
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
+                if(rp.burningUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=18;ctx.fillStyle='#ff6d00';for(let f=0;f<5;f++){const a=f*1.25+Date.now()/180;ctx.beginPath();ctx.ellipse(Math.cos(a)*13,Math.sin(a)*12,5,10,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
@@ -2954,6 +2968,7 @@
 
                 const heldWeapon = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : null;
                 const activeKey = heldWeapon ? 'gun' : (activeHotbar === 0 ? 'sword' : (activeHotbar === 1 ? 'pickaxe' : (activeHotbar === 2 ? 'block' : (activeHotbar === 6 ? 'grenade' : (activeHotbar === 8 ? 'smoke_bomb' : (activeHotbar === 9 ? 'trap' : 'bandage'))))));
+                if(window.localBurnUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=22;ctx.fillStyle='#ff6d00';for(let f=0;f<7;f++){const a=f*.9+Date.now()/150;ctx.beginPath();ctx.ellipse(Math.cos(a)*15,Math.sin(a)*14,6,12,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
                     ctx.drawImage(activePlayerSkin, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
