@@ -290,7 +290,7 @@
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
         <div id="self-destruct-banner">⚠️ Base Exited! Re-entry locked (<span id="sd-countdown">30s</span>)</div>
-        <div id="ammo-hud-badge">Ammo: <span id="ammo-num">10</span>/10<br/><span style="font-size:10px; color:#aaa;">[SPACE to Reload]</span></div>
+        <div id="ammo-hud-badge">Ammo: <span id="ammo-num">—</span><br/><span id="ammo-hint" style="font-size:10px;color:#aaa;">Select an item</span></div>
 
         <!-- Minimap -->
         <div id="minimap-box">
@@ -385,7 +385,7 @@
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span>0</span><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas></div>
+            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span>0</span><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><select id="trap-type-select" title="Choose trap" onclick="event.stopPropagation()" onchange="setSelectedTrapType(this.value)" style="position:absolute;left:2px;bottom:1px;width:calc(100% - 4px);height:15px;padding:0;font-size:8px;z-index:5;background:#17191d;color:#fff;border:1px solid #777;border-radius:3px;"><option value="spike">Spike</option><option value="bear">Bear</option><option value="mine">Mine</option><option value="glue">Glue</option><option value="bounce">Bounce</option></select></div>
         </div>
         <div id="mobile-controls" aria-label="Mobile game controls">
             <div id="move-stick"><div id="move-knob"></div></div>
@@ -528,8 +528,13 @@
         let activeSmokeClouds = [];
         let hostRemoteSmokeClouds = [];
         let activeTraps = {};
+        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0 };
         let trapsCount = 2;
         let selectedTrapType = 'spike';
+        function updateTrapTotal(){trapsCount=Object.values(trapInventory).reduce((sum,n)=>sum+(Number(n)||0),0);return trapsCount;}
+        function addTraps(type,count){if(!Object.prototype.hasOwnProperty.call(trapInventory,type))type='spike';trapInventory[type]+=Math.max(0,Number(count)||0);updateTrapTotal();refreshHotbarUI();}
+        function consumeTrap(type){if(!trapInventory[type])return false;trapInventory[type]--;updateTrapTotal();refreshHotbarUI();return true;}
+        function setSelectedTrapType(type){if(!Object.prototype.hasOwnProperty.call(trapInventory,type))return;selectedTrapType=type;const el=document.getElementById('trap-type-select');if(el)el.value=type;refreshHotbarUI();refreshAmmoHud();}
         let playerSlowUntil = 0;
         let ctfFlags = null;
         let ctfScores = { Red: 0, Blue: 0 };
@@ -547,8 +552,9 @@
             if(deathLootDropped)return;deathLootDropped=true;
             for(let i=0;i<weaponBarSlots.length;i++){const w=weaponBarSlots[i];if(w){spawnWorldLoot('gun',w,posX+(Math.random()-.5)*45,posY+(Math.random()-.5)*45,0);weaponBarSlots[i]=null;}}
             for(let i=0;i<backpackInventory.length;i++){const it=backpackInventory[i];if(it){spawnWorldLoot(it.type,it.subtype||null,posX+(Math.random()-.5)*55,posY+(Math.random()-.5)*55,it.count||1);backpackInventory[i]=null;}}
-            for(const [type,count,sub] of [['grenade',grenadesCount,null],['bandage',bandagesCount,null],['smoke_bomb',smokeBombsCount,null],['trap',trapsCount,selectedTrapType]])if(count>0)spawnWorldLoot(type,sub,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
-            grenadesCount=0;bandagesCount=0;smokeBombsCount=0;trapsCount=0;
+            for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
         }
@@ -801,7 +807,9 @@
             const smokeCanvas = document.getElementById('hcanvas-8');
             if (smokeBombsCount > 0) drawItemArtOnCanvas(smokeCanvas, 'smoke_bomb', null);
             else if (smokeCanvas) smokeCanvas.getContext('2d').clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
-            drawItemArtOnCanvas(document.getElementById('hcanvas-9'), 'trap', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-9'), 'trap', selectedTrapType);
+            const trapSelect=document.getElementById('trap-type-select');if(trapSelect)trapSelect.value=selectedTrapType;
+            updateTrapTotal();
         }
 
         function selectHotbarSlot(idx) {
@@ -1496,10 +1504,8 @@
                 smokeBombsCount--;
                 spawnWorldLoot('smoke_bomb', null, posX + 30, posY + 30, 1);
                 refreshHotbarUI();
-            } else if (activeHotbar === 9 && trapsCount > 0) {
-                trapsCount--;
+            } else if (activeHotbar === 9 && consumeTrap(selectedTrapType)) {
                 spawnWorldLoot('trap', selectedTrapType, posX + 30, posY + 30, 1);
-                refreshHotbarUI();
             }
         }
 
@@ -1529,9 +1535,10 @@
                 refreshHotbarUI();
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'trap') {
-                selectedTrapType = subtypeName;
-                trapsCount += (subtypeName === 'mine' ? 1 : 2);
-                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${subtypeName === 'mine' ? 1 : 2}). Next placed trap: ${selectedTrapType.toUpperCase()}`);
+                setSelectedTrapType(subtypeName);
+                const packCount = subtypeName === 'mine' ? 1 : 2;
+                addTraps(subtypeName, packCount);
+                showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${packCount}). Selected trap: ${selectedTrapType.toUpperCase()}`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
@@ -2105,8 +2112,15 @@
         });
 
         function refreshAmmoHud() {
-            const el=document.getElementById('ammo-num');
-            if(el){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;el.textContent=isReloading?'Reloading…':w?`${currentAmmo}/${maxAmmo}`:'—';}
+            const el=document.getElementById('ammo-num'),hint=document.getElementById('ammo-hint');
+            if(!el)return;
+            const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
+            if(w){el.textContent=isReloading?'Reloading…':`${currentAmmo}/${maxAmmo}`;if(hint)hint.textContent='[SPACE to Reload]';}
+            else if(activeHotbar===6){el.textContent=String(grenadesCount);if(hint)hint.textContent='Grenades';}
+            else if(activeHotbar===7){el.textContent=String(bandagesCount);if(hint)hint.textContent='Bandages';}
+            else if(activeHotbar===8){el.textContent=String(smokeBombsCount);if(hint)hint.textContent='Smoke bombs';}
+            else if(activeHotbar===9){updateTrapTotal();el.textContent=String(trapInventory[selectedTrapType]||0);if(hint)hint.textContent=selectedTrapType.toUpperCase()+' traps';}
+            else {el.textContent='—';if(hint)hint.textContent='Select an item';}
         }
         function updateAirdropHud() {
             const el = document.getElementById('airdrop-countdown');
@@ -2227,7 +2241,7 @@
                     } else if (item.type === 'bandage') {
                         bandagesCount += Number(item.value)||1; refreshHotbarUI();
                     } else if (item.type === 'trap') {
-                        trapsCount += Number(item.value)||1; if(item.subtype)selectedTrapType=item.subtype; refreshHotbarUI();
+                        addTraps(item.subtype || 'spike', Number(item.value)||1);
                     } else if (item.type === 'gun') {
                         const emptyIdx = weaponBarSlots.findIndex(w => w === null);
                         if (emptyIdx !== -1) {
@@ -2336,14 +2350,13 @@
                 setTimeout(() => { actionCdBuild = false; }, 300);
             }
             else if (activeHotbar === 9 && !actionCdBuild) {
-                if (trapsCount <= 0) { showNotificationBox('No traps remaining! Buy more in the Shop.'); return; }
-                trapsCount--;
+                if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
                 const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType };
                 activeTraps[tKey] = newTrap;
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_trap', key: tKey, trap: newTrap });
-                showNotificationBox(`🪤 Trap deployed! Remaining: ${trapsCount}`);
+                showNotificationBox(`🪤 ${selectedTrapType.toUpperCase()} deployed! Remaining: ${trapInventory[selectedTrapType]}`);
                 actionCdBuild = true;
                 setTimeout(() => { actionCdBuild = false; }, 300);
             }
