@@ -2896,7 +2896,7 @@
                     y: posY,
                     hp: currentHp,
                     coins: playerCoins,
-                    bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type})),
+                    bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})),
                     smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt}))
                 });
             }
