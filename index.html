@@ -810,6 +810,7 @@
             drawItemArtOnCanvas(document.getElementById('hcanvas-9'), 'trap', selectedTrapType);
             const trapSelect=document.getElementById('trap-type-select');if(trapSelect)trapSelect.value=selectedTrapType;
             updateTrapTotal();
+            refreshAmmoHud();
         }
 
         function selectHotbarSlot(idx) {
