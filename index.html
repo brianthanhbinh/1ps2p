@@ -526,6 +526,7 @@
         let bandagesCount = 2;
         let smokeBombsCount = 0;
         let activeSmokeClouds = [];
+        let hostRemoteSmokeClouds = [];
         let activeTraps = {};
         let trapsCount = 2;
         let selectedTrapType = 'spike';
@@ -1801,6 +1802,7 @@
                         remotePlayers[conn.peer].team = data.team;
                         remotePlayers[conn.peer].color = data.color;
                         remotePlayers[conn.peer].bullets = Array.isArray(data.bullets) ? data.bullets.slice(0, 120) : [];
+                        remotePlayers[conn.peer].smokeClouds = Array.isArray(data.smokeClouds) ? data.smokeClouds.slice(0, 30) : [];
                     }
                     broadcastStateToClients();
                 } else if (data.type === 'place_block') {
@@ -1868,6 +1870,7 @@
                             if (peerInstance && pid === peerInstance.id) {
                                 if (typeof data.players[pid].hp === 'number') currentHp = data.players[pid].hp;
                                 hostRemoteBullets = Array.isArray(data.players[pid].bullets) ? data.players[pid].bullets : [];
+                                hostRemoteSmokeClouds = Array.isArray(data.players[pid].smokeClouds) ? data.players[pid].smokeClouds : [];
                                 window.localBurnUntil = Number(data.players[pid].burningUntil) || 0;
                                 window.localBurnTick = Number(data.players[pid].nextBurnTick) || 0;
                             } else {
@@ -1908,7 +1911,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type})) }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2823,7 +2826,8 @@
                     y: posY,
                     hp: currentHp,
                     coins: playerCoins,
-                    bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type}))
+                    bullets: bulletsList.slice(0, 120).map(b => ({x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type})),
+                    smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt}))
                 });
             }
 
@@ -3077,17 +3081,28 @@
                 ctx.restore();
             }
 
-            activeSmokeClouds = activeSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
-            activeSmokeClouds.forEach(cloud => {
+            function drawSmokeCloud(cloud) {
+                if (!cloud || cloud.expiresAt <= Date.now()) return;
                 const fade = Math.min(1, (cloud.expiresAt - Date.now()) / 1200);
-                ctx.save(); ctx.globalAlpha = 0.48 * fade;
-                for (let i = 0; i < 7; i++) {
-                    const a = i * Math.PI * 2 / 7, d = i % 2 ? 25 : 16;
+                ctx.save(); ctx.globalAlpha = 0.62 * fade;
+                for (let i = 0; i < 10; i++) {
+                    const a = i * Math.PI * 2 / 10, d = i % 2 ? 42 : 25;
                     ctx.fillStyle = i % 2 ? '#737b82' : '#a0a6ab';
-                    ctx.beginPath(); ctx.arc(cloud.x + Math.cos(a) * d, cloud.y + Math.sin(a) * d, 23, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(cloud.x + Math.cos(a) * d, cloud.y + Math.sin(a) * d, 38, 0, Math.PI * 2); ctx.fill();
                 }
-                ctx.fillStyle = '#899198'; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, 28, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-            });
+                ctx.fillStyle = '#899198'; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, 45, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            }
+            activeSmokeClouds = activeSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
+            activeSmokeClouds.forEach(drawSmokeCloud);
+            hostRemoteSmokeClouds = hostRemoteSmokeClouds.filter(cloud => cloud.expiresAt > Date.now());
+            hostRemoteSmokeClouds.forEach(drawSmokeCloud);
+            for (const pid in remotePlayers) {
+                const rp = remotePlayers[pid];
+                if (rp && Array.isArray(rp.smokeClouds)) {
+                    rp.smokeClouds = rp.smokeClouds.filter(cloud => cloud.expiresAt > Date.now());
+                    rp.smokeClouds.forEach(drawSmokeCloud);
+                }
+            }
 
             activeGrenades.forEach(g => {
                 const grenadePng = assetRegistry['grenade'];
