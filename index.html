@@ -804,7 +804,9 @@
 
         function selectHotbarSlot(idx) {
             if (!Number.isInteger(idx) || idx < 0 || idx > 9) return;
+            saveSelectedAmmo();
             activeHotbar = idx;
+            syncSelectedAmmo();
             document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('selected'));
             const el = document.getElementById(`hslot-${idx}`);
             if (el) el.classList.add('selected');
@@ -1453,7 +1455,9 @@
                 const target = emptyHotbarIdx !== -1 ? emptyHotbarIdx : Math.max(0, activeHotbar - 3);
                 const oldGun = weaponBarSlots[target];
                 weaponBarSlots[target] = item.subtype;
+                if(ammoByWeapon[item.subtype]===undefined)ammoByWeapon[item.subtype]=getAmmoCapacity(item.subtype);
                 backpackInventory[idx] = oldGun ? { type: 'gun', subtype: oldGun } : null;
+                syncSelectedAmmo();
                 refreshHotbarUI();
                 renderBackpackGrid();
                 return;
@@ -1513,6 +1517,8 @@
                 } else {
                     weaponBarSlots[emptyIdx] = subtypeName;
                 }
+                if(ammoByWeapon[subtypeName]===undefined)ammoByWeapon[subtypeName]=getAmmoCapacity(subtypeName);
+                syncSelectedAmmo();
                 refreshHotbarUI();
             } else if (itemType === 'consumable') {
                 if (subtypeName === 'grenade') grenadesCount += 3;
@@ -1752,8 +1758,8 @@
                         Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 12 &&
                         (shooter.team === 'FFA' || shooter.team !== target.team);
                     if (validHit) {
-                        if (targetIsHost) currentHp = Math.max(0, currentHp - damage);
-                        else target.hp = Math.max(0, target.hp - damage);
+                        if (targetIsHost) { currentHp = Math.max(0, currentHp - damage); if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
+                        else { target.hp = Math.max(0, target.hp - damage); if(weapon==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;} }
                         let splashDamage = 0;
                         if (weapon === 'rocket') {
                             const splashRadius = 120;
@@ -2707,6 +2713,38 @@
                 }
             }
 
+            // Burning deals 5 HP once per second for up to five seconds.
+            // Fire spreads to nearby opponents on contact.
+            const nowBurn=Date.now();
+            const burnTick=target=>{
+                if(target&&target.burningUntil>nowBurn&&nowBurn>=(target.nextBurnTick||0)){
+                    target.hp=Math.max(0,target.hp-5);target.nextBurnTick=nowBurn+1000;
+                }
+            };
+            const ignite=target=>{
+                if(target&&(!target.burningUntil||target.burningUntil<nowBurn)){
+                    target.burningUntil=nowBurn+5000;target.nextBurnTick=nowBurn+1000;
+                }
+            };
+            if(window.localBurnUntil>nowBurn){
+                if(nowBurn>=(window.localBurnTick||0)){currentHp=Math.max(0,currentHp-5);window.localBurnTick=nowBurn+1000;}
+                for(const pid in remotePlayers){const p=remotePlayers[pid];if(p&&p.hp>0&&Math.hypot(posX-p.x,posY-p.y)<RADIUS_PLAYER*1.8&&(playerTeam==='FFA'||playerTeam!==p.team))ignite(p);}
+                if(isPractice)aiBots.forEach(bot=>{if(bot&&bot.hp>0&&Math.hypot(posX-bot.x,posY-bot.y)<RADIUS_PLAYER*1.8)bot.burningUntil=nowBurn+5000;});
+            }
+            if(isHosting){
+                for(const pid in remotePlayers){
+                    const p=remotePlayers[pid];if(!p||p.hp<=0)continue;burnTick(p);
+                    if(p.burningUntil>nowBurn){
+                        for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==pid&&other&&other.hp>0&&Math.hypot(p.x-other.x,p.y-other.y)<RADIUS_PLAYER*1.8&&(p.team==='FFA'||p.team!==other.team))ignite(other);}
+                        if(Math.hypot(p.x-posX,p.y-posY)<RADIUS_PLAYER*1.8&&(p.team==='FFA'||p.team!==playerTeam)) {window.localBurnUntil=nowBurn+5000;window.localBurnTick=nowBurn+1000;}
+                    }
+                }
+            }
+            if(isPractice)aiBots.forEach(bot=>{
+                if(!bot||bot.hp<=0)return;burnTick(bot);
+                if(bot.burningUntil>nowBurn&&Math.hypot(bot.x-posX,bot.y-posY)<RADIUS_PLAYER*1.8){window.localBurnUntil=nowBurn+5000;window.localBurnTick=nowBurn+1000;}
+                if(bot.burningUntil>nowBurn)aiBots.forEach(other=>{if(other!==bot&&other&&other.hp>0&&Math.hypot(bot.x-other.x,bot.y-other.y)<RADIUS_PLAYER*1.8)ignite(other);});
+            });
             if (isPractice) {
                 aiBots.forEach(bot => {
                     if (bot.isZombie && bot.hp <= 0) {
