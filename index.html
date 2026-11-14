@@ -924,7 +924,8 @@
         const assetKeysList = [
             'skin', 'avatar', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
             'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
-            'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate', 'smoke_bomb'
+            'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate', 'smoke_bomb',
+            'trap_laser', 'trap_shock', 'trap_spring'
         ];
 
         function initializeAssets() {
@@ -974,7 +975,24 @@
                 else if(subType==='ball'){const g=c.createRadialGradient(-5,-6,2,0,0,14);g.addColorStop(0,'#fff');g.addColorStop(.25,'#e9eef2');g.addColorStop(1,'#303943');c.fillStyle=g;c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();c.strokeStyle='#f5f7fa';c.lineWidth=1.5;c.stroke();c.fillStyle='#202a33';c.beginPath();c.arc(0,0,5,0,Math.PI*2);c.fill();c.strokeStyle='#fff';c.stroke();}
                 else {path([[-13,-10],[13,-10],[13,10],[-13,10]],wood);c.strokeStyle='#f3c995';c.lineWidth=1.4;for(let y=-6;y<=6;y+=6){c.beginPath();c.moveTo(-10,y);c.lineTo(10,y);c.stroke();}c.fillStyle='#684329';for(const [x,y] of [[-8,-7],[8,7]]){c.beginPath();c.arc(x,y,1.5,0,Math.PI*2);c.fill();}}
             } else if(itemType==='trap'){
-                if(subType==='spike'){
+                if (['laser', 'shock', 'spring'].includes(subType)) {
+                    const trapTexture = assetRegistry['trap_' + subType];
+                    if (trapTexture && trapTexture.complete && trapTexture.naturalWidth > 0) {
+                        c.drawImage(trapTexture, -16, -16, 32, 32);
+                    } else if (subType === 'laser') {
+                        path([[-14,-7],[9,-7],[14,-2],[9,3],[-14,3]],'#176b80','#baf7ff',2);
+                        c.fillStyle='#6df3ff'; c.beginPath(); c.arc(11,-2,4,0,Math.PI*2); c.fill();
+                        c.strokeStyle='#d8ffff'; c.lineWidth=2; c.beginPath(); c.moveTo(13,-2); c.lineTo(17,-2); c.stroke();
+                    } else if (subType === 'shock') {
+                        c.fillStyle='#3c4650'; c.beginPath(); c.arc(0,0,13,0,Math.PI*2); c.fill();
+                        c.strokeStyle='#ffd54f'; c.lineWidth=2.5; c.stroke();
+                        path([[-1,-12],[-8,1],[-1,1],[-5,12],[9,-4],[2,-4]],'#fff18a','#fff',1);
+                    } else {
+                        c.strokeStyle='#73e5a0'; c.lineWidth=5; c.beginPath();
+                        c.moveTo(0,12); c.lineTo(-9,7); c.lineTo(9,2); c.lineTo(-9,-3); c.lineTo(9,-8); c.lineTo(0,-13); c.stroke();
+                        c.fillStyle='#38545a'; c.fillRect(-12,11,24,5);
+                    }
+                } else if(subType==='spike'){
                     path([[-13,5],[-9,-9],[-5,5],[-1,-11],[3,5],[8,-8],[13,5]],'#687780','#17232b',1.5);
                     c.fillStyle='#d84d43';c.fillRect(-13,7,26,3);
                 } else if(subType==='bear'){
