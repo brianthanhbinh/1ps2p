@@ -3067,7 +3067,7 @@
                 renderFriendsList();
             });
             conn.on('data', data => {
-                if (!data || data.type !== 'friend_presence') return;
+                if (!data) return;
                 if (data.type === 'friend_dm') {
                     if (friends.includes(id)) {
                         storeFriendMessage(id, { from:id, username:String(data.username || 'Friend').slice(0,24), text:String(data.message || '').slice(0,120), at:Date.now() });
