@@ -3909,6 +3909,7 @@
         }
 
         function updatePushableBalls() {
+            const balls = [];
             for (const key in worldBlocks) {
                 const ball = worldBlocks[key];
                 if (!ball || ball.type !== 'ball') continue;
@@ -3956,7 +3957,47 @@
                 if (ball.y !== nextY) ball.vy *= -0.55;
                 if (Math.abs(ball.vx) < 0.025) ball.vx = 0;
                 if (Math.abs(ball.vy) < 0.025) ball.vy = 0;
+                balls.push({ key, ball });
             }
+
+            // Resolve ball-to-ball collisions as equal-mass rolling spheres.
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    const a = balls[i].ball, b = balls[j].ball;
+                    let dx = b.x - a.x, dy = b.y - a.y;
+                    let distance = Math.hypot(dx, dy);
+                    const minDistance = 32;
+                    if (distance >= minDistance) continue;
+                    if (distance < 0.001) { dx = 1; dy = 0; distance = 1; }
+                    const nx = dx / distance, ny = dy / distance;
+                    const overlap = minDistance - distance;
+                    a.x -= nx * overlap * 0.5;
+                    a.y -= ny * overlap * 0.5;
+                    b.x += nx * overlap * 0.5;
+                    b.y += ny * overlap * 0.5;
+                    const relativeSpeed = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+                    if (relativeSpeed < 0) {
+                        const impulse = -(1 + 0.78) * relativeSpeed * 0.5;
+                        a.vx -= impulse * nx;
+                        a.vy -= impulse * ny;
+                        b.vx += impulse * nx;
+                        b.vy += impulse * ny;
+                    }
+                }
+            }
+
+            // Move each ball's map key with it. Its old tile is now free for building.
+            const nextBlocks = { ...worldBlocks };
+            for (const entry of balls) delete nextBlocks[entry.key];
+            for (const entry of balls) {
+                const ball = entry.ball;
+                const gx = Math.floor(ball.x / 40), gy = Math.floor(ball.y / 40);
+                let nextKey = gx + ',' + gy;
+                let suffix = 1;
+                while (nextBlocks[nextKey]) nextKey = gx + ',' + gy + ',ball' + suffix++;
+                nextBlocks[nextKey] = ball;
+            }
+            worldBlocks = nextBlocks;
         }
 
         function updateGameLogic() {
