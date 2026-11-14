@@ -3644,6 +3644,7 @@
                         if (Object.prototype.hasOwnProperty.call(blockInventory, item.subtype)) {
                             blockInventory[item.subtype] = (blockInventory[item.subtype] || 0) + (Number(item.value) || 1);
                             selectedBuildBlock = item.subtype;
+                            refreshHotbarUI();
                             showNotificationBox(`Picked up ${item.subtype} block x${Number(item.value)||1}!`);
                         }
                     } else if (item.type === 'gun') {
