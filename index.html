@@ -1984,7 +1984,8 @@
             // Contact with a trap applies its effect to the boss too.
             for (const key in activeTraps) {
                 const trap = activeTraps[key];
-                if (!trap || trap.team === 'Raiders' || Math.hypot(bossEntity.x-trap.x,bossEntity.y-trap.y) > bossEntity.radius + 18) continue;
+                // Boss is hostile to the Raiders, so Raiders' own traps must hurt it.
+                if (!trap || Math.hypot(bossEntity.x-trap.x,bossEntity.y-trap.y) > bossEntity.radius + 18) continue;
                 if (trap.type === 'mine') {
                     const d = Math.hypot(bossEntity.x-trap.x,bossEntity.y-trap.y);
                     const radius = 125, maxDamage = 72;
@@ -2103,7 +2104,8 @@
                     }
                     for (const key in activeTraps) {
                         const trap = activeTraps[key];
-                        if (!trap || trap.team === 'Raiders') continue;
+                        // Every placed trap is hostile to the boss, including Raiders' traps.
+                        if (!trap) continue;
                         const d = Math.hypot(nx-trap.x,ny-trap.y);
                         const safe = trap.type === 'mine' ? 165 : 75;
                         if (d < safe) dodgePenalty += (safe-d) * (trap.type === 'mine' ? 12 : 5);
