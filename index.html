@@ -1861,7 +1861,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && trap.type === 'mine' && triggerPlayer && trap.team !== triggerPlayer.team && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<34) {
+                    if (trap && trap.type === 'mine' && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<34) {
                         const bx=trap.x,by=trap.y,radius=125,maxDamage=72;
                         delete activeTraps[data.key];
                         const applyBlast=p=>{if(!p||p.hp<=0||(trap.team!=='FFA'&&p.team===trap.team))return 0;const d=Math.hypot(p.x-bx,p.y-by);if(d>=radius)return 0;const amount=Math.max(1,Math.round(maxDamage*(1-d/radius)));p.hp=Math.max(0,p.hp-amount);return amount;};
@@ -2732,7 +2732,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || tr.team === playerTeam || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending) continue;
+                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending) continue;
                 if (tr.type === 'mine') {
                     if (isHosting) {
                         const radius=125,maxDamage=72;
