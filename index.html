@@ -2997,7 +2997,9 @@
             if (!conn || !conn.peer) return;
             const id = String(conn.peer).toUpperCase();
             friendConnections[id] = conn;
+            conn.__friendConnecting = Date.now();
             conn.on('open', () => {
+                conn.__friendConnecting = 0;
                 if (conn.open) conn.send(currentFriendPresence());
                 friendPresence[id] = { ...(friendPresence[id] || {}), online: true, lastSeen: Date.now() };
                 renderFriendsList();
@@ -3033,6 +3035,8 @@
             for (const id of friends) {
                 let conn = friendConnections[id];
                 const lastSeen = friendPresence[id] && friendPresence[id].lastSeen || 0;
+                const connecting = conn && conn.__friendConnecting && Date.now() - conn.__friendConnecting < 12000;
+                if (conn && !conn.open && connecting) continue;
                 if (conn && conn.open && Date.now() - lastSeen < 15000) {
                     try { conn.send(payload); } catch (_) {}
                 } else {
@@ -3070,7 +3074,7 @@
                 name.textContent = info.username || id;
                 const state = document.createElement('span');
                 state.className = online ? 'friend-online' : 'friend-offline';
-                state.textContent = online ? (info.inGame ? ' · In game' : ' · Online') : ' · Offline';
+                state.textContent = online ? (info.inGame ? ' · In game · ' + (info.gameMode || 'Game') + ' · Room ' + info.roomCode : ' · Online') : ' · Offline';
                 label.append(name, state);
                 row.appendChild(label);
                 if (online && info.inGame && info.roomCode) {
@@ -3103,6 +3107,7 @@
                 return;
             }
             document.getElementById('input-room').value = info.roomCode;
+            document.getElementById('input-username').value = myUsername || 'Combatant';
             if (info.gameMode) hostGameMode = info.gameMode;
             switchChatTab('all');
             initJoinRoom();
