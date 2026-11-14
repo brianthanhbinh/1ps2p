@@ -1985,6 +1985,10 @@
                 bossEntity.nextAttackAt = now + attackDelay;
                 showNotificationBox('The Boss hit a Raider! -15 HP');
             }
+            if (now >= (bossEntity.nextBroadcastAt || 0)) {
+                bossEntity.nextBroadcastAt = now + 100;
+                broadcastStateToClients();
+            }
         }
 
         function damagePracticeBot(bot, damage) {
@@ -2904,12 +2908,12 @@
                 currentStamina = 100;
             }
 
+            if (activeMode === 'bossfight' && isHosting) updateBossFightAI();
             if (currentHp <= 0) {
                 dropAllPlayerLoot();
                 document.getElementById('death-modal').style.display = 'flex';
                 return;
             }
-            if (activeMode === 'bossfight' && isHosting) updateBossFightAI();
 
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
