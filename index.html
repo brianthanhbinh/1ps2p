@@ -278,7 +278,7 @@
                 <div class="shop-item-card"><span>AK-47</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('gun', 'ak', 260)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">450 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 450)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 900)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Minigun</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('gun', 'minigun', 600)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
@@ -1947,7 +1947,7 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -2738,6 +2738,7 @@
                     if(p&&Number.isFinite(ex)&&Number.isFinite(ey)&&Math.hypot(p.x-ex,p.y-ey)<900){
                         const radius=Math.min(140,Math.max(40,Number(data.radius)||100)),damage=Math.min(120,Math.max(1,Number(data.damage)||50));
                         const apply=t=>{if(!t||t.hp<=0||(p.team!=='FFA'&&t.team===p.team))return;const d=Math.hypot(t.x-ex,t.y-ey);if(d<radius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(damage*(1-d/radius))));};
+                        damageBlocksInRocketBlast(ex,ey);
                         const dSelf=Math.hypot(posX-ex,posY-ey);if(dSelf<radius&&(p.team==='FFA'||p.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(damage*(1-dSelf/radius))));
                         for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);
                         if (bossEntity && bossEntity.hp > 0) {
@@ -3569,6 +3570,26 @@
             if (!nextAirdropAt) nextAirdropAt = Date.now() + 30000;
             el.textContent = Math.max(0, Math.ceil((nextAirdropAt - Date.now()) / 1000)) + 's';
         }
+        // Rocket splash also damages nearby destructible world blocks, not just the first block hit.
+        function damageBlocksInRocketBlast(x, y, directBlockKey = null) {
+            const radius = 120;
+            for (const key of Object.keys(worldBlocks)) {
+                if (key === directBlockKey) continue;
+                const parts = key.split(',');
+                const bx = Number(parts[0]) * 40 + 20;
+                const by = Number(parts[1]) * 40 + 20;
+                const distance = Math.hypot(bx - x, by - y);
+                if (distance >= radius) continue;
+                const block = worldBlocks[key];
+                if (!block) continue;
+                block.hp -= Math.max(1, Math.round(90 * (1 - distance / radius)));
+                if (block.hp <= 0) {
+                    delete worldBlocks[key];
+                    dropBrokenBlock(block, bx, by);
+                }
+            }
+        }
+
         function reloadWeapon() {
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
             if(!w||isReloading)return;
@@ -4428,6 +4449,7 @@
                         if (worldBlocks[k].hp <= 0) { const broken = worldBlocks[k]; delete worldBlocks[k]; dropBrokenBlock(broken, bx + 20, by + 20); }
 
                         if (b.type === 'rocket') {
+                            damageBlocksInRocketBlast(b.x, b.y, k);
                             floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
                             if (isPractice) aiBots.forEach(bot => { if (bot && bot.hp > 0 && (b.team === 'FFA' || b.team !== bot.team)) { const d=Math.hypot(bot.x-b.x,bot.y-b.y); if(d<120) damagePracticeBot(bot,Math.round(65*(1-d/120))); } });
                             if (isHosting) {
@@ -4447,6 +4469,7 @@
                 }
 
                 if (bossEntity && bossEntity.hp > 0 && Math.hypot(b.x - bossEntity.x, b.y - bossEntity.y) < bossEntity.radius + 8) {
+                    if (b.type === 'rocket') { damageBlocksInRocketBlast(b.x, b.y); floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true }); }
                     if (isHosting) damageRaidBoss((({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 })[b.type] || 20) * (Number(b.damageMultiplier) || 1));
                     else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'hit_request', targetId: 'boss', hitX: b.x, hitY: b.y, weapon: b.type });
                     showNotificationBox('Hit THE BOSS!');
@@ -4463,6 +4486,7 @@
                                 if (b.type === 'rocket') {
                                     hitDmg = 65;
                                     floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
+                                    damageBlocksInRocketBlast(b.x, b.y);
                                     aiBots.forEach(other => { if (other && other !== bot && other.hp > 0) { const d=Math.hypot(other.x-b.x,other.y-b.y); if(d<120) damagePracticeBot(other,Math.round(45*(1-d/120))); } });
                                 }
                                 if (b.type === 'laser') hitDmg = 40;
@@ -4496,6 +4520,7 @@
                             if (b.type === 'rocket') {
                                 hitDmg = 65;
                                 floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
+                                damageBlocksInRocketBlast(b.x, b.y);
                                 if(isHosting){const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-getVehicleAdjustedDamage(Math.round(45*(1-dSelf/120))));for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==pid&&other&&other.hp>0&&(b.team==='FFA'||b.team!==other.team)){const d=Math.hypot(other.x-b.x,other.y-b.y);if(d<120)other.hp=Math.max(0,other.hp-Math.round(45*(1-d/120)));}}}
                             }
                             if (b.type === 'laser') hitDmg = 40;
