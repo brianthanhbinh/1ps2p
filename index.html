@@ -741,7 +741,7 @@
             const tx = Math.max(24, Math.min(MAP_SIZE - 24, targetX + Math.cos(angle) * lead));
             const ty = Math.max(24, Math.min(MAP_SIZE - 24, targetY + Math.sin(angle) * lead));
             if (Math.hypot(tx - bot.x, ty - bot.y) > 42) {
-                activeTraps['bot-trap-' + bot.id + '-' + now] = { x: tx, y: ty, team: bot.team, type: trapType, hp: 80, maxHp: 80, botPlaced: true };
+                activeTraps['bot-trap-' + bot.id + '-' + now] = { x: tx, y: ty, team: bot.team, type: trapType, hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: 1800, botPlaced: true };
                 bot.trapStock[trapType]--;
                 bot.nextTrapAt = now + 6500;
             }
@@ -1847,7 +1847,10 @@
 
         function buyStoreItem(itemType, subtypeName, price) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            if (activeMode !== 'creative' && playerCoins < price) {
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240}};
+            const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
+            if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
+            if (activeMode !== 'creative' && playerCoins < expectedPrice) {
                 showNotificationBox('Insufficient coins!');
                 return;
             }
@@ -1907,7 +1910,7 @@
                 showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
             }
             if (activeMode !== 'creative') {
-                playerCoins -= price;
+                playerCoins -= expectedPrice;
                 document.getElementById('coin-num').innerText = playerCoins;
             }
         }
@@ -2588,9 +2591,11 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && trap.type === 'mine' && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<34) {
+                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
+                        trap.nextReadyAt = Date.now() + (trap.cooldownMs || 1800);
+                        let slowUntil = 0;
+                        if(trap.type === 'mine') {
                         const bx=trap.x,by=trap.y,radius=125,maxDamage=72;
-                        delete activeTraps[data.key];
                         const applyBlast=p=>{if(!p||p.hp<=0||(trap.team!=='FFA'&&p.team===trap.team))return 0;const d=Math.hypot(p.x-bx,p.y-by);if(d>=radius)return 0;const amount=Math.max(1,Math.round(maxDamage*(1-d/radius)));p.hp=Math.max(0,p.hp-amount);return amount;};
                         const localDamage=applyBlast({x:posX,y:posY,hp:currentHp,team:playerTeam});
                         if(localDamage)currentHp=Math.max(0,currentHp-localDamage);
@@ -2599,8 +2604,11 @@
                             const d = Math.hypot(bossEntity.x-bx,bossEntity.y-by);
                             if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
                         }
-                        conn.send({type:'trap_damage',hp:triggerPlayer.hp});
                         floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
+                        } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
+                        else if(trap.type==='bounce'||trap.type==='spring') { const a=Math.atan2(triggerPlayer.y-trap.y,triggerPlayer.x-trap.x),boost=trap.type==='spring'?105:55;triggerPlayer.x+=Math.cos(a)*boost;triggerPlayer.y+=Math.sin(a)*boost; }
+                        else triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
+                        conn.send({type:'trap_damage',hp:triggerPlayer.hp,x:triggerPlayer.x,y:triggerPlayer.y,slowedUntil:slowUntil});
                         broadcastStateToClients();
                     }
                 } else if (data.type === 'explosion_request') {
@@ -2761,6 +2769,7 @@
                     document.getElementById('net-status').innerText = 'Bossfight expired. Returned to lobby.';
                 } else if (data.type === 'trap_damage') {
                     if (typeof data.hp === 'number') currentHp = data.hp;
+                    if(Number.isFinite(data.x))posX=data.x;if(Number.isFinite(data.y))posY=data.y;if(data.slowedUntil)playerSlowUntil=Math.max(playerSlowUntil||0,data.slowedUntil);
                 } else if (data.type === 'hit_confirm') {
                     showNotificationBox(`Hit confirmed! -${data.damage} HP`);
                 } else if (data.type === 'crate_reward') {
@@ -3692,7 +3701,7 @@
             else if (activeHotbar === 9 && !actionCdBuild) {
                 if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
                 const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, hp: 80, maxHp: 80 };
+                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: 1800 };
                 const uniqueTrapKey=tKey+':'+Date.now()+':'+Math.random().toString(36).slice(2,6);
                 activeTraps[uniqueTrapKey] = newTrap;
                 if (isHosting) broadcastStateToClients();
@@ -3924,7 +3933,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending) continue;
+                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'mine') {
                     if (isHosting) {
                         const radius=125,maxDamage=72;
@@ -3937,7 +3946,7 @@
                             const d = Math.hypot(bossEntity.x-tr.x,bossEntity.y-tr.y);
                             if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
                         }
-                        delete activeTraps[tk];
+                        tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);
                         floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
                         showNotificationBox('💥 Mine detonated! Ring blast!');
                         broadcastStateToClients();
@@ -3947,11 +3956,14 @@
                         floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:125,alpha:1,isShockwave:true});
                         showNotificationBox('💥 Mine detonated!');
                     }
+                } else if(!isHosting && hostConnection && hostConnection.open) {
+                    tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});
                 } else {
+                    tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);
                     if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
                     else if(tr.type==='bounce'||tr.type==='spring'){const a=Math.atan2(posY-tr.y,posX-tr.x),boost=tr.type==='spring'?105:55;posX+=Math.cos(a)*boost;posY+=Math.sin(a)*boost;showNotificationBox(tr.type==='spring'?'Spring launcher!':'Bounce trap!');}
                     else{const dmg=tr.type==='laser'?36:tr.type==='bear'?28:20;currentHp=Math.max(0,currentHp-dmg);showNotificationBox(tr.type==='laser'?'🔴 Laser tripwire triggered!':`Triggered ${String(tr.type||'spike').toUpperCase()} trap!`);}
-                    delete activeTraps[tk];if(isHosting)broadcastStateToClients();
+                    if(isHosting)broadcastStateToClients();
                 }
             }
 
@@ -4245,10 +4257,10 @@
                             // Enemy traps trigger on contact and can eliminate a zombie.
                             for (const trapKey in activeTraps) {
                                 const trap = activeTraps[trapKey];
-                                if (!trap || Math.hypot(bot.x - trap.x, bot.y - trap.y) > 23) continue;
+                                if (!trap || Math.hypot(bot.x - trap.x, bot.y - trap.y) > 23 || Date.now() < (trap.nextReadyAt || 0)) continue;
                                 bot.hp -= trap.type === 'mine' ? 80 : trap.type === 'bear' ? 65 : 60;
                                 if (trap.type === 'glue') bot.frozenUntil = Date.now() + 1800;
-                                delete activeTraps[trapKey];
+                                trap.nextReadyAt=Date.now()+(trap.cooldownMs||1800);
                                 if (bot.hp <= 0) {
                                     bot.hp = 0;
                                     bot.respawnAt = Date.now() + 5000;
@@ -4348,7 +4360,7 @@
             if (isPractice) {
                 for (const trapKey of Object.keys(activeTraps)) {
                     const trap = activeTraps[trapKey];
-                    if (!trap || !trap.botPlaced || (trap.team !== 'FFA' && trap.team === playerTeam)) continue;
+                    if (!trap || !trap.botPlaced || (trap.team !== 'FFA' && trap.team === playerTeam) || Date.now() < (trap.nextReadyAt || 0)) continue;
                     if (Math.hypot(posX - trap.x, posY - trap.y) > 23) continue;
                     if (trap.type === 'mine') {
                         const radius = 125, distance = Math.hypot(posX - trap.x, posY - trap.y);
@@ -4358,7 +4370,7 @@
                         currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(trap.type === 'bear' ? 18 : 8));
                         playerSlowUntil = Math.max(playerSlowUntil || 0, Date.now() + (trap.type === 'glue' ? 1800 : 900));
                     }
-                    delete activeTraps[trapKey];
+                    trap.nextReadyAt=Date.now()+(trap.cooldownMs||1800);
                 }
             }
 
@@ -4566,12 +4578,14 @@
                 }else if(tr.type==='laser'){const pulse=.65+.35*Math.sin(Date.now()/110);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff1744';ctx.lineWidth=3;ctx.shadowColor='#ff1744';ctx.shadowBlur=16;ctx.beginPath();ctx.moveTo(tr.x-38,tr.y);ctx.lineTo(tr.x+38,tr.y);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=pulse;ctx.fillStyle='#ff8a80';ctx.fillRect(tr.x-5,tr.y-5,10,10);}else if(tr.type==='shock'){ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#40c4ff';ctx.lineWidth=3;ctx.shadowColor='#40c4ff';ctx.shadowBlur=12;for(let z=0;z<4;z++){const a=Date.now()/250+z*Math.PI/2;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*5,tr.y+Math.sin(a)*5);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}ctx.shadowBlur=0;}else if(tr.type==='spring'){ctx.fillStyle='#37474f';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a5d6a7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tr.x,tr.y,10,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-9,tr.y+7);ctx.lineTo(tr.x-4,tr.y-1);ctx.lineTo(tr.x+1,tr.y+7);ctx.lineTo(tr.x+6,tr.y-1);ctx.lineTo(tr.x+10,tr.y+7);ctx.stroke();}else if(tr.type==='bounce'){
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
-                if((tr.hp||80)<(tr.maxHp||80)){ctx.fillStyle='#111';ctx.fillRect(tr.x-17,tr.y-23,34,4);ctx.fillStyle='#ffb74d';ctx.fillRect(tr.x-17,tr.y-23,34*Math.max(0,(tr.hp||0))/(tr.maxHp||80),4);}
+                if((tr.hp||120)<(tr.maxHp||120)){ctx.fillStyle='#111';ctx.fillRect(tr.x-17,tr.y-23,34,4);ctx.fillStyle='#ffb74d';ctx.fillRect(tr.x-17,tr.y-23,34*Math.max(0,(tr.hp||0))/(tr.maxHp||120),4);}
+                if(tr.nextReadyAt>Date.now()){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
                 ctx.restore();
             }
 
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
+                if (item.type === 'trap') { const colors={spike:'#ef5350',bear:'#b0bec5',mine:'#ff7043',glue:'#80cbc4',bounce:'#26c6da',laser:'#ff1744',shock:'#40c4ff',spring:'#a5d6a7'};const color=colors[item.subtype]||'#90a4ae';ctx.save();ctx.translate(item.x,item.y);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(({spike:'▲',bear:'⌘',mine:'✹',glue:'●',bounce:'⌒',laser:'⚡',shock:'ϟ',spring:'↟'})[item.subtype]||'T',0,1);ctx.restore();continue; }
                 if (item.type === 'block') {
                     const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0' };
                     ctx.save(); ctx.fillStyle = colors[item.subtype] || '#a8794f'; ctx.strokeStyle = '#eef7ff'; ctx.lineWidth = 2;
