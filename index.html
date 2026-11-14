@@ -2776,7 +2776,9 @@
                         Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 48 &&
                         (shooter.team === 'FFA' || shooter.team !== target.team);
                     if (validHit) {
-                        if (targetIsHost) { currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage)); if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
+                        if (weapon === 'gravity') { target.slowUntil = Date.now() + 2600; if (targetIsHost) window.localSlowUntil = Date.now() + 2600; }
+                        if (weapon === 'sonic' && !targetIsHost) { const pushAngle = Math.atan2(target.y-shooter.y,target.x-shooter.x); target.x += Math.cos(pushAngle)*42; target.y += Math.sin(pushAngle)*42; }
+                        if (targetIsHost) { currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage)); if (weapon === 'gravity') window.localSlowUntil = Date.now() + 2600; if (weapon === 'sonic') { const pushAngle = Math.atan2(posY-shooter.y,posX-shooter.x); playerMomentumX += Math.cos(pushAngle)*8; playerMomentumY += Math.sin(pushAngle)*8; } if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
                         else { target.hp = Math.max(0, target.hp - damage); if(weapon==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;} }
                         let splashDamage = 0;
                         if (weapon === 'rocket') {
@@ -4227,7 +4229,7 @@
                 }
             }
 
-            let moveSpeed = Date.now() < playerSlowUntil ? 1.8 : 3.8;
+            let moveSpeed = Date.now() < Math.max(playerSlowUntil, window.localSlowUntil || 0) ? 1.8 : 3.8;
             let sprintMultiplier = 1.0;
             const hasMovementInput = !!(
                 keyboardInput['KeyW'] || keyboardInput['ArrowUp'] ||
@@ -4528,6 +4530,14 @@
                     const by = parseInt(parts[1]) * 40;
 
                     if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
+                        if (b.type === 'ricochet' && (b.ricochets || 0) > 0) {
+                            const edgeX = Math.min(Math.abs(b.x-bx),Math.abs(bx+40-b.x));
+                            const edgeY = Math.min(Math.abs(b.y-by),Math.abs(by+40-b.y));
+                            if (edgeX < edgeY) b.vx *= -1; else b.vy *= -1;
+                            b.ricochets--; b.x += b.vx * 2; b.y += b.vy * 2;
+                            floatingParticles.push({x:b.x,y:b.y,radius:4,alpha:.8,smoke:true});
+                            hitObs = true; break;
+                        }
                         let dmg = 25;
                         if (b.type === 'sniper') dmg = 70;
                         if (b.type === 'rocket') dmg = 90;
