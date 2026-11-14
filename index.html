@@ -908,8 +908,10 @@
                 path([[-13,-7],[-10,-12],[-4,-14],[3,-13],[11,-10],[14,-5],[10,-3],[5,-7],[0,-8],[-7,-5],[-11,-3]],metal);
                 c.strokeStyle='#f4fbff';c.lineWidth=1.2;c.beginPath();c.moveTo(-8,-9);c.quadraticCurveTo(0,-15,9,-9);c.stroke();
             } else if(itemType==='block'){
-                path([[-13,-6],[0,-13],[13,-6],[0,1]],'#d5a36d');path([[-13,-6],[0,1],[0,14],[-13,7]],'#a66c3f');path([[0,1],[13,-6],[13,7],[0,14]],'#75472e');
-                c.strokeStyle='rgba(255,235,205,.7)';c.lineWidth=1;c.beginPath();c.moveTo(-9,-5);c.lineTo(0,0);c.lineTo(9,-5);c.stroke();
+                if(subType==='ice'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#7bdcf2');path([[-13,-6],[0,1],[0,14],[-13,7]],'#367f9e');path([[0,1],[13,-6],[13,7],[0,14]],'#245b78');c.strokeStyle='#e2fbff';c.lineWidth=1.5;c.beginPath();c.moveTo(-8,-5);c.lineTo(0,0);c.lineTo(8,-5);c.stroke();}
+                else if(subType==='crystal'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#c79cff');path([[-13,-6],[0,1],[0,14],[-13,7]],'#7951a8');path([[0,1],[13,-6],[13,7],[0,14]],'#503777');c.strokeStyle='#f3dcff';c.beginPath();c.moveTo(0,-12);c.lineTo(0,13);c.stroke();}
+                else if(subType==='bunker'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#8998a4');path([[-13,-6],[0,1],[0,14],[-13,7]],'#53616c');path([[0,1],[13,-6],[13,7],[0,14]],'#34414b');c.strokeStyle='#dce5eb';c.lineWidth=2;c.strokeRect(-7,-5,14,13);}
+                else {path([[-13,-6],[0,-13],[13,-6],[0,1]],'#d5a36d');path([[-13,-6],[0,1],[0,14],[-13,7]],'#a66c3f');path([[0,1],[13,-6],[13,7],[0,14]],'#75472e');c.strokeStyle='rgba(255,235,205,.7)';c.lineWidth=1;c.beginPath();c.moveTo(-9,-5);c.lineTo(0,0);c.lineTo(9,-5);c.stroke();}
             } else if(itemType==='trap'){
                 if(subType==='spike'){
                     path([[-13,5],[-9,-9],[-5,5],[-1,-11],[3,5],[8,-8],[13,5]],'#687780','#17232b',1.5);
@@ -1359,7 +1361,7 @@
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
             trapInventory.spike = 2;
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0 };
             selectedBuildBlock = 'wood';
             updateTrapTotal();
             activeHotbar = 0;
