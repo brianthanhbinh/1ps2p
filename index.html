@@ -192,7 +192,12 @@
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
         #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
-    </style>
+    /* Force hotbar visible and positioned */
+#hotbar-dock { display:flex !important; }
+
+/* Ensure yellow team button color */
+.btn-team-yellow { background:#fbc02d !important; color:#000 !important; }
+</style>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -2920,7 +2925,13 @@
                                     floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true });
                                     aiBots.forEach(other => { if (other && other !== bot && other.hp > 0 && Math.hypot(other.x - b.x, other.y - b.y) < 58) damagePracticeBot(other, 18); });
                                 }
-                                if (b.type === 'freeze') { hitDmg = 22; bot.frozenUntil = Date.now() + 1800; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true }); }
+                                if (b.type === 'freeze') {
+    hitDmg = 22;
+    // Freeze both AI bots and remote players for 3 seconds
+    bot.frozenUntil = Date.now() + 3000;
+    rp.frozenUntil = Date.now() + 3000;
+    floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true });
+}
                                 if (b.type === 'burst') hitDmg = 30;
                                 if (b.type === 'flame') { hitDmg = 18; bot.burningUntil=Date.now()+5000; bot.nextBurnTick=Date.now()+1000; }
                                 damagePracticeBot(bot, hitDmg);
