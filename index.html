@@ -96,10 +96,10 @@
 
         #self-destruct-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(229,57,53,0.85); color: #fff; padding: 6px 18px; border-radius: 20px; border: 1px solid #ff5252; font-size: 13px; font-weight: bold; display: none; z-index: 25; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
 
-        #tip-banner { position: absolute; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; z-index: 25; }
+        #tip-banner { position: fixed; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: #ccc; padding: 6px 14px; border-radius: 6px; font-size: 11px; pointer-events: none; text-align: center; display: none; z-index: 25; white-space: nowrap; max-width: 95vw; }
 
         /* Hotbar with Unique Canvases for Icons */
-        #hotbar-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; background: rgba(0,0,0,0.82); padding: 9px; border-radius: 12px; border: 1px solid #555; pointer-events: auto; z-index: 30; }
+        #hotbar-dock { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: none; flex-direction: row; align-items: center; justify-content: center; gap: 6px; background: rgba(14,18,26,0.94); padding: 8px 10px; border-radius: 12px; border: 1px solid #555; box-shadow: 0 8px 28px rgba(0,0,0,0.85); pointer-events: auto; z-index: 100; max-width: 98vw; box-sizing: border-box; }
         #mobile-controls { display:none; position:absolute; inset:0; z-index:45; pointer-events:none; touch-action:none; }
         #move-stick { position:absolute; left:max(18px,env(safe-area-inset-left)); bottom:calc(22px + env(safe-area-inset-bottom)); width:138px; height:138px; border:2px solid rgba(255,255,255,.48); border-radius:50%; background:rgba(8,15,20,.36); pointer-events:auto; touch-action:none; }
         #move-knob { position:absolute; left:42px; top:42px; width:50px; height:50px; border-radius:50%; background:rgba(230,240,245,.65); border:2px solid #fff; box-shadow:0 2px 10px #0008; }
@@ -119,7 +119,7 @@
         @media (hover:none) and (pointer:coarse) {
             #mobile-controls.mobile-enabled { display:block; }
             /* Keep the hotbar in its own clear strip; controls never cover its slots. */
-            #hotbar-dock { position:fixed !important; z-index:9999 !important; left:50% !important; bottom:calc(5px + env(safe-area-inset-bottom)) !important; width:max-content; max-width:98vw; gap:2px; padding:4px; transform:translateX(-50%) !important; overflow-x:auto; display:flex; pointer-events:auto !important; isolation:isolate; }
+            #hotbar-dock { position:fixed !important; z-index:9999 !important; left:50% !important; bottom:calc(6px + env(safe-area-inset-bottom)) !important; width:max-content; max-width:98vw; gap:2px; padding:4px; transform:translateX(-50%) !important; pointer-events:auto !important; }
             #hotbar-dock .hotbar-slot { pointer-events:auto !important; touch-action:manipulation !important; position:relative; z-index:10000; }
             .hotbar-slot { flex:0 0 43px; width:43px; height:43px; border-width:1px; border-radius:6px; }
             .hotbar-canvas { width:29px; height:29px; margin-top:5px; }
@@ -401,13 +401,13 @@
         <div id="hotbar-dock">
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button></div></div></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button></div></div></div>
             <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
+            <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><small id="grenade-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
+            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
+            <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><small id="smoke-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button></div></div>
         </div>
         <div id="mobile-controls" aria-label="Mobile game controls">
@@ -858,11 +858,22 @@
                 }
             }
 
+            const blockSlotCount = document.getElementById('block-slot-count');
+            if (blockSlotCount) blockSlotCount.textContent = selectedBuildBlock === 'wood' ? '∞' : (blockInventory[selectedBuildBlock] || 0);
+
             drawItemArtOnCanvas(document.getElementById('hcanvas-6'), 'grenade', null);
+            const grenadeCountEl = document.getElementById('grenade-slot-count');
+            if (grenadeCountEl) grenadeCountEl.textContent = grenadesCount;
+
             drawItemArtOnCanvas(document.getElementById('hcanvas-7'), 'bandage', null);
+            const bandageCountEl = document.getElementById('bandage-slot-count');
+            if (bandageCountEl) bandageCountEl.textContent = bandagesCount;
+
             const smokeCanvas = document.getElementById('hcanvas-8');
             if (smokeBombsCount > 0) drawItemArtOnCanvas(smokeCanvas, 'smoke_bomb', null);
             else if (smokeCanvas) smokeCanvas.getContext('2d').clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
+            const smokeCountEl = document.getElementById('smoke-slot-count');
+            if (smokeCountEl) smokeCountEl.textContent = smokeBombsCount;
             drawItemArtOnCanvas(document.getElementById('hcanvas-9'), 'trap', selectedTrapType);
             for(const type of Object.keys(trapInventory)){
                 const icon=document.getElementById('trap-icon-'+type);if(icon)drawItemArtOnCanvas(icon,'trap',type);
@@ -884,21 +895,20 @@
             if (el) el.classList.add('selected');
         }
 
-        /* iOS Safari: explicitly handle pointer/touch selection instead of relying on inline click. */
+        /* Mobile & desktop hotbar interaction without cancelling native drag & drop */
         function bindMobileHotbarInput() {
             const dock = document.getElementById('hotbar-dock');
             if (!dock || dock.dataset.mobileInputBound) return;
             dock.dataset.mobileInputBound = '1';
             dock.querySelectorAll('.hotbar-slot').forEach((slot, index) => {
-                const choose = event => {
-                    if(event.target.closest('#trap-picker,#block-picker')) return;
-                    event.preventDefault();
-                    event.stopPropagation();
+                slot.addEventListener('click', (event) => {
+                    if (event.target.closest('#trap-picker,#block-picker')) return;
                     selectHotbarSlot(index);
-                };
-                slot.addEventListener('pointerdown', choose, { passive: false });
-                slot.addEventListener('touchstart', choose, { passive: false });
-                slot.addEventListener('click', choose);
+                });
+                slot.addEventListener('touchend', (event) => {
+                    if (event.target.closest('#trap-picker,#block-picker')) return;
+                    selectHotbarSlot(index);
+                }, { passive: true });
             });
         }
         window.addEventListener('DOMContentLoaded', bindMobileHotbarInput);
@@ -1508,8 +1518,11 @@
             if (draggedData.source === 'backpack') {
                 backpackInventory[draggedData.index] = targetItem;
             } else if (draggedData.source === 'hotbar') {
-                const hIdx = draggedData.index;
-                if (hIdx >= 3 && hIdx <= 5) weaponBarSlots[hIdx - 3] = targetItem ? targetItem.subtype : null;
+                const wIdx = draggedData.index;
+                if (wIdx >= 0 && wIdx < weaponBarSlots.length) {
+                    weaponBarSlots[wIdx] = (targetItem && targetItem.type === 'gun') ? targetItem.subtype : null;
+                }
+                syncSelectedAmmo();
             }
             draggedData = null;
             refreshHotbarUI();
@@ -1538,6 +1551,7 @@
             }
             weaponBarSlots[targetHIdx - 3] = item.subtype;
             draggedData = null;
+            syncSelectedAmmo();
             refreshHotbarUI();
             renderBackpackGrid();
         }
