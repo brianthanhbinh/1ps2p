@@ -2116,6 +2116,9 @@
                 hostConnection.send({ type: 'spawn_loot', id, item });
             }
         }
+        function dropBrokenBlock(block, x, y) {
+            if (block && block.type && block.type !== 'wood') spawnWorldLoot('block', block.type, x, y, 1);
+        }
 
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
@@ -2433,7 +2436,7 @@
                             showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
                             if (blk.hp <= 0) {
                                 delete worldBlocks[k];
-                                if (blk.type && blk.type !== 'wood') spawnWorldLoot('block', blk.type, bx + 20, by + 20, 1);
+                                dropBrokenBlock(blk, bx + 20, by + 20);
                                 playerCoins += 15;
                                 document.getElementById('coin-num').innerText = playerCoins;
                                 showNotificationBox('Block destroyed (+15 🪙)!');
@@ -2466,7 +2469,13 @@
                 const maxHp = buildStats[buildType] || 100;
                 const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam };
                 worldBlocks[bKey] = newBlock;
-                if (buildType !== 'wood' && activeMode !== 'creative') blockInventory[buildType]--;
+                if (buildType !== 'wood') {
+                    blockInventory[buildType]--;
+                    if (blockInventory[buildType] <= 0) {
+                        const nextType = Object.keys(blockInventory).find(type => blockInventory[type] > 0);
+                        selectedBuildBlock = nextType || 'wood';
+                    }
+                }
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
                 showNotificationBox(`🧱 ${buildType.toUpperCase()} block placed! ${buildType === 'wood' ? 'Basic wood is unlimited.' : 'Remaining: ' + blockInventory[buildType]}`);
@@ -2743,7 +2752,7 @@
                     const by = parseInt(parts[1]) * 40;
                     if (g.x >= bx && g.x <= bx + 40 && g.y >= by && g.y <= by + 40) {
                         worldBlocks[k].hp -= 70;
-                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+                        if (worldBlocks[k].hp <= 0) { const broken = worldBlocks[k]; delete worldBlocks[k]; dropBrokenBlock(broken, bx + 20, by + 20); }
                         hitWall = true;
                         break;
                     }
@@ -2814,7 +2823,7 @@
                         if (b.type === 'burst') dmg = 30;
                         if (b.type === 'flame') dmg = 18;
                         worldBlocks[k].hp -= dmg;
-                        if (worldBlocks[k].hp <= 0) delete worldBlocks[k];
+                        if (worldBlocks[k].hp <= 0) { const broken = worldBlocks[k]; delete worldBlocks[k]; dropBrokenBlock(broken, bx + 20, by + 20); }
 
                         if (b.type === 'rocket') {
                             floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
@@ -3144,6 +3153,15 @@
 
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
+                if (item.type === 'block') {
+                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b' };
+                    ctx.save(); ctx.fillStyle = colors[item.subtype] || '#a8794f'; ctx.strokeStyle = '#eef7ff'; ctx.lineWidth = 2;
+                    ctx.fillRect(item.x-10,item.y-10,20,20); ctx.strokeRect(item.x-10,item.y-10,20,20);
+                    if(item.subtype==='healing'){ctx.fillStyle='#fff';ctx.fillRect(item.x-2,item.y-7,4,14);ctx.fillRect(item.x-7,item.y-2,14,4);}
+                    else if(item.subtype==='metal'){ctx.strokeStyle='#e5f7ff';ctx.beginPath();ctx.moveTo(item.x-6,item.y-6);ctx.lineTo(item.x+6,item.y+6);ctx.moveTo(item.x+6,item.y-6);ctx.lineTo(item.x-6,item.y+6);ctx.stroke();}
+                    else {ctx.strokeStyle='#fff';ctx.strokeRect(item.x-6,item.y-6,12,12);}
+                    ctx.restore(); continue;
+                }
                 const lootImg = assetRegistry[item.type === 'coin' ? 'coin' : (item.subtype || item.type)];
                 if (lootImg && lootImg.complete && lootImg.naturalWidth > 0) {
                     ctx.drawImage(lootImg, item.x - 10, item.y - 10, 20, 20);
