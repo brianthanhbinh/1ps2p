@@ -3020,11 +3020,52 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                ctx.save(); ctx.fillStyle=tr.type==='glue'?'#8d6e63':tr.type==='bounce'?'#00acc1':tr.type==='mine'?'#ef6c00':'#c62828'; ctx.strokeStyle='#fff3e0'; ctx.lineWidth=2; ctx.beginPath();
-                if(tr.type==='mine'||tr.type==='bounce') ctx.arc(tr.x,tr.y,13,0,Math.PI*2);
-                else if(tr.type==='glue') ctx.roundRect(tr.x-13,tr.y-9,26,18,8);
-                else { for(let p=0;p<8;p++){const a=p*Math.PI/4,r=p%2?9:16,x=tr.x+Math.cos(a)*r,y=tr.y+Math.sin(a)*r;if(!p)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath(); }
-                ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.arc(tr.x-4,tr.y-4,3,0,Math.PI*2);ctx.fill();ctx.restore();
+                ctx.save();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#263238';
+                if (tr.type === 'bear') {
+                    // Distinct steel bear trap with two visible semicircular jaws and teeth.
+                    ctx.fillStyle = '#778994';
+                    ctx.beginPath();
+                    ctx.arc(tr.x, tr.y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#dce5e9';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(tr.x, tr.y, 11, Math.PI * 0.12, Math.PI * 0.88);
+                    ctx.arc(tr.x, tr.y, 11, Math.PI * 1.12, Math.PI * 1.88);
+                    ctx.stroke();
+                    ctx.strokeStyle = '#263238';
+                    ctx.lineWidth = 2;
+                    for (let p = 0; p < 8; p++) {
+                        const a = p * Math.PI / 4;
+                        const x1 = tr.x + Math.cos(a) * 11, y1 = tr.y + Math.sin(a) * 11;
+                        const x2 = tr.x + Math.cos(a) * 17, y2 = tr.y + Math.sin(a) * 17;
+                        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                    }
+                    ctx.fillStyle = '#dce5e9';
+                    ctx.beginPath(); ctx.arc(tr.x, tr.y, 3, 0, Math.PI * 2); ctx.fill();
+                } else if (tr.type === 'spike') {
+                    ctx.fillStyle = '#b83232';
+                    ctx.fillRect(tr.x - 15, tr.y + 8, 30, 5);
+                    ctx.fillStyle = '#aebbc2';
+                    ctx.strokeStyle = '#263238';
+                    ctx.beginPath();
+                    for (let p = 0; p < 3; p++) {
+                        const x = tr.x - 13 + p * 13;
+                        ctx.moveTo(x - 5, tr.y + 8);
+                        ctx.lineTo(x, tr.y - 13);
+                        ctx.lineTo(x + 5, tr.y + 8);
+                    }
+                    ctx.fill(); ctx.stroke();
+                } else {
+                    ctx.fillStyle = tr.type === 'glue' ? '#8d6e63' : tr.type === 'bounce' ? '#00acc1' : '#ef6c00';
+                    ctx.beginPath();
+                    if (tr.type === 'mine' || tr.type === 'bounce') ctx.arc(tr.x, tr.y, 13, 0, Math.PI * 2);
+                    else if (tr.type === 'glue') ctx.roundRect(tr.x - 13, tr.y - 9, 26, 18, 8);
+                    ctx.fill(); ctx.stroke();
+                }
+                ctx.restore();
             }
 
             for (let lid in droppedLoot) {
