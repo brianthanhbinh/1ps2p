@@ -607,6 +607,30 @@
         let aiBots = [];
         let pendingLocalMode = null;
         let botDifficulty = 'normal';
+        let bossEntity = null;
+        let bossVictoryId = null;
+        const BOSS_TROPHY_KEY = 'arena_bossfight_trophies_v1';
+        function getBossTrophies() {
+            try { return Math.max(0, Math.floor(Number(localStorage.getItem(BOSS_TROPHY_KEY)) || 0)); }
+            catch (_) { return 0; }
+        }
+        function awardBossTrophy(victoryId) {
+            if (!victoryId || !bossEntity || bossEntity.difficulty !== 'extreme') return;
+            const awardKey = 'arena_bossfight_awarded_' + victoryId;
+            try {
+                if (localStorage.getItem(awardKey)) return;
+                localStorage.setItem(BOSS_TROPHY_KEY, String(getBossTrophies() + 1));
+                localStorage.setItem(awardKey, '1');
+                showNotificationBox('🏆 Extreme Boss defeated! You earned a permanent trophy!');
+            } catch (_) {
+                showNotificationBox('Extreme Boss defeated! Browser storage is unavailable, so the trophy could not be saved.');
+            }
+        }
+        function formatPlayerName(name, trophies) {
+            const count = Math.max(0, Math.floor(Number(trophies) || 0));
+            return (name || 'Combatant') + (count > 0 ? ' 🏆' + count : '');
+        }
+
         // Every tier uses the same bot stats; difficulty changes AI decisions only.
         const BOT_DIFFICULTY_SETTINGS = {
             easy:    { label: 'Easy', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900, shotJitter: 450, bulletSpeed: 7.2, damage: 9, dodge: 0, predict: 0, block: false, traps: false, weaponSkill: 0 },
@@ -1169,8 +1193,36 @@
                 <button style="background:#e53935; color:#fff;" onclick="selectGameModeAndTeam('lgs')">👑 Last Guy Standing</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectGameModeAndTeam('zombie')">🧟 Zombie Survival</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Mode</button>
+                <button style="background:#8e24aa; color:#fff;" onclick="promptBossDifficulty()">👑 Bossfight — Co-op Raid</button>
             `;
             modal.style.display = 'flex';
+        }
+
+
+        function promptBossDifficulty() {
+            const modal = document.getElementById('modal-screen');
+            document.getElementById('modal-title').innerText = 'Choose Boss Difficulty';
+            document.getElementById('modal-options').innerHTML = `
+                <p style="color:#ccc;font-size:12px;margin-bottom:10px;">Everyone joins one team. Boss: 300 HP, +50% damage, +50% size.</p>
+                <button style="background:#78909c;color:#fff;" onclick="startBossfight('easy')">Easy Boss</button>
+                <button style="background:#2196f3;color:#fff;" onclick="startBossfight('normal')">Normal Boss</button>
+                <button style="background:#ef6c00;color:#fff;" onclick="startBossfight('hard')">Hard Boss</button>
+                <button style="background:#7b1fa2;color:#fff;" onclick="startBossfight('extreme')">🟣 Extreme Boss — Trophy eligible</button>
+                <button style="background:#555;color:#fff;" onclick="promptGameModeSelection()">Back</button>
+            `;
+            modal.style.display = 'flex';
+        }
+        function startBossfight(level) {
+            botDifficulty = BOT_DIFFICULTY_SETTINGS[level] ? level : 'normal';
+            currentMode = 'bossfight';
+            hostGameMode = 'bossfight';
+            ctfFlags = null;
+            ctfScores = { Red: 0, Blue: 0 };
+            playerCoins = 100;
+            currentHp = 100;
+            document.getElementById('coin-num').innerText = playerCoins;
+            document.getElementById('modal-screen').style.display = 'none';
+            promptTeamSelection();
         }
 
         function selectGameModeAndTeam(mode) {
@@ -1206,7 +1258,9 @@
             
             const activeMode = isHosting ? currentMode : hostGameMode;
 
-            if (activeMode === 'ffa' || activeMode === 'lgs' || activeMode === 'zombie') {
+            if (activeMode === 'bossfight') {
+                opts.innerHTML = `<button class="btn-team-blue" onclick="assignTeamAndSpawn('Raiders', '#42a5f5')">⚔️ Join the Raiders</button>`;
+            } else if (activeMode === 'ffa' || activeMode === 'lgs' || activeMode === 'zombie') {
                 opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">Enter Arena</button>`;
             } else if (activeMode === '2team' || activeMode === 'ctf') {
                 opts.innerHTML = `
@@ -1247,13 +1301,15 @@
             document.getElementById('modal-screen').style.display = 'none';
 
             resetPlayerInventoryForNewMatch();
-            const spawnCoords = getTeamSpawnCoords(teamName);
+            const activeModeForSpawn = isHosting ? currentMode : hostGameMode;
+            const spawnCoords = getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
 
             refreshTeamSkinColors();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
+            if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
             if (activeMode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
@@ -1271,6 +1327,11 @@
             if (isPractice) {
                 spawnPracticeBots();
             }
+            if (activeMode === 'bossfight' && isHosting && !bossEntity) {
+                bossEntity = { id: 'raid-boss', username: 'THE BOSS', x: MAP_SIZE / 2, y: MAP_SIZE / 2, hp: 300, maxHp: 300, radius: RADIUS_PLAYER * 1.5, damage: 15, difficulty: botDifficulty, color: '#8e24aa', nextAttackAt: 0, nextMoveAt: 0, defeated: false };
+                bossVictoryId = null;
+                showNotificationBox('👑 Bossfight started! Work together to defeat the boss!');
+            }
 
             if (!isHosting && hostConnection && hostConnection.open) {
                 hostConnection.send({
@@ -1278,6 +1339,7 @@
                     username: myUsername,
                     team: playerTeam,
                     color: playerColor,
+                    trophies: getBossTrophies(),
                     x: posX,
                     y: posY
                 });
@@ -1877,6 +1939,54 @@
             showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
         }
 
+
+        function damageRaidBoss(amount) {
+            if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
+            bossEntity.hp = Math.max(0, bossEntity.hp - Math.max(0, Number(amount) || 0));
+            if (bossEntity.hp <= 0) {
+                bossEntity.hp = 0;
+                bossEntity.defeated = true;
+                bossVictoryId = 'boss-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+                if (bossEntity.difficulty === 'extreme') awardBossTrophy(bossVictoryId);
+                showNotificationBox('🏆 The Boss has been defeated! The raid is over!');
+            }
+            broadcastStateToClients();
+        }
+        function updateBossFightAI() {
+            if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
+            const now = Date.now();
+            const targets = [{ x: posX, y: posY, hp: currentHp, id: peerInstance && peerInstance.id }];
+            for (const pid in remotePlayers) {
+                const p = remotePlayers[pid];
+                if (p && p.hp > 0) targets.push({ x: p.x, y: p.y, hp: p.hp, id: pid });
+            }
+            const living = targets.filter(p => p.hp > 0);
+            if (!living.length) return;
+            let target = living[0], best = Infinity;
+            for (const p of living) {
+                const d = Math.hypot(p.x - bossEntity.x, p.y - bossEntity.y);
+                if (d < best) { best = d; target = p; }
+            }
+            const tier = bossEntity.difficulty || botDifficulty || 'normal';
+            const speed = ({ easy: 1.35, normal: 1.8, hard: 2.35, extreme: 2.9 })[tier] || 1.8;
+            const attackDelay = ({ easy: 1050, normal: 850, hard: 700, extreme: 560 })[tier] || 850;
+            if (now >= (bossEntity.nextMoveAt || 0)) {
+                const a = Math.atan2(target.y - bossEntity.y, target.x - bossEntity.x);
+                const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(a) * speed));
+                const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(a) * speed));
+                if (!checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius)) bossEntity.x = nx;
+                if (!checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius)) bossEntity.y = ny;
+                bossEntity.nextMoveAt = now + 16;
+            }
+            if (best < bossEntity.radius + RADIUS_PLAYER + 7 && now >= (bossEntity.nextAttackAt || 0)) {
+                const damage = 15;
+                if (target.id === (peerInstance && peerInstance.id)) currentHp = Math.max(0, currentHp - damage);
+                else if (remotePlayers[target.id]) remotePlayers[target.id].hp = Math.max(0, remotePlayers[target.id].hp - damage);
+                bossEntity.nextAttackAt = now + attackDelay;
+                showNotificationBox('The Boss hit a Raider! -15 HP');
+            }
+        }
+
         function damagePracticeBot(bot, damage) {
             if (!bot || bot.hp <= 0) return;
             bot.hp -= damage;
@@ -1951,6 +2061,9 @@
                 conn.send({ 
                     type: 'room_config', 
                     mode: currentMode,
+                    botDifficulty,
+                    boss: bossEntity,
+                    bossVictoryId,
                     blocks: worldBlocks,
                     traps: activeTraps,
                     loot: droppedLoot,
@@ -1993,6 +2106,18 @@
                     }
                 } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
+                    if (data.targetId === 'boss' && bossEntity && bossEntity.hp > 0 && shooter) {
+                        const hitX = Number(data.hitX), hitY = Number(data.hitY);
+                        const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
+                        const damage = damageByWeapon[data.weapon] || 0;
+                        if (damage > 0 && Number.isFinite(hitX) && Number.isFinite(hitY) &&
+                            Math.hypot(shooter.x-hitX, shooter.y-hitY) < 1000 &&
+                            Math.hypot(bossEntity.x-hitX, bossEntity.y-hitY) < bossEntity.radius + 48) {
+                            damageRaidBoss(damage);
+                            conn.send({ type: 'hit_confirm', targetId: 'boss', damage, hp: bossEntity.hp });
+                        }
+                        return;
+                    }
                     const targetIsHost = data.targetId === peerInstance.id;
                     const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100 } : remotePlayers[data.targetId];
                     const hitX = Number(data.hitX), hitY = Number(data.hitY);
@@ -2031,7 +2156,8 @@
                         y: spawnCoords.y,
                         hp: joinHp,
                         maxHp: joinHp,
-                        coins: 100
+                        coins: 100,
+                        trophies: Math.max(0, Math.floor(Number(data.trophies) || 0))
                     };
                     broadcastStateToClients();
                 } else if (data.type === 'player_update') {
@@ -2041,6 +2167,7 @@
                         // HP is host-authoritative; never overwrite it from movement packets.
                         remotePlayers[conn.peer].coins = data.coins;
                         remotePlayers[conn.peer].username = data.username;
+                        remotePlayers[conn.peer].trophies = Math.max(0, Math.floor(Number(data.trophies) || 0));
                         remotePlayers[conn.peer].team = data.team;
                         remotePlayers[conn.peer].color = data.color;
                         remotePlayers[conn.peer].heldItem = data.heldItem && typeof data.heldItem === 'object' ? data.heldItem : null;
@@ -2114,6 +2241,9 @@
                     showNotificationBox(`Opened Airdrop Crate (+${data.reward} 🪙)!`);
                 } else if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
+                    if (data.botDifficulty && BOT_DIFFICULTY_SETTINGS[data.botDifficulty]) botDifficulty = data.botDifficulty;
+                    bossEntity = data.boss || null;
+                    bossVictoryId = data.bossVictoryId || null;
                     if (data.blocks) worldBlocks = data.blocks;
                     if (data.traps) activeTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
@@ -2123,6 +2253,11 @@
                     if (data.ctfScores) ctfScores = data.ctfScores;
                     promptTeamSelection();
                 } else if (data.type === 'server_state') {
+                    if (data.boss !== undefined) bossEntity = data.boss;
+                    if (data.bossVictoryId && data.bossVictoryId !== bossVictoryId) {
+                        bossVictoryId = data.bossVictoryId;
+                        awardBossTrophy(bossVictoryId);
+                    }
                     if (data.players) {
                         for (let pid in data.players) {
                             if (peerInstance && pid === peerInstance.id) {
@@ -2169,7 +2304,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, trophies: getBossTrophies(), x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2184,6 +2319,8 @@
                 vehicles: activeVehiclesList,
                 ctfFlags,
                 ctfScores,
+                boss: bossEntity,
+                bossVictoryId,
                 nextAirdropAt
             };
             for (let pid in peerConnections) {
@@ -2772,6 +2909,8 @@
                 document.getElementById('death-modal').style.display = 'flex';
                 return;
             }
+            if (activeMode === 'bossfight' && isHosting) updateBossFightAI();
+
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
@@ -3000,6 +3139,14 @@
                 }
 
                 if (hitObs) {
+                    bulletsList.splice(i, 1);
+                    continue;
+                }
+
+                if (bossEntity && bossEntity.hp > 0 && Math.hypot(b.x - bossEntity.x, b.y - bossEntity.y) < bossEntity.radius + 8) {
+                    if (isHosting) damageRaidBoss(({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 })[b.type] || 20);
+                    else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'hit_request', targetId: 'boss', hitX: b.x, hitY: b.y, weapon: b.type });
+                    showNotificationBox('Hit THE BOSS!');
                     bulletsList.splice(i, 1);
                     continue;
                 }
@@ -3272,6 +3419,7 @@
                     username: myUsername,
                     team: playerTeam,
                     color: playerColor,
+                    trophies: getBossTrophies(),
                     x: posX,
                     y: posY,
                     hp: currentHp,
@@ -3495,13 +3643,39 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(rp.username || 'Enemy', 0, -26);
+                ctx.fillText(formatPlayerName(rp.username || 'Enemy', rp.trophies), 0, -26);
                 if(rp.heldItem&&rp.heldItem.type){drawItemArtOnCanvas(heldItemCanvas,rp.heldItem.type,rp.heldItem.subtype||null);ctx.drawImage(heldItemCanvas,10,-13,28,28);}
 
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(-18, -20, 36, 4);
                 ctx.fillStyle = '#4caf50';
                 ctx.fillRect(-18, -20, (Math.max(0, rp.hp) / (rp.maxHp || (hostGameMode === 'creative' ? 300 : 100))) * 36, 4);
+                ctx.restore();
+            }
+
+            if (bossEntity && bossEntity.hp > 0) {
+                ctx.save();
+                ctx.translate(bossEntity.x, bossEntity.y);
+                ctx.fillStyle = '#4a145f';
+                ctx.strokeStyle = '#e1bee7';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#ce93d8';
+                ctx.shadowBlur = 24;
+                ctx.beginPath();
+                ctx.arc(0, 0, bossEntity.radius || RADIUS_PLAYER * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 22px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('👑', 0, 8);
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillText('THE BOSS', 0, -(bossEntity.radius || 31) - 13);
+                ctx.fillStyle = 'rgba(0,0,0,.75)';
+                ctx.fillRect(-38, -(bossEntity.radius || 31) - 8, 76, 7);
+                ctx.fillStyle = '#e53935';
+                ctx.fillRect(-38, -(bossEntity.radius || 31) - 8, 76 * Math.max(0, bossEntity.hp) / (bossEntity.maxHp || 300), 7);
                 ctx.restore();
             }
 
@@ -3583,7 +3757,7 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(myUsername + ' (You)', 0, -28);
+                ctx.fillText(formatPlayerName(myUsername + ' (You)', getBossTrophies()), 0, -28);
                 ctx.restore();
             }
 
