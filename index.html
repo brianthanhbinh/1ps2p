@@ -1959,11 +1959,13 @@
             const now = Date.now();
             const tier = bossEntity.difficulty || botDifficulty || 'normal';
             const settings = {
-                easy:    { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0 },
-                normal:  { lead: 0.10, speed: 1.8, attackDelay: 850, rethink: 66, samples: 5, accel: 0.10 },
-                hard:    { lead: 0.16, speed: 2.35, attackDelay: 650, rethink: 33, samples: 9, accel: 0.22 },
-                extreme: { lead: 0.13, speed: 2.9, attackDelay: 300, rethink: 0, samples: 24, accel: 0.38 }
-            }[tier] || { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0 };
+                easy:    { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0, dodge: false },
+                normal:  { lead: 0.10, speed: 1.8, attackDelay: 850, rethink: 66, samples: 5, accel: 0.10, dodge: true },
+                hard:    { lead: 0.16, speed: 2.35, attackDelay: 650, rethink: 33, samples: 9, accel: 0.22, dodge: true },
+                extreme: { lead: 0.13, speed: 2.9, attackDelay: 300, rethink: 0, samples: 24, accel: 0.38, dodge: true }
+            }[tier] || { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0, dodge: false };
+            // Boss gets +50% movement speed on every difficulty.
+            const bossMoveSpeed = settings.speed * 1.5;
 
             // Sample every living player each simulation tick. Keeping histories for all
             // players prevents stale velocity estimates when the boss changes targets.
@@ -2030,16 +2032,41 @@
                         ? [0, -0.25, 0.25, -0.55, 0.55, -0.95, 0.95, Math.PI]
                         : tier === 'normal' ? [0, -0.45, 0.45, Math.PI] : [0];
                 let chosen = null, chosenScore = Infinity;
+                // Gather live projectiles from the host and every connected player.
+                const incomingBullets = [];
+                if (settings.dodge) {
+                    for (const b of bulletsList) if (b && Number.isFinite(b.x) && Number.isFinite(b.y) && Number.isFinite(b.vx) && Number.isFinite(b.vy)) incomingBullets.push(b);
+                    for (const b of hostRemoteBullets) if (b && Number.isFinite(b.x) && Number.isFinite(b.y) && Number.isFinite(b.vx) && Number.isFinite(b.vy)) incomingBullets.push(b);
+                    for (const pid in remotePlayers) {
+                        const player = remotePlayers[pid];
+                        if (player && Array.isArray(player.bullets)) {
+                            for (const b of player.bullets) if (b && Number.isFinite(b.x) && Number.isFinite(b.y) && Number.isFinite(b.vx) && Number.isFinite(b.vy)) incomingBullets.push(b);
+                        }
+                    }
+                }
                 for (const offset of candidateOffsets) {
                     const angle = desiredAngle + offset;
-                    const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(angle) * settings.speed));
-                    const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(angle) * settings.speed));
+                    const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(angle) * bossMoveSpeed));
+                    const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(angle) * bossMoveSpeed));
                     if (checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius) ||
                         checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius) ||
                         checkCollisionWithBlocks(nx, ny, bossEntity.radius)) continue;
                     const remaining = Math.hypot(predicted.x - nx, predicted.y - ny);
                     const alignment = Math.abs(offset) * (tier === 'extreme' ? 0.15 : tier === 'hard' ? 24 : 40);
-                    const score = remaining + alignment;
+                    let dodgePenalty = 0;
+                    // Score how close each projectile's next 300ms trajectory comes to
+                    // the candidate boss position; strongly prefer clear approach lanes.
+                    for (const b of incomingBullets) {
+                        if (b.team && b.team !== 'Raiders' && b.team !== 'FFA') continue;
+                        const travelX = b.vx * 18, travelY = b.vy * 18;
+                        const relX = nx - b.x, relY = ny - b.y;
+                        const denom = travelX * travelX + travelY * travelY;
+                        const t = denom > 0 ? Math.max(0, Math.min(1, (relX * travelX + relY * travelY) / denom)) : 0;
+                        const closest = Math.hypot(relX - travelX * t, relY - travelY * t);
+                        const dangerRadius = bossEntity.radius + 24;
+                        if (closest < dangerRadius) dodgePenalty += (dangerRadius - closest) * 9;
+                    }
+                    const score = remaining + alignment + dodgePenalty;
                     if (score < chosenScore) { chosenScore = score; chosen = { x: nx, y: ny }; }
                 }
                 if (chosen) {
@@ -2052,8 +2079,8 @@
                         // Search for a clear escape step rather than repeatedly pushing into a wall.
                         for (let i = 0; i < 24; i++) {
                             const angle = i * Math.PI * 2 / 24;
-                            const nx = bossEntity.x + Math.cos(angle) * settings.speed * 2;
-                            const ny = bossEntity.y + Math.sin(angle) * settings.speed * 2;
+                            const nx = bossEntity.x + Math.cos(angle) * bossMoveSpeed * 2;
+                            const ny = bossEntity.y + Math.sin(angle) * bossMoveSpeed * 2;
                             if (nx > bossEntity.radius && ny > bossEntity.radius &&
                                 nx < MAP_SIZE - bossEntity.radius && ny < MAP_SIZE - bossEntity.radius &&
                                 !checkCollisionWithBlocks(nx, ny, bossEntity.radius)) {
