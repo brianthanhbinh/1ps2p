@@ -1215,6 +1215,9 @@
         }
         function startBossfight(level) {
             botDifficulty = BOT_DIFFICULTY_SETTINGS[level] ? level : 'normal';
+            // A new match must never reuse a defeated or stale boss from a prior room.
+            bossEntity = null;
+            bossVictoryId = null;
             currentMode = 'bossfight';
             hostGameMode = 'bossfight';
             ctfFlags = null;
