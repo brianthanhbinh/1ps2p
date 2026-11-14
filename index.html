@@ -4080,11 +4080,50 @@
                 }
             }
 
+            // Entity cramping: dense piles of pushable balls slowly break apart.
+            // Spatial buckets keep the density check efficient even with many balls.
+            let crampedBall = null;
+            if (balls.length >= 8 && Date.now() >= (window.nextBallCrampBreakAt || 0)) {
+                const cellSize = 100;
+                const buckets = new Map();
+                for (const entry of balls) {
+                    const cx = Math.floor(entry.ball.x / cellSize);
+                    const cy = Math.floor(entry.ball.y / cellSize);
+                    const bucketKey = cx + ',' + cy;
+                    if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
+                    buckets.get(bucketKey).push(entry);
+                }
+                let mostCrowdedCount = 7;
+                for (const entry of balls) {
+                    const cx = Math.floor(entry.ball.x / cellSize);
+                    const cy = Math.floor(entry.ball.y / cellSize);
+                    let nearbyCount = 0;
+                    for (let ox = -1; ox <= 1; ox++) {
+                        for (let oy = -1; oy <= 1; oy++) {
+                            const nearby = buckets.get((cx + ox) + ',' + (cy + oy));
+                            if (!nearby) continue;
+                            for (const other of nearby) {
+                                if (Math.hypot(other.ball.x - entry.ball.x, other.ball.y - entry.ball.y) < 100) nearbyCount++;
+                            }
+                        }
+                    }
+                    if (nearbyCount > mostCrowdedCount) {
+                        mostCrowdedCount = nearbyCount;
+                        crampedBall = entry.ball;
+                    }
+                }
+                if (crampedBall) window.nextBallCrampBreakAt = Date.now() + 700;
+            }
+
             // Move each ball's map key with it. Its old tile is now free for building.
             const nextBlocks = { ...worldBlocks };
             for (const entry of balls) delete nextBlocks[entry.key];
             for (const entry of balls) {
                 const ball = entry.ball;
+                if (ball === crampedBall) {
+                    floatingParticles.push({ x: ball.x, y: ball.y, vx: 0, vy: -0.8, radius: 5, alpha: 0.9, isCrampBreak: true });
+                    continue;
+                }
                 const gx = Math.floor(ball.x / 40), gy = Math.floor(ball.y / 40);
                 let nextKey = gx + ',' + gy;
                 let suffix = 1;
