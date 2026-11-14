@@ -299,6 +299,7 @@
                 <div class="shop-item-card"><span>🧊 Ice Block (260 HP)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ice', 75)">Buy</button></div></div>
                 <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItem('block', 'crystal', 125)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -460,7 +461,7 @@
         <div id="hotbar-dock">
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button><button type="button" class="block-choice" data-block="force" onclick="chooseBlockFromPicker(event,'force')"><canvas id="block-icon-force" width="68" height="68"></canvas>Force<small id="block-count-force">0</small></button></div></div>
             <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
@@ -654,7 +655,7 @@
             for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0 };
             grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
@@ -747,7 +748,8 @@
             }
         }
         let worldBlocks = {};
-        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0 };
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0 };
+        let forceBlockRotation = 0;
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
         let droppedLoot = {};
@@ -1847,7 +1849,7 @@
 
         function buyStoreItem(itemType, subtypeName, price) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -3385,7 +3387,8 @@
             if (e.code === 'KeyE') { e.preventDefault(); toggleInventoryPanel(); }
             if (e.code === 'KeyQ') dropActiveItem();
             if (e.code === 'KeyZ') openCoinModal();
-            if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
+            if (e.code === 'KeyX' && activeHotbar === 2 && selectedBuildBlock === 'force') { e.preventDefault(); forceBlockRotation = (forceBlockRotation + Math.PI/4) % (Math.PI*2); showNotificationBox('Force block rotated: '+Math.round(forceBlockRotation*180/Math.PI)+'°'); }
+            else if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
             if (e.code === 'KeyR') executeSelfDestruct();
             if (e.code === 'KeyJ') tryHopOnVehicle();
             if (e.code === 'KeyH') dismountVehicle();
@@ -3682,7 +3685,7 @@
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
-                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900 };
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180 };
                 if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
                     selectedBuildBlock = 'wood';
                     showNotificationBox('That purchased block is out of stock. Using basic wood.');
@@ -3690,7 +3693,7 @@
                 }
                 if (worldBlocks[bKey]) { showNotificationBox('There is already a block there!'); return; }
                 const maxHp = buildStats[buildType] || 100;
-                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam };
+                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, ...(buildType === 'force' ? { angle: forceBlockRotation } : {}) };
                 worldBlocks[bKey] = newBlock;
                 if (buildType !== 'wood') {
                     blockInventory[buildType]--;
@@ -3823,6 +3826,7 @@
                 const closestX = Math.max(bx, Math.min(x, bx + 40));
                 const closestY = Math.max(by, Math.min(y, by + 40));
 
+                if(worldBlocks[k] && worldBlocks[k].type === 'force') continue;
                 const dist = Math.hypot(x - closestX, y - closestY);
                 if (dist < radius) {
                     return true;
@@ -3937,6 +3941,7 @@
 
             if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER)) posX = nextX;
             if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER)) posY = nextY;
+            for(const k in worldBlocks){const fb=worldBlocks[k];if(!fb||fb.type!=='force')continue;const parts=k.split(','),fx=Number(parts[0])*40+20,fy=Number(parts[1])*40+20;if(Math.hypot(posX-fx,posY-fy)<31){const a=Number(fb.angle)||0;const push=6.5;const px=posX+Math.cos(a)*push,py=posY+Math.sin(a)*push;if(!checkCollisionWithBlocks(px,posY,RADIUS_PLAYER))posX=px;if(!checkCollisionWithBlocks(posX,py,RADIUS_PLAYER))posY=py;floatingParticles.push({x:fx-Math.cos(a)*12,y:fy-Math.sin(a)*12,vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2,radius:2,alpha:.55,smoke:true});}}
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
@@ -4527,7 +4532,7 @@
             for (let k in worldBlocks) {
                 const blk=worldBlocks[k]; if(!blk||typeof blk!=='object')continue;
                 const parts=k.split(','),bx=parseInt(parts[0])*40,by=parseInt(parts[1])*40;
-                const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5'],obsidian:['#242034','#a68cff'],glass:['rgba(105,210,255,.32)','#b7efff'],bounce:['#542d83','#e0a5ff'],ice:['#367f9e','#a8f1ff'],crystal:['#573b8c','#e3b5ff'],bunker:['#46515b','#b5c2ce']};
+                const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5'],obsidian:['#242034','#a68cff'],glass:['rgba(105,210,255,.32)','#b7efff'],bounce:['#542d83','#e0a5ff'],ice:['#367f9e','#a8f1ff'],crystal:['#573b8c','#e3b5ff'],bunker:['#46515b','#b5c2ce'],force:['rgba(20,220,255,.22)','#5df5ff']};
                 const style=styles[blk.type]||styles.wood;
                 ctx.save();ctx.fillStyle=style[0];ctx.strokeStyle=style[1];ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(bx+2,by+2,36,36,7);ctx.fill();ctx.stroke();
                 if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
@@ -4539,10 +4544,19 @@
                  else if(blk.type==='ice'){ctx.strokeStyle='#d8fbff';ctx.lineWidth=3;for(let q=0;q<3;q++){ctx.beginPath();ctx.moveTo(bx+10+q*10,by+8);ctx.lineTo(bx+8+q*10,by+32);ctx.stroke();}ctx.beginPath();ctx.moveTo(bx+9,by+20);ctx.lineTo(bx+31,by+20);ctx.stroke();}
                  else if(blk.type==='crystal'){ctx.fillStyle='rgba(230,190,255,.45)';ctx.beginPath();ctx.moveTo(bx+20,by+5);ctx.lineTo(bx+33,by+17);ctx.lineTo(bx+24,by+34);ctx.lineTo(bx+10,by+27);ctx.lineTo(bx+8,by+15);ctx.closePath();ctx.fill();ctx.strokeStyle='#f0d7ff';ctx.stroke();}
                  else if(blk.type==='bunker'){ctx.strokeStyle='#d1d9df';ctx.lineWidth=3;ctx.strokeRect(bx+6,by+6,28,28);ctx.fillStyle='#25313b';ctx.fillRect(bx+13,by+13,14,14);ctx.strokeRect(bx+13,by+13,14,14);}
+                 else if(blk.type==='force'){const a=Number(blk.angle)||0;ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(a);ctx.shadowColor='#00eaff';ctx.shadowBlur=12;ctx.fillStyle='rgba(0,234,255,.28)';ctx.fillRect(-16,-16,32,32);ctx.strokeStyle='#70f7ff';ctx.lineWidth=2;ctx.strokeRect(-16,-16,32,32);ctx.fillStyle='#d9ffff';ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-4,-8);ctx.lineTo(-4,8);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.restore();}
                  else{ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.roundRect(bx+7,by+6,26,5,3);ctx.fill();}
                 ctx.restore();
-                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900}[blk.type]||100);
+                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900,force:180}[blk.type]||100);
                 if(blk.hp<maxHp){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by-8,40,5);ctx.fillStyle='#4caf50';ctx.fillRect(bx,by-8,(Math.max(0,blk.hp)/maxHp)*40,5);}
+            }
+
+            if(inGameActive && activeHotbar===2 && selectedBuildBlock==='force') {
+                const zoom=getCameraZoom(),wx=posX+(mouseXCoord-canvas.width/2)/zoom,wy=posY+(mouseYCoord-canvas.height/2)/zoom;
+                const bx=Math.floor(wx/40)*40,by=Math.floor(wy/40)*40,angle=forceBlockRotation;
+                ctx.save();ctx.globalAlpha=.48;ctx.translate(bx+20,by+20);ctx.rotate(angle);
+                ctx.fillStyle='rgba(0,230,255,.20)';ctx.strokeStyle='#8af8ff';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.fillRect(-18,-18,36,36);ctx.strokeRect(-18,-18,36,36);ctx.setLineDash([]);
+                ctx.shadowColor='#00eaff';ctx.shadowBlur=14;ctx.fillStyle='#cfffff';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-7,-11);ctx.lineTo(-7,11);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.restore();
             }
 
             for (let tk in activeTraps) {
