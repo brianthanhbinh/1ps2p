@@ -1048,7 +1048,7 @@
                 path([[-7,-8],[6,-8],[9,-4],[8,10],[-7,10],[-9,6],[-9,-4]],'#405965');c.fillStyle='#aab8bf';c.beginPath();c.roundRect(-3,-13,7,5,2);c.fill();c.strokeStyle='#17232b';c.stroke();
                 c.strokeStyle='#d4e0e5';c.lineWidth=1;c.beginPath();c.moveTo(-5,-3);c.lineTo(4,-3);c.stroke();
             } else if(itemType==='gun'){
-                const body=({pistol:'#566d7b',smg:'#435d6d',shotgun:'#805b3d',sniper:'#566d7b',rocket:'#607d42',laser:'#287e91',plasma:'#7555a5',flame:'#a84e2b',burst:'#536c7c',freeze:'#4b83a8',minigun:'#455968'})[subType]||'#536c7c';
+                const body=({pistol:'#566d7b',smg:'#435d6d',shotgun:'#805b3d',sniper:'#566d7b',rocket:'#607d42',laser:'#287e91',plasma:'#7555a5',flame:'#a84e2b',burst:'#536c7c',freeze:'#4b83a8',minigun:'#455968',ricochet:'#b76b35',gravity:'#7252a8',sonic:'#2b9db3'})[subType]||'#536c7c';
                 path([[-13,-4],[-8,-7],[8,-7],[12,-4],[12,1],[-13,1]],body);c.fillStyle=metal;c.beginPath();c.roundRect(2,-5,8,2,1);c.fill();path([[-4,1],[3,1],[2,9],[-2,9]],wood);
                 c.fillStyle='#25343d';c.beginPath();c.roundRect(-13,-3,5,3,1);c.fill();c.strokeStyle='#d8e5eb';c.lineWidth=1;c.beginPath();c.moveTo(-7,-6);c.lineTo(7,-6);c.stroke();
                 if (subType === 'pistol') {
@@ -4224,7 +4224,7 @@
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
-                if (eq === 'smg' || eq === 'ak' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst') {
+                if (eq === 'smg' || eq === 'ak' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst' || eq === 'ricochet' || eq === 'gravity' || eq === 'sonic') {
                     triggerWeaponAttack(mouseXCoord, mouseYCoord);
                 }
             }
