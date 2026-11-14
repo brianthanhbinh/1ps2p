@@ -2868,6 +2868,15 @@
                 b.distanceTravelled = (b.distanceTravelled || 0) + Math.hypot(b.vx, b.vy);
                 if (b.distanceTravelled > (b.maxDistance || 900)) { bulletsList.splice(i, 1); continue; }
 
+                // Practice-bot projectiles can hit the local player.
+                if (isPractice && b.isBotBullet && currentHp > 0 &&
+                    (b.team === 'FFA' || b.team !== playerTeam) &&
+                    Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER + 5) {
+                    currentHp = Math.max(0, currentHp - 9);
+                    bulletsList.splice(i, 1);
+                    continue;
+                }
+
                 let hitObs = false;
                 for (let k in worldBlocks) {
                     const parts = k.split(',');
@@ -3064,8 +3073,38 @@
                                 showNotificationBox('🧟 Zombie horde is attacking you!');
                             }
                         } else {
-                            bot.x += (Math.random() - 0.5) * 2;
-                            bot.y += (Math.random() - 0.5) * 2;
+                            // Combat bots pursue, hold range, and strafe instead of wandering randomly.
+                            const targetDistance = Math.hypot(posX - bot.x, posY - bot.y);
+                            const targetAngle = Math.atan2(posY - bot.y, posX - bot.x);
+                            const preferredRange = 230;
+                            const botIndex = Number(String(bot.id).replace(/\\D/g, '')) || 0;
+                            const strafeSide = Math.sin(Date.now() / 650 + botIndex) >= 0 ? 1 : -1;
+                            let moveAngle = targetAngle;
+                            let moveAmount = targetDistance > preferredRange + 35 ? 1 : (targetDistance < preferredRange - 55 ? -0.65 : 0);
+                            if (moveAmount === 0) moveAngle += Math.PI / 2 * strafeSide;
+                            else if (moveAmount < 0) moveAngle += Math.PI;
+                            const botSpeed = 2.15;
+                            const stepX = Math.cos(moveAngle) * botSpeed * Math.abs(moveAmount);
+                            const stepY = Math.sin(moveAngle) * botSpeed * Math.abs(moveAmount);
+                            const tryX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.x + stepX));
+                            const tryY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.y + stepY));
+                            if (!checkCollisionWithBlocks(tryX, bot.y, RADIUS_PLAYER)) bot.x = tryX;
+                            if (!checkCollisionWithBlocks(bot.x, tryY, RADIUS_PLAYER)) bot.y = tryY;
+
+                            // Aimed practice-bot shots have limited range and a cooldown.
+                            if (targetDistance < 620 && targetDistance > 38 && nowBurn >= (bot.nextShotAt || 0) &&
+                                !checkInsideBase(posX, posY, playerTeam)) {
+                                const shotAngle = targetAngle + (Math.random() - 0.5) * 0.12;
+                                bulletsList.push({
+                                    id: 'bot-' + bot.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                                    x: bot.x, y: bot.y,
+                                    vx: Math.cos(shotAngle) * 7.2,
+                                    vy: Math.sin(shotAngle) * 7.2,
+                                    type: 'smg', team: bot.team, isBotBullet: true,
+                                    distanceTravelled: 0, maxDistance: 680
+                                });
+                                bot.nextShotAt = nowBurn + 900 + Math.random() * 450;
+                            }
                         }
                     }
                 });
