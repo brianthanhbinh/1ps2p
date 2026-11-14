@@ -1852,8 +1852,10 @@
         }
 
         function isEnemyTryingToEnterBase(x, y, myTeam) {
-            if (myTeam === 'FFA') return false;
+            // Modes with shared/non-standard teams (e.g. Bossfight's Raiders) do not
+            // participate in the four-base territory restrictions.
             const teamNames = ['Red', 'Blue', 'Green', 'Yellow'];
+            if (!teamNames.includes(myTeam)) return false;
             for (let t of teamNames) {
                 if (t !== myTeam) {
                     if (checkInsideBase(x, y, t)) return true;
