@@ -2260,7 +2260,7 @@
                 } else {
                     damageRaidBoss(trap.type === 'bear' ? 28 : 20);
                 }
-                delete activeTraps[key];
+                trap.nextReadyAt=now+(trap.cooldownMs||1800);
                 broadcastStateToClients();
             }
 
@@ -2709,13 +2709,17 @@
                 } else if (data.type === 'place_trap') {
                     activeTraps[data.key] = data.trap;
                     broadcastStateToClients();
-                } else if (data.type === 'break_trap') {
-                    const tr = activeTraps[data.key], p = remotePlayers[conn.peer];
-                    if (tr && p && Math.hypot(p.x-tr.x,p.y-tr.y) < 105) {
-                        delete activeTraps[data.key];
-                        spawnWorldLoot('trap', tr.type, tr.x, tr.y, 1);
+                } else if (data.type === 'mine_trap') {
+                    const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
+                    if(tr&&p&&Math.hypot(p.x-tr.x,p.y-tr.y)<105){
+                        tr.hp=(Number(tr.hp)||120)-Math.min(35,Math.max(1,Number(data.damage)||35));
+                        if(tr.hp<=0){delete activeTraps[data.key];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);}
                         broadcastStateToClients();
                     }
+                } else if (data.type === 'break_trap') {
+                    // Legacy clients cannot instantly remove a full-health trap.
+                    const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
+                    if(tr&&p&&Math.hypot(p.x-tr.x,p.y-tr.y)<105&&tr.hp<=0){delete activeTraps[data.key];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);broadcastStateToClients();}
                 } else if (data.type === 'spawn_loot') {
                     droppedLoot[data.id] = data.item;
                     broadcastStateToClients();
@@ -3636,7 +3640,10 @@
 
             else if (activeHotbar === 1 && !actionCdAttack) {
                 let minedTrap=false;
-                for(let tk in activeTraps){const tr=activeTraps[tk];if(!tr||Math.hypot(posX-tr.x,posY-tr.y)>90||Math.hypot(targetWorldX-tr.x,targetWorldY-tr.y)>24)continue;tr.hp=(Number(tr.hp)||80)-35;if(tr.hp<=0){delete activeTraps[tk];if(isHosting)spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);else if(hostConnection&&hostConnection.open)hostConnection.send({type:'break_trap',key:tk});showNotificationBox('Trap mined! It dropped as loot.');}else showNotificationBox('Mining trap... HP: '+tr.hp);if(isHosting)broadcastStateToClients();minedTrap=true;break;}
+                for(let tk in activeTraps){const tr=activeTraps[tk];if(!tr||Math.hypot(posX-tr.x,posY-tr.y)>90||Math.hypot(targetWorldX-tr.x,targetWorldY-tr.y)>24)continue;
+                    if(!isHosting){if(hostConnection&&hostConnection.open){hostConnection.send({type:'mine_trap',key:tk,damage:35});showNotificationBox('Mining trap...');}else showNotificationBox('Only the host can update traps right now.');}
+                    else{tr.hp=(Number(tr.hp)||120)-35;if(tr.hp<=0){delete activeTraps[tk];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);showNotificationBox('Trap destroyed! It dropped as loot.');}else showNotificationBox('Mining trap... HP: '+tr.hp);broadcastStateToClients();}
+                    minedTrap=true;break;}
                 if(!minedTrap) for (let k in worldBlocks) {
                     const blk = worldBlocks[k];
                     const parts = k.split(',');
