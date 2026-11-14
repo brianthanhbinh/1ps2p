@@ -760,8 +760,10 @@
                     c.strokeStyle='#d7c5a7';c.lineWidth=2;c.beginPath();c.arc(0,-1,8,0,Math.PI*2);c.stroke();
                     for(let x=-7;x<=7;x+=7){c.fillStyle='#c6d0d5';c.beginPath();c.arc(x,0,2,0,Math.PI*2);c.fill();}
                 } else if(subType==='mine'){
-                    c.fillStyle='#b64b42';c.beginPath();c.arc(0,0,11,0,Math.PI*2);c.fill();c.strokeStyle='#f5c6a5';c.lineWidth=2;c.stroke();
-                    c.fillStyle='#f5d36a';c.beginPath();c.arc(0,0,4,0,Math.PI*2);c.fill();c.strokeStyle='#d9e1e5';c.beginPath();c.moveTo(-4,-13);c.lineTo(4,-13);c.stroke();
+                    c.fillStyle='#343b43';c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();c.strokeStyle='#ff7043';c.lineWidth=2;c.stroke();
+                    c.fillStyle='#e65100';c.beginPath();c.arc(0,0,8,0,Math.PI*2);c.fill();c.strokeStyle='#ffcc80';c.lineWidth=2;c.stroke();
+                    c.strokeStyle='#17232b';c.lineWidth=2;for(let p=0;p<8;p++){const a=p*Math.PI/4;c.beginPath();c.moveTo(Math.cos(a)*10,Math.sin(a)*10);c.lineTo(Math.cos(a)*14,Math.sin(a)*14);c.stroke();}
+                    c.fillStyle='#ffeb3b';c.beginPath();c.arc(0,0,3,0,Math.PI*2);c.fill();c.strokeStyle='#ffab91';c.lineWidth=1;c.beginPath();c.arc(0,0,16,0,Math.PI*2);c.stroke();
                 } else if(subType==='glue'){
                     path([[-12,-5],[-8,-10],[8,-10],[12,-5],[8,8],[-8,8]],'#4c9a9b');
                     c.fillStyle='#b7f0dc';for(let x=-6;x<=6;x+=6){c.beginPath();c.arc(x,0,2,0,Math.PI*2);c.fill();}
