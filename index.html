@@ -260,7 +260,7 @@
 
             <div id="shop-tab-rides" class="shop-content">
                 <div class="shop-item-card"><span>🚲 Fast Bike (Cap: 1 | +15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +40% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +50% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
@@ -3110,14 +3110,22 @@
             }
         }
 
+        function getEquippedWeapon() {
+            return activeHotbar >= 3 && activeHotbar <= 5 ? weaponBarSlots[activeHotbar - 3] : null;
+        }
+        function getCameraZoom() {
+            return getEquippedWeapon() === 'sniper' ? 0.70 : 1;
+        }
+
         function triggerWeaponAttack(clickX, clickY) {
             if (checkInsideBase(posX, posY, playerTeam)) {
                 showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
                 return;
             }
 
-            const targetWorldX = posX + (clickX - canvas.width/2);
-            const targetWorldY = posY + (clickY - canvas.height/2);
+            const cameraZoom = getCameraZoom();
+            const targetWorldX = posX + (clickX - canvas.width/2) / cameraZoom;
+            const targetWorldY = posY + (clickY - canvas.height/2) / cameraZoom;
 
             if (activeHotbar === 0 && !actionCdAttack) {
                 if (isPractice) {
@@ -3370,7 +3378,7 @@
             const sprintKeyDown = !!(keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']);
             if (sprintKeyDown && hasMovementInput) {
                 if (activeMode === 'creative' || currentStamina > 2) {
-                    sprintMultiplier = 1.75;
+                    sprintMultiplier = 1.15;
                     if (activeMode !== 'creative') currentStamina = Math.max(0, currentStamina - 0.5);
                 }
             } else if (activeMode !== 'creative') {
@@ -3390,7 +3398,9 @@
             }
 
             if (boardedVehicle) {
-                sprintMultiplier = 1.95;
+                const vehicleSpeedBonus = boardedVehicle.type === 'car' ? 1.50 :
+                    boardedVehicle.type === 'bike' ? 1.15 : 1.95;
+                sprintMultiplier = vehicleSpeedBonus * (sprintKeyDown && hasMovementInput ? 1.15 : 1);
             }
 
             let dx = 0, dy = 0;
@@ -3914,6 +3924,10 @@
                 camX += (mouseXCoord - canvas.width / 2) * 0.35;
                 camY += (mouseYCoord - canvas.height / 2) * 0.35;
             }
+            const cameraZoom = getCameraZoom();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(cameraZoom, cameraZoom);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
             ctx.translate(-camX, -camY);
 
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
