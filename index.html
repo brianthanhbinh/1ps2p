@@ -3761,11 +3761,12 @@
                     currentAmmo--;
                     saveSelectedAmmo();
                     refreshAmmoHud();
-                    const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 4 + Math.floor(Math.random() * 3) : 1;
+                    const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 5 : 1;
                     const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : 18;
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let shotAngle = aimAngle;
                         if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
+                        if (gunEquipped === 'burst') shotAngle += (bIdx - 2) * 0.025;
                         bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, damageMultiplier: getVehicleDamageOutputMultiplier(), distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
                     }
                     if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
@@ -4031,7 +4032,8 @@
                     if (fp.vx) fp.x += fp.vx;
                     if (fp.vy) fp.y += fp.vy;
                     if (fp.smoke) fp.radius += 0.06;
-                    fp.alpha -= fp.smoke ? 0.012 : 0.02;
+                    if (fp.ice) fp.radius *= 0.985;
+                    fp.alpha -= fp.smoke ? 0.012 : fp.ice ? 0.045 : 0.02;
                     if (fp.alpha <= 0) floatingParticles.splice(i, 1);
                 }
             }
@@ -4040,6 +4042,7 @@
                 const b = bulletsList[i];
                 b.x += b.vx;
                 b.y += b.vy;
+                if (b.type === 'freeze' && Math.random() < 0.9) floatingParticles.push({x:b.x,y:b.y,vx:(Math.random()-.5)*1.4,vy:(Math.random()-.5)*1.4,radius:2+Math.random()*3,alpha:.9,ice:true});
                 b.distanceTravelled = (b.distanceTravelled || 0) + Math.hypot(b.vx, b.vy);
                 if (b.distanceTravelled > (b.maxDistance || 900)) { bulletsList.splice(i, 1); continue; }
 
@@ -4393,6 +4396,8 @@
                 ctx.shadowBlur=12;ctx.shadowColor=color;ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,8,3,0,0,Math.PI*2);ctx.fill();
             } else if (b.type === 'flame') {
                 ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,Math.PI*2);ctx.fill();
+            } else if (b.type === 'freeze') {
+                ctx.shadowBlur=14;ctx.shadowColor='#8beaff';ctx.fillStyle='#bdf5ff';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(0,-5);ctx.lineTo(-7,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
             } else {
                 ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-6,-2.5,12,5,2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(-3,-1,5,1);
             }
@@ -4800,6 +4805,8 @@
                     ctx.beginPath();
                     ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI * 2);
                     ctx.stroke();
+                } else if (fp.ice) {
+                    ctx.translate(fp.x,fp.y);ctx.rotate((fp.vx||0)*2);ctx.shadowColor='#7deaff';ctx.shadowBlur=8;ctx.fillStyle='#c9f7ff';ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-fp.radius*1.8);ctx.lineTo(fp.radius,0);ctx.lineTo(0,fp.radius*1.8);ctx.lineTo(-fp.radius,0);ctx.closePath();ctx.fill();ctx.stroke();
                 } else if (fp.smoke) {
                     ctx.fillStyle = '#aeb8bf';
                     ctx.beginPath(); ctx.arc(fp.x, fp.y, fp.radius, 0, Math.PI*2); ctx.fill();
