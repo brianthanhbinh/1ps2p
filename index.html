@@ -357,8 +357,6 @@
             <button style="width:100%; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleInventoryPanel()">Close (E)</button>
         </div>
 
-        <button id="friends-lobby-button" onclick="openFriendsOverlay()">👥 Friends</button>
-
         <!-- Chat Feed & Input -->
         <div id="chat-box">
             <div id="chat-tabs">
@@ -461,6 +459,8 @@
             <button id="mobile-scope" class="mobile-action" onclick="toggleMobileScope()">SCOPE</button>
         </div>
     </div>
+
+    <button id="friends-lobby-button" onclick="openFriendsOverlay()" style="position:fixed!important;right:20px!important;bottom:20px!important;z-index:999999!important;display:block!important;pointer-events:auto!important;background:#1769aa;color:white;border:2px solid #9bd5ff;border-radius:10px;padding:13px 20px;font-size:16px;font-weight:800;box-shadow:0 5px 20px #000b;cursor:pointer;">👥 FRIENDS</button>
 
     <script>
         const canvas = document.getElementById('canvas-main');
