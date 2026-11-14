@@ -2572,13 +2572,21 @@
 
             let moveSpeed = Date.now() < playerSlowUntil ? 1.8 : 3.8;
             let sprintMultiplier = 1.0;
-            if (keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']) {
+            const hasMovementInput = !!(
+                keyboardInput['KeyW'] || keyboardInput['ArrowUp'] ||
+                keyboardInput['KeyS'] || keyboardInput['ArrowDown'] ||
+                keyboardInput['KeyA'] || keyboardInput['ArrowLeft'] ||
+                keyboardInput['KeyD'] || keyboardInput['ArrowRight']
+            );
+            const sprintKeyDown = !!(keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']);
+            if (sprintKeyDown && hasMovementInput) {
                 if (activeMode === 'creative' || currentStamina > 2) {
                     sprintMultiplier = 1.75;
-                    if (activeMode !== 'creative') currentStamina -= 0.5;
+                    if (activeMode !== 'creative') currentStamina = Math.max(0, currentStamina - 0.5);
                 }
-            } else {
-                currentStamina = Math.min(100, currentStamina + 0.3);
+            } else if (activeMode !== 'creative') {
+                // Recover slowly whenever the player is not actively sprinting.
+                currentStamina = Math.min(100, currentStamina + 0.08);
             }
             if (activeMode === 'creative') currentStamina = 100;
 
