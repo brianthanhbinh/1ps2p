@@ -1955,34 +1955,102 @@
         function updateBossFightAI() {
             if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
             const now = Date.now();
+            const tier = bossEntity.difficulty || botDifficulty || 'normal';
+            const settings = {
+                easy:    { lead: 0, pathLookahead: 0, speed: 1.35, attackDelay: 1050, rethink: 110 },
+                normal:  { lead: 0.18, pathLookahead: 36, speed: 1.8, attackDelay: 850, rethink: 85 },
+                hard:    { lead: 0.38, pathLookahead: 70, speed: 2.35, attackDelay: 700, rethink: 55 },
+                extreme: { lead: 0.72, pathLookahead: 115, speed: 2.9, attackDelay: 560, rethink: 32 }
+            }[tier] || { lead: 0, pathLookahead: 0, speed: 1.35, attackDelay: 1050, rethink: 110 };
+
+            // Track player movement on the host, then estimate where each target is heading.
+            if (!bossEntity.targetHistory) bossEntity.targetHistory = {};
             const targets = [{ x: posX, y: posY, hp: currentHp, id: peerInstance && peerInstance.id }];
             for (const pid in remotePlayers) {
                 const p = remotePlayers[pid];
                 if (p && p.hp > 0) targets.push({ x: p.x, y: p.y, hp: p.hp, id: pid });
             }
-            const living = targets.filter(p => p.hp > 0);
+            const living = targets.filter(p => p.hp > 0 && Number.isFinite(p.x) && Number.isFinite(p.y));
             if (!living.length) return;
+
             let target = living[0], best = Infinity;
             for (const p of living) {
                 const d = Math.hypot(p.x - bossEntity.x, p.y - bossEntity.y);
                 if (d < best) { best = d; target = p; }
             }
-            const tier = bossEntity.difficulty || botDifficulty || 'normal';
-            const speed = ({ easy: 1.35, normal: 1.8, hard: 2.35, extreme: 2.9 })[tier] || 1.8;
-            const attackDelay = ({ easy: 1050, normal: 850, hard: 700, extreme: 560 })[tier] || 850;
+            const history = bossEntity.targetHistory[target.id] || { x: target.x, y: target.y, at: now, vx: 0, vy: 0 };
+            const elapsed = Math.max(1, Math.min(250, now - history.at));
+            const instantVx = (target.x - history.x) / elapsed;
+            const instantVy = (target.y - history.y) / elapsed;
+            history.vx = history.vx * 0.45 + instantVx * 0.55;
+            history.vy = history.vy * 0.45 + instantVy * 0.55;
+            history.x = target.x;
+            history.y = target.y;
+            history.at = now;
+            bossEntity.targetHistory[target.id] = history;
+
+            const leadMs = settings.lead * 1000;
+            const predicted = {
+                x: Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, target.x + history.vx * leadMs)),
+                y: Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, target.y + history.vy * leadMs))
+            };
+            const distanceToTarget = Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y);
+            const attackReach = bossEntity.radius + RADIUS_PLAYER + 7;
+
+            // Choose a clear movement direction that closes distance to the predicted intercept.
+            // Extreme checks more candidate directions and replans more often instead of walking
+            // straight into walls or blindly following the player's last position.
             if (now >= (bossEntity.nextMoveAt || 0)) {
-                const a = Math.atan2(target.y - bossEntity.y, target.x - bossEntity.x);
-                const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(a) * speed));
-                const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(a) * speed));
-                if (!checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius)) bossEntity.x = nx;
-                if (!checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius)) bossEntity.y = ny;
-                bossEntity.nextMoveAt = now + 16;
+                const desiredAngle = Math.atan2(predicted.y - bossEntity.y, predicted.x - bossEntity.x);
+                const candidateOffsets = tier === 'extreme'
+                    ? [0, -0.22, 0.22, -0.48, 0.48, -0.82, 0.82, -1.2, 1.2, Math.PI]
+                    : tier === 'hard'
+                        ? [0, -0.3, 0.3, -0.7, 0.7, Math.PI]
+                        : tier === 'normal' ? [0, -0.5, 0.5, Math.PI] : [0];
+                let chosen = null, chosenScore = Infinity;
+                for (const offset of candidateOffsets) {
+                    const angle = desiredAngle + offset;
+                    const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(angle) * settings.speed));
+                    const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(angle) * settings.speed));
+                    if (checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius) ||
+                        checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius) ||
+                        checkCollisionWithBlocks(nx, ny, bossEntity.radius)) continue;
+                    const remaining = Math.hypot(predicted.x - nx, predicted.y - ny);
+                    const alignment = Math.abs(offset) * settings.pathLookahead;
+                    const score = remaining + alignment;
+                    if (score < chosenScore) { chosenScore = score; chosen = { x: nx, y: ny }; }
+                }
+                if (chosen) {
+                    bossEntity.x = chosen.x;
+                    bossEntity.y = chosen.y;
+                    bossEntity.stuckSince = 0;
+                } else {
+                    bossEntity.stuckSince = bossEntity.stuckSince || now;
+                    if (tier === 'extreme' && now - bossEntity.stuckSince > 300) {
+                        // A blocked direct route? Reposition toward the nearest clear side.
+                        const escapeAngles = Array.from({ length: 16 }, (_, i) => i * Math.PI / 8);
+                        for (const angle of escapeAngles) {
+                            const nx = bossEntity.x + Math.cos(angle) * settings.speed * 2;
+                            const ny = bossEntity.y + Math.sin(angle) * settings.speed * 2;
+                            if (nx > bossEntity.radius && ny > bossEntity.radius &&
+                                nx < MAP_SIZE - bossEntity.radius && ny < MAP_SIZE - bossEntity.radius &&
+                                !checkCollisionWithBlocks(nx, ny, bossEntity.radius)) {
+                                bossEntity.x = nx; bossEntity.y = ny; break;
+                            }
+                        }
+                    }
+                }
+                bossEntity.nextMoveAt = now + settings.rethink;
             }
-            if (best < bossEntity.radius + RADIUS_PLAYER + 7 && now >= (bossEntity.nextAttackAt || 0)) {
+
+            // Re-check the actual target position for melee contact; prediction is for movement,
+            // not for granting hits from a distance.
+            const actualDistance = Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y);
+            if (actualDistance < attackReach && now >= (bossEntity.nextAttackAt || 0)) {
                 const damage = 15;
                 if (target.id === (peerInstance && peerInstance.id)) currentHp = Math.max(0, currentHp - damage);
                 else if (remotePlayers[target.id]) remotePlayers[target.id].hp = Math.max(0, remotePlayers[target.id].hp - damage);
-                bossEntity.nextAttackAt = now + attackDelay;
+                bossEntity.nextAttackAt = now + settings.attackDelay;
                 showNotificationBox('The Boss hit a Raider! -15 HP');
             }
             if (now >= (bossEntity.nextBroadcastAt || 0)) {
