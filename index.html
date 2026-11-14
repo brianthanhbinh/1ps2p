@@ -591,7 +591,7 @@
             fire.addEventListener('pointerup',stopFire);fire.addEventListener('pointercancel',stopFire);fire.addEventListener('pointerleave',stopFire);
         }
         window.addEventListener('DOMContentLoaded',initMobileControls);
-        const RADIUS_PLAYER = 21;
+        const RADIUS_PLAYER = 20; // One 40px block wide
         const ZONE_SIZE = 500;
 
         let inGameActive = false;
@@ -878,7 +878,10 @@
         function drawPlayerSkinTexture(context, image, radius) {
             if (!context || !image || !image.complete || !image.naturalWidth || !image.naturalHeight) return false;
             const diameter = radius * 2;
-            const scale = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
+            // Skin PNGs often contain transparent padding; zoom the artwork inside
+            // the exact circular hitbox so the visible avatar does not look undersized.
+            const artworkDiameter = diameter * 1.22;
+            const scale = Math.max(artworkDiameter / image.naturalWidth, artworkDiameter / image.naturalHeight);
             const width = image.naturalWidth * scale;
             const height = image.naturalHeight * scale;
             context.save();
