@@ -1956,6 +1956,17 @@
             }
             broadcastStateToClients();
         }
+        function isBossInsideAnyBase(x, y) {
+            const teams = ['Red', 'Blue', 'Green', 'Yellow'];
+            const margin = bossEntity ? bossEntity.radius : RADIUS_PLAYER;
+            for (const team of teams) {
+                const base = getTeamBaseRegion(team);
+                if (base && x + margin > base.x1 && x - margin < base.x2 &&
+                    y + margin > base.y1 && y - margin < base.y2) return true;
+            }
+            return false;
+        }
+
         function updateBossFightAI() {
             if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
             const now = Date.now();
@@ -2069,7 +2080,10 @@
                     const angle = desiredAngle + offset;
                     const nx = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.x + Math.cos(angle) * bossMoveSpeed));
                     const ny = Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, bossEntity.y + Math.sin(angle) * bossMoveSpeed));
-                    if (checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius) ||
+                    // Team bases are safe zones: reject any step that would let the
+                    // boss's full collision radius overlap a base, not just its center.
+                    if (isBossInsideAnyBase(nx, ny) ||
+                        checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius) ||
                         checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius) ||
                         checkCollisionWithBlocks(nx, ny, bossEntity.radius)) continue;
                     const remaining = Math.hypot(predicted.x - nx, predicted.y - ny);
@@ -2117,6 +2131,7 @@
                             const ny = bossEntity.y + Math.sin(angle) * bossMoveSpeed * 2;
                             if (nx > bossEntity.radius && ny > bossEntity.radius &&
                                 nx < MAP_SIZE - bossEntity.radius && ny < MAP_SIZE - bossEntity.radius &&
+                                !isBossInsideAnyBase(nx, ny) &&
                                 !checkCollisionWithBlocks(nx, ny, bossEntity.radius)) {
                                 bossEntity.x = nx; bossEntity.y = ny; break;
                             }
