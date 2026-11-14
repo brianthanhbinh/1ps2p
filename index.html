@@ -1955,7 +1955,7 @@
 
 
         function damageRaidBoss(amount) {
-            if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
+            if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated || bossEntity.timeoutHandled) return;
             bossEntity.hp = Math.max(0, bossEntity.hp - Math.max(0, Number(amount) || 0));
             if (bossEntity.hp <= 0) {
                 bossEntity.hp = 0;
@@ -2002,7 +2002,8 @@
             if (!isWalkable(goal)) {
                 let nearest = null, nearestDistance = Infinity;
                 const gx = rawGoal % cols, gy = Math.floor(rawGoal / cols);
-                for (let radius = 1; radius <= 5 && nearest === null; radius++) {
+                const maxSearchRadius = Math.ceil(ZONE_SIZE / cellSize) + 4;
+            for (let radius = 1; radius <= maxSearchRadius && nearest === null; radius++) {
                     for (let oy = -radius; oy <= radius; oy++) {
                         for (let ox = -radius; ox <= radius; ox++) {
                             if (Math.max(Math.abs(ox), Math.abs(oy)) !== radius) continue;
@@ -2241,7 +2242,8 @@
                         checkCollisionWithBlocks(nx, bossEntity.y, bossEntity.radius) ||
                         checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius) ||
                         checkCollisionWithBlocks(nx, ny, bossEntity.radius)) continue;
-                    const remaining = Math.hypot(predicted.x - nx, predicted.y - ny);
+                    const routePoint = path.length ? navigationGoal : predicted;
+                    const remaining = Math.hypot(routePoint.x - nx, routePoint.y - ny);
                     const alignment = Math.abs(offset) * (tier === 'extreme' ? 0.15 : tier === 'hard' ? 24 : 40);
                     let dodgePenalty = 0;
                     // Score how close each projectile's next 300ms trajectory comes to
