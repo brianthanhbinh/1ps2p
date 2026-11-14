@@ -1337,7 +1337,7 @@
                 spawnPracticeBots();
             }
             if (activeMode === 'bossfight' && isHosting && !bossEntity) {
-                bossEntity = { id: 'raid-boss', username: 'THE BOSS', x: MAP_SIZE / 2, y: MAP_SIZE / 2, hp: 300, maxHp: 300, radius: RADIUS_PLAYER * 1.5, damage: 15, difficulty: botDifficulty, color: '#8e24aa', nextAttackAt: 0, nextMoveAt: 0, defeated: false, endsAt: Date.now() + 300000, path: null, nextPathAt: 0 };
+                bossEntity = { id: 'raid-boss', username: 'THE BOSS', x: MAP_SIZE / 2, y: MAP_SIZE / 2, hp: 300, maxHp: 300, radius: RADIUS_PLAYER * 1.5, damage: 15, difficulty: botDifficulty, color: '#8e24aa', nextAttackAt: 0, nextMoveAt: 0, nextShotAt: 0, nextBlockBreakAt: 0, projectiles: [], defeated: false, endsAt: Date.now() + 300000, path: null, nextPathAt: 0 };
                 bossVictoryId = null;
                 const bossTimerHud = document.getElementById('bossfight-timer');
                 if (bossTimerHud) bossTimerHud.style.display = 'block';
@@ -2096,6 +2096,64 @@
             }
         }
 
+        function updateBossProjectiles(now) {
+            if (!isHosting || !bossEntity) return;
+            if (!Array.isArray(bossEntity.projectiles)) bossEntity.projectiles = [];
+            for (let i = bossEntity.projectiles.length - 1; i >= 0; i--) {
+                const shot = bossEntity.projectiles[i];
+                shot.x += shot.vx; shot.y += shot.vy; shot.life = (shot.life || 0) - 1;
+                if (shot.life <= 0 || shot.x < 0 || shot.y < 0 || shot.x > MAP_SIZE || shot.y > MAP_SIZE) {
+                    bossEntity.projectiles.splice(i, 1); continue;
+                }
+                let hitBlock = false;
+                for (const key in worldBlocks) {
+                    const parts = key.split(','), bx = Number(parts[0]) * 40, by = Number(parts[1]) * 40;
+                    if (shot.x >= bx && shot.x <= bx + 40 && shot.y >= by && shot.y <= by + 40) {
+                        const block = worldBlocks[key];
+                        if (block) {
+                            if (!Number.isFinite(block.hp)) block.hp = Number(block.maxHp) || 100;
+                            block.hp -= shot.blockDamage || 38;
+                            if (block.hp <= 0) { delete worldBlocks[key]; dropBrokenBlock(block, bx + 20, by + 20); }
+                        }
+                        floatingParticles.push({x:shot.x,y:shot.y,radius:3,maxRadius:18,alpha:0.9,isShockwave:true});
+                        hitBlock = true; break;
+                    }
+                }
+                if (hitBlock) { bossEntity.projectiles.splice(i, 1); continue; }
+                let hitPlayer = false;
+                if (currentHp > 0 && Math.hypot(shot.x-posX,shot.y-posY) < RADIUS_PLAYER+5) {
+                    currentHp = Math.max(0,currentHp-(shot.damage||14)); hitPlayer = true;
+                } else {
+                    for (const pid in remotePlayers) {
+                        const p = remotePlayers[pid];
+                        if (p && p.hp > 0 && Math.hypot(shot.x-p.x,shot.y-p.y) < RADIUS_PLAYER+5) {
+                            p.hp = Math.max(0,p.hp-(shot.damage||14)); hitPlayer = true; break;
+                        }
+                    }
+                }
+                if (hitPlayer) bossEntity.projectiles.splice(i, 1);
+            }
+        }
+
+        function bossBreakBlockAhead(angle, now) {
+            if (!bossEntity || now < (bossEntity.nextBlockBreakAt || 0)) return false;
+            for (let distance = bossEntity.radius + 8; distance <= bossEntity.radius + 68; distance += 12) {
+                const x = bossEntity.x + Math.cos(angle) * distance, y = bossEntity.y + Math.sin(angle) * distance;
+                const key = Math.floor(x / 40) + ',' + Math.floor(y / 40), block = worldBlocks[key];
+                if (!block) continue;
+                const bx = Math.floor(x / 40) * 40, by = Math.floor(y / 40) * 40;
+                if (!Number.isFinite(block.hp)) block.hp = Number(block.maxHp) || 100;
+                block.hp -= 38; bossEntity.nextBlockBreakAt = now + 280;
+                floatingParticles.push({x:bx+20,y:by+20,radius:4,maxRadius:24,alpha:0.85,isShockwave:true});
+                if (block.hp <= 0) {
+                    delete worldBlocks[key]; dropBrokenBlock(block,bx+20,by+20);
+                    showNotificationBox('The Boss smashed through a block!');
+                }
+                return true;
+            }
+            return false;
+        }
+
         function updateBossFightAI() {
             if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
             const now = Date.now();
@@ -2298,6 +2356,28 @@
                 }
                 bossEntity.nextMoveAt = now + settings.rethink;
             }
+
+            // The boss fires aimed shots. Projectiles are host-authoritative and can hit
+            // Raiders or damage blocks that stand between the boss and its target.
+            if (!Array.isArray(bossEntity.projectiles)) bossEntity.projectiles = [];
+            const fireDelay = tier === 'extreme' ? 360 : tier === 'hard' ? 520 : tier === 'normal' ? 720 : 1050;
+            if (target && now >= (bossEntity.nextShotAt || 0)) {
+                const speed = 8.2, lead = Math.min(0.42, Math.max(0.08, Math.hypot(target.x-bossEntity.x,target.y-bossEntity.y)/950));
+                const aimX = target.x + (history.vx || 0) * lead * 1000;
+                const aimY = target.y + (history.vy || 0) * lead * 1000;
+                const angle = Math.atan2(aimY-bossEntity.y,aimX-bossEntity.x);
+                bossEntity.projectiles.push({
+                    id:'boss-shot-'+now+'-'+Math.random().toString(36).slice(2,6),
+                    x:bossEntity.x+Math.cos(angle)*(bossEntity.radius+5),
+                    y:bossEntity.y+Math.sin(angle)*(bossEntity.radius+5),
+                    vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+                    damage:tier==='extreme'?17:tier==='hard'?15:13, blockDamage:38, life:105
+                });
+                bossEntity.nextShotAt = now + fireDelay;
+            }
+            updateBossProjectiles(now);
+            // If it cannot step around the wall in front of it, it smashes the block.
+            if (!chosen) bossBreakBlockAhead(desiredAngle,now);
 
             // Contact is still checked against the real player position; prediction only
             // guides pursuit. Extreme's shorter cooldown makes close-range reactions quicker.
@@ -4188,6 +4268,14 @@
 
             bulletsList.forEach(drawNetworkBullet);
             hostRemoteBullets.forEach(drawNetworkBullet);
+            if (bossEntity && Array.isArray(bossEntity.projectiles)) {
+                bossEntity.projectiles.forEach(shot => {
+                    ctx.save(); ctx.shadowColor='#d500f9'; ctx.shadowBlur=13;
+                    ctx.fillStyle='#ea80fc'; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.arc(shot.x,shot.y,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                    ctx.restore();
+                });
+            }
             for (const pid in remotePlayers) {
                 const rp = remotePlayers[pid];
                 if (rp && Array.isArray(rp.bullets)) rp.bullets.forEach(drawNetworkBullet);
