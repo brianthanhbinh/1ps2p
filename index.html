@@ -1884,7 +1884,10 @@
                     // The host game loop already broadcasts authoritative state.
                     // Avoid an extra full-room broadcast for every incoming player update.
                 } else if (data.type === 'place_block') {
-                    worldBlocks[data.key] = data.block;
+                    // A null block means it was mined; remove the key instead of
+                    // storing null, which can break world rendering for every client.
+                    if (data.block) worldBlocks[data.key] = data.block;
+                    else delete worldBlocks[data.key];
                     broadcastStateToClients();
                 } else if (data.type === 'place_trap') {
                     activeTraps[data.key] = data.trap;
@@ -3003,6 +3006,7 @@
 
             for (let k in worldBlocks) {
                 const blk = worldBlocks[k];
+                if (!blk || typeof blk !== 'object') continue;
                 const parts = k.split(',');
                 const bx = parseInt(parts[0]) * 40;
                 const by = parseInt(parts[1]) * 40;
