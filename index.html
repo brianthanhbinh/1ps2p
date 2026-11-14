@@ -2904,7 +2904,10 @@
             document.getElementById('friends-panel').classList.toggle('active', activeChatTab === 'friends');
             const input = document.getElementById('chat-text-input');
             input.placeholder = activeChatTab === 'team' ? 'Message your team...' : 'Message everyone...';
-            if (activeChatTab === 'friends') input.style.display = 'none';
+            if (activeChatTab === 'friends') {
+                input.style.display = 'none';
+                input.blur();
+            }
             renderFriendsList();
         }
 
@@ -3110,6 +3113,7 @@
             document.getElementById('input-username').value = myUsername || 'Combatant';
             if (info.gameMode) hostGameMode = info.gameMode;
             switchChatTab('all');
+            if (inGameActive) exitToLobby();
             initJoinRoom();
         }
 
@@ -3133,6 +3137,12 @@
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
+            if (activeChatTab === 'friends') {
+                input.value = '';
+                input.blur();
+                input.style.display = 'none';
+                return;
+            }
             if (txt) {
                 const packet = { type: 'chat_message', channel: activeChatTab, message: txt, teamColor: playerColor, trophies: getBossTrophies() };
                 localChatBubbleText = txt;
@@ -3225,6 +3235,7 @@
             }
             if (e.code === 'KeyT') {
                 e.preventDefault();
+                if (activeChatTab === 'friends') switchChatTab('all');
                 const chatInput = document.getElementById('chat-text-input');
                 chatInput.style.display = 'block';
                 chatInput.focus();
