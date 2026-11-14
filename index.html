@@ -222,7 +222,7 @@
 /* Ensure yellow team button color */
 .btn-team-yellow { background:#fbc02d !important; color:#000 !important; }
 </style>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" onerror="window.peerJsLoadFailed = true;"></script>
 </head>
 <body>
 
@@ -464,6 +464,8 @@
             <div id="net-status">Ready to Connect</div>
         </div>
 
+        <button id="friends-lobby-button" type="button" onclick="openFriendsFromLobby()">Friends</button>
+
         <!-- Generic Modal Screen -->
         <div id="modal-screen">
             <div class="modal-card">
@@ -508,6 +510,21 @@
 
 
     <script>
+        function createPeer(...args) {
+            if (window.peerJsLoadFailed || typeof window.Peer !== 'function') {
+                const status = document.getElementById('net-status');
+                if (status) status.textContent = 'Connection unavailable: PeerJS failed to load. Check your internet connection and refresh.';
+                throw new Error('PeerJS is unavailable. The PeerJS library did not load.');
+            }
+            return new window.Peer(...args);
+        }
+
+        function openFriendsFromLobby() {
+            const chatBox = document.getElementById('chat-box');
+            if (chatBox) chatBox.style.display = 'flex';
+            if (typeof switchChatTab === 'function') switchChatTab('friends');
+        }
+
         const canvas = document.getElementById('canvas-main');
         const ctx = canvas ? canvas.getContext('2d') : null;
 
@@ -1520,7 +1537,7 @@
             document.getElementById('net-status').innerText = 'Initializing Host Peer...';
             if (peerInstance) peerInstance.destroy();
 
-            peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+            peerInstance = createPeer(formatPeerId(roomCode), { debug: 1 });
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
@@ -1578,7 +1595,7 @@
             document.getElementById('net-status').innerText = 'Connecting via Direct Link...';
 
             if (peerInstance) peerInstance.destroy();
-            peerInstance = new Peer({ debug: 1 });
+            peerInstance = createPeer({ debug: 1 });
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 const targetHostId = formatPeerId(roomCode);
@@ -1603,7 +1620,7 @@
                     if (!connected) {
                         conn.close();
                         peerInstance.destroy();
-                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance = createPeer(targetHostId, { debug: 1 });
                         peerInstance.on('open', () => {
                             isHosting = true;
                             currentMode = '4team';
@@ -1644,7 +1661,7 @@
             document.getElementById('net-status').innerText = `Connecting to ${serverCode}...`;
             if (peerInstance) peerInstance.destroy();
 
-            peerInstance = new Peer({ debug: 1 });
+            peerInstance = createPeer({ debug: 1 });
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 const targetHostId = formatPeerId(serverCode);
@@ -1662,7 +1679,7 @@
                         conn.close();
                         peerInstance.destroy();
                         
-                        peerInstance = new Peer(targetHostId, { debug: 1 });
+                        peerInstance = createPeer(targetHostId, { debug: 1 });
                         peerInstance.on('open', () => {
                             isHosting = true;
                             isPractice = false;
@@ -1691,7 +1708,7 @@
                 const gId = formatPeerId(gRoom);
                 if (!globalHostingInstances[gRoom]) {
                     try {
-                        const p = new Peer(gId, { debug: 0 });
+                        const p = createPeer(gId, { debug: 0 });
                         p.on('open', () => {
                             globalHostingInstances[gRoom] = p;
                             p.on('connection', (conn) => {
@@ -2064,7 +2081,7 @@
             document.getElementById('net-status').innerText = 'Connecting to Host...';
             if (peerInstance) peerInstance.destroy();
 
-            peerInstance = new Peer({ debug: 1 });
+            peerInstance = createPeer({ debug: 1 });
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 const targetHostId = formatPeerId(roomCode);
@@ -2941,7 +2958,7 @@
                 if (!isHosting && roomCode) {
                     isHosting = true;
                     if (peerInstance) peerInstance.destroy();
-                    peerInstance = new Peer(formatPeerId(roomCode), { debug: 1 });
+                    peerInstance = createPeer(formatPeerId(roomCode), { debug: 1 });
                     peerInstance.on('open', () => {
                         showNotificationBox('You are now the new room Host!');
                         document.getElementById('net-status').innerText = `Hosting Room: ${roomCode}`;
@@ -3162,7 +3179,7 @@
         function startPresencePeer() {
             if (!window.Peer || presencePeer) return;
             try {
-                presencePeer = new Peer(myDeviceId, { debug: 0 });
+                presencePeer = createPeer(myDeviceId, { debug: 0 });
                 presencePeer.on('open', () => { friendHeartbeat(); renderFriendsList(); });
                 presencePeer.on('connection', conn => attachFriendConnection(conn));
                 presencePeer.on('error', err => {
@@ -5281,13 +5298,17 @@
         const timeStep = 1000 / 60;
 
         function gameLoop(timestamp) {
-            const dt = timestamp - lastTime;
+            // A suspended/background tab can resume with a huge elapsed time.
+            // Clamp elapsed time and cap catch-up work to five fixed updates/frame.
+            const dt = Math.min(100, Math.max(0, timestamp - lastTime));
             lastTime = timestamp;
-            accumulator += dt;
+            accumulator = Math.min(accumulator + dt, timeStep * 5);
 
-            while (accumulator >= timeStep) {
+            let steps = 0;
+            while (accumulator >= timeStep && steps < 5) {
                 updateGameLogic();
                 accumulator -= timeStep;
+                steps++;
             }
 
             debugFrameCount++;
