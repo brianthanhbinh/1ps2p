@@ -4142,16 +4142,10 @@
                 const parts=k.split(','),fx=Number(parts[0])*40+20,fy=Number(parts[1])*40+20;
                 if(Math.hypot(posX-fx,posY-fy)<31){
                     const a=Number(fb.angle)||0;
-                    if(fb.type==='force'){
-                        const push=6.5,px=posX+Math.cos(a)*push,py=posY+Math.sin(a)*push;
-                        if(!checkCollisionWithBlocks(px,posY,RADIUS_PLAYER))posX=px;
-                        if(!checkCollisionWithBlocks(posX,py,RADIUS_PLAYER))posY=py;
-                    } else if(Date.now()>=nextForceLaunchAt){
-                        // The arrow direction is the launch direction. Momentum carries
-                        // the player beyond the pad and gradually fades with friction.
-                        // Force pads ADD velocity, preserving momentum from previous pads.
-                        // Force III contributes a stronger impulse than Force II.
-                        const launchImpulse=fb.type==='force3'?27:18;
+                    if(Date.now()>=nextForceLaunchAt){
+                        // All force pads launch along their arrow direction.
+                        // Regular Force is weaker; Force II and III provide stronger impulses.
+                        const launchImpulse=fb.type==='force3'?27:fb.type==='force2'?18:6.5;
                         playerMomentumX+=Math.cos(a)*launchImpulse;
                         playerMomentumY+=Math.sin(a)*launchImpulse;
                         // Keep combined momentum controllable even when several pads overlap.
