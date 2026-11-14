@@ -3013,7 +3013,6 @@
                     isHost: !!data.isHost,
                     lastSeen: Date.now()
                 };
-                if (conn.open) conn.send(currentFriendPresence());
                 renderFriendsList();
             });
             conn.on('close', () => {
@@ -3033,9 +3032,11 @@
             const payload = currentFriendPresence();
             for (const id of friends) {
                 let conn = friendConnections[id];
-                if (conn && conn.open) {
+                const lastSeen = friendPresence[id] && friendPresence[id].lastSeen || 0;
+                if (conn && conn.open && Date.now() - lastSeen < 15000) {
                     try { conn.send(payload); } catch (_) {}
-                } else if (!conn || conn.open === false) {
+                } else {
+                    if (conn) { try { conn.close(); } catch (_) {} delete friendConnections[id]; }
                     try {
                         conn = presencePeer.connect(id, { reliable: true });
                         attachFriendConnection(conn);
