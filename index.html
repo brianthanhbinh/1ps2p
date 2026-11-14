@@ -279,7 +279,7 @@
                 <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -467,7 +467,7 @@
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><small id="grenade-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><small id="smoke-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button></div></div>
         </div>
         <div id="mobile-controls" aria-label="Mobile game controls">
             <div id="move-stick"><div id="move-knob"></div></div>
@@ -623,7 +623,7 @@
         let activeSmokeClouds = [];
         let hostRemoteSmokeClouds = [];
         let activeTraps = {};
-        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0 };
+        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0, laser: 0, shock: 0, spring: 0 };
         let trapsCount = 2;
         let selectedTrapType = 'spike';
         function updateTrapTotal(){trapsCount=Object.values(trapInventory).reduce((sum,n)=>sum+(Number(n)||0),0);return trapsCount;}
@@ -1872,7 +1872,7 @@
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'trap') {
                 setSelectedTrapType(subtypeName);
-                const packCount = subtypeName === 'mine' ? 1 : 2;
+                const packCount = ['mine','laser'].includes(subtypeName) ? 1 : 2;
                 addTraps(subtypeName, packCount);
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${packCount}). Selected trap: ${selectedTrapType.toUpperCase()}`);
             } else if (itemType === 'block') {
@@ -3948,11 +3948,10 @@
                         showNotificationBox('💥 Mine detonated!');
                     }
                 } else {
-                    if (tr.type === 'glue') { playerSlowUntil = Date.now() + 2500; showNotificationBox('Glue trap! Movement slowed.'); }
-                    else if (tr.type === 'bounce') { const a = Math.atan2(posY-tr.y,posX-tr.x); posX += Math.cos(a)*55; posY += Math.sin(a)*55; showNotificationBox('Bounce trap!'); }
-                    else { currentHp -= tr.type === 'bear' ? 28 : 20; showNotificationBox(`Triggered ${String(tr.type || 'spike').toUpperCase()} trap!`); }
-                    delete activeTraps[tk];
-                    if(isHosting)broadcastStateToClients();
+                    if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
+                    else if(tr.type==='bounce'||tr.type==='spring'){const a=Math.atan2(posY-tr.y,posX-tr.x),boost=tr.type==='spring'?105:55;posX+=Math.cos(a)*boost;posY+=Math.sin(a)*boost;showNotificationBox(tr.type==='spring'?'Spring launcher!':'Bounce trap!');}
+                    else{const dmg=tr.type==='laser'?36:tr.type==='bear'?28:20;currentHp=Math.max(0,currentHp-dmg);showNotificationBox(tr.type==='laser'?'🔴 Laser tripwire triggered!':`Triggered ${String(tr.type||'spike').toUpperCase()} trap!`);}
+                    delete activeTraps[tk];if(isHosting)broadcastStateToClients();
                 }
             }
 
@@ -4564,7 +4563,7 @@
                     ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(tr.x,tr.y,3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffab91';ctx.lineWidth=1;ctx.beginPath();ctx.arc(tr.x,tr.y,19,0,Math.PI*2);ctx.stroke();
                 }else if(tr.type==='glue'){
                     ctx.fillStyle='#6d4c41';ctx.beginPath();ctx.roundRect(tr.x-15,tr.y-10,30,20,7);ctx.fill();ctx.stroke();ctx.fillStyle='#80cbc4';for(let p=-1;p<=1;p++){ctx.beginPath();ctx.arc(tr.x+p*8,tr.y,4,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#b2dfdb';ctx.beginPath();ctx.moveTo(tr.x-10,tr.y+13);ctx.lineTo(tr.x+10,tr.y+13);ctx.stroke();
-                }else if(tr.type==='bounce'){
+                }else if(tr.type==='laser'){const pulse=.65+.35*Math.sin(Date.now()/110);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff1744';ctx.lineWidth=3;ctx.shadowColor='#ff1744';ctx.shadowBlur=16;ctx.beginPath();ctx.moveTo(tr.x-38,tr.y);ctx.lineTo(tr.x+38,tr.y);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=pulse;ctx.fillStyle='#ff8a80';ctx.fillRect(tr.x-5,tr.y-5,10,10);}else if(tr.type==='shock'){ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#40c4ff';ctx.lineWidth=3;ctx.shadowColor='#40c4ff';ctx.shadowBlur=12;for(let z=0;z<4;z++){const a=Date.now()/250+z*Math.PI/2;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*5,tr.y+Math.sin(a)*5);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}ctx.shadowBlur=0;}else if(tr.type==='spring'){ctx.fillStyle='#37474f';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a5d6a7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tr.x,tr.y,10,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-9,tr.y+7);ctx.lineTo(tr.x-4,tr.y-1);ctx.lineTo(tr.x+1,tr.y+7);ctx.lineTo(tr.x+6,tr.y-1);ctx.lineTo(tr.x+10,tr.y+7);ctx.stroke();}else if(tr.type==='bounce'){
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
                 if((tr.hp||80)<(tr.maxHp||80)){ctx.fillStyle='#111';ctx.fillRect(tr.x-17,tr.y-23,34,4);ctx.fillStyle='#ffb74d';ctx.fillRect(tr.x-17,tr.y-23,34*Math.max(0,(tr.hp||0))/(tr.maxHp||80),4);}
