@@ -780,6 +780,7 @@
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
         let nextDamageBlockAt = 0;
+        const nextDamageBlockByPlayer = {};
         let droppedLoot = {};
         let supplyCrates = [];
         let bulletsList = [];
@@ -2856,6 +2857,9 @@
                 } else if (data.type === 'trap_damage') {
                     if (typeof data.hp === 'number') currentHp = data.hp;
                     if(Number.isFinite(data.x))posX=data.x;if(Number.isFinite(data.y))posY=data.y;if(data.slowedUntil)playerSlowUntil=Math.max(playerSlowUntil||0,data.slowedUntil);
+                } else if (data.type === 'block_damage') {
+                    if (typeof data.hp === 'number') currentHp = data.hp;
+                    showNotificationBox(`☠ Damage block! -${Number(data.damage) || 12} HP`);
                 } else if (data.type === 'hit_confirm') {
                     showNotificationBox(`Hit confirmed! -${data.damage} HP`);
                 } else if (data.type === 'crate_reward') {
@@ -4189,7 +4193,42 @@
                 if(velocityXLabel)velocityXLabel.textContent=playerMomentumX.toFixed(2);
                 if(velocityYLabel)velocityYLabel.textContent=playerMomentumY.toFixed(2);
             }
-            if(Date.now()>=nextDamageBlockAt){for(const k in worldBlocks){const db=worldBlocks[k];if(!db||db.type!=='damage')continue;const parts=k.split(','),cx=Number(parts[0])*40+20,cy=Number(parts[1])*40+20;if(Math.hypot(posX-cx,posY-cy)<31&&(db.team==='FFA'||db.team!==playerTeam)){currentHp=Math.max(0,currentHp-12);nextDamageBlockAt=Date.now()+900;showNotificationBox('☠ Damage block!');break;}}}
+            const damageNow = Date.now();
+            if (damageNow >= nextDamageBlockAt) {
+                for (const k in worldBlocks) {
+                    const db = worldBlocks[k];
+                    if (!db || db.type !== 'damage') continue;
+                    const parts = k.split(','), cx = Number(parts[0]) * 40 + 20, cy = Number(parts[1]) * 40 + 20;
+                    if (Math.hypot(posX - cx, posY - cy) < 31 && (db.team === 'FFA' || db.team !== playerTeam)) {
+                        currentHp = Math.max(0, currentHp - 12);
+                        nextDamageBlockAt = damageNow + 900;
+                        showNotificationBox('☠ Damage block! -12 HP');
+                        break;
+                    }
+                }
+            }
+            // The host also checks connected opponents, so placed Damage Blocks hurt
+            // other players even when they are not the player running this update.
+            if (isHosting) {
+                let changedDamageBlockHp = false;
+                for (const pid in remotePlayers) {
+                    const victim = remotePlayers[pid];
+                    if (!victim || victim.hp <= 0 || damageNow < (nextDamageBlockByPlayer[pid] || 0)) continue;
+                    for (const k in worldBlocks) {
+                        const db = worldBlocks[k];
+                        if (!db || db.type !== 'damage' || (db.team !== 'FFA' && db.team === victim.team)) continue;
+                        const parts = k.split(','), cx = Number(parts[0]) * 40 + 20, cy = Number(parts[1]) * 40 + 20;
+                        if (Math.hypot(victim.x - cx, victim.y - cy) >= 31) continue;
+                        victim.hp = Math.max(0, victim.hp - 12);
+                        nextDamageBlockByPlayer[pid] = damageNow + 900;
+                        const victimConn = peerConnections[pid];
+                        if (victimConn && victimConn.open) victimConn.send({ type: 'block_damage', hp: victim.hp, damage: 12 });
+                        changedDamageBlockHp = true;
+                        break;
+                    }
+                }
+                if (changedDamageBlockHp) broadcastStateToClients();
+            }
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
