@@ -2007,9 +2007,9 @@
             const history = bossEntity.targetHistory[target.id] || { vx: 0, vy: 0, ax: 0, ay: 0 };
             // Predict a short, continuously updated intercept. Acceleration helps the boss
             // recognize starts, stops and direction changes instead of extending old velocity.
-            const horizon = settings.lead;
-            const predictAxis = (position, velocity, acceleration, max) => {
-                const projected = position + velocity * horizon + 0.5 * acceleration * horizon * horizon * 1000;
+            const horizonMs = settings.lead * 1000;
+            const predictAxis = (position, velocity, acceleration) => {
+                const projected = position + velocity * horizonMs + 0.5 * acceleration * horizonMs * horizonMs;
                 return Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, projected));
             };
             const predicted = {
