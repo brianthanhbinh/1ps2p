@@ -242,6 +242,16 @@
             </div>
         </div>
 
+<div id="debug-panel" style="display:none;position:absolute;top:16px;left:260px;z-index:90;min-width:210px;padding:10px 12px;border:1px solid #42d9e8;border-radius:8px;background:rgba(5,12,18,.88);color:#eafaff;font:12px/1.65 monospace;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.45);">
+            <div style="font-weight:bold;color:#42d9e8;font-size:13px;margin-bottom:4px;">DEBUG MENU <span style="float:right;color:#aaa;">F2</span></div>
+            <div>FPS: <span id="debug-fps">0</span></div>
+            <div>Velocity X: <span id="debug-vx">0.00</span></div>
+            <div>Velocity Y: <span id="debug-vy">0.00</span></div>
+            <div>Speed: <span id="debug-speed">0.00</span></div>
+            <div>Position X: <span id="debug-pos-x">0</span></div>
+            <div>Position Y: <span id="debug-pos-y">0</span></div>
+            <div>Hitboxes: <span id="debug-hitboxes">ON</span></div>
+        </div>
 <div id="velocity-hud" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,.72);border:1px solid #546e7a;border-radius:7px;padding:7px 10px;color:#fff;font:11px/1.6 monospace;display:none;min-width:132px;pointer-events:none;">
             <div style="color:#80deea;font-weight:bold;margin-bottom:2px;">VELOCITY</div>
             <div>Velocity X: <span id="velocity-x">0.00</span></div>
@@ -763,6 +773,8 @@
         let forceBlockRotation = 0;
         // Launch velocity from Force II / Force III blocks.
         let playerMomentumX = 0, playerMomentumY = 0, nextForceLaunchAt = 0;
+        let debugMenuOpen = false;
+        let debugFrameCount = 0, debugFps = 0, debugLastFpsAt = performance.now();
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
         let nextDamageBlockAt = 0;
@@ -3434,6 +3446,13 @@
                 return;
             }
 
+            if (e.code === 'F2') {
+                e.preventDefault();
+                debugMenuOpen = !debugMenuOpen;
+                const debugPanel = document.getElementById('debug-panel');
+                if (debugPanel) debugPanel.style.display = debugMenuOpen ? 'block' : 'none';
+                return;
+            }
             keyboardInput[e.code] = true;
             if (e.code === 'Digit1') selectHotbarSlot(0);
             if (e.code === 'Digit2') selectHotbarSlot(1);
@@ -5117,6 +5136,42 @@
                 if (rp && Array.isArray(rp.bullets)) rp.bullets.forEach(drawNetworkBullet);
             }
 
+            if (debugMenuOpen) {
+                ctx.save();
+                ctx.lineWidth = 1.5 / Math.max(0.25, getCameraZoom());
+                ctx.strokeStyle = '#00f5ff';
+                ctx.fillStyle = 'rgba(0,245,255,.08)';
+                ctx.beginPath(); ctx.arc(posX, posY, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#ffcc00';
+                for (const pid in remotePlayers) {
+                    const rp = remotePlayers[pid];
+                    if (!rp || rp.hp <= 0) continue;
+                    ctx.beginPath(); ctx.arc(rp.x, rp.y, Number(rp.radius) || RADIUS_PLAYER, 0, Math.PI * 2); ctx.stroke();
+                }
+                if (Array.isArray(aiBots)) for (const bot of aiBots) {
+                    if (!bot || bot.hp <= 0) continue;
+                    ctx.beginPath(); ctx.arc(bot.x, bot.y, Number(bot.radius) || RADIUS_PLAYER, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.strokeStyle = '#ff66aa';
+                for (const key in worldBlocks) {
+                    const block = worldBlocks[key];
+                    if (!block) continue;
+                    const parts = key.split(',');
+                    const bx = Number(parts[0]) * 40 + 20, by = Number(parts[1]) * 40 + 20;
+                    ctx.save(); ctx.translate(Number.isFinite(Number(block.x)) ? Number(block.x) : bx, Number.isFinite(Number(block.y)) ? Number(block.y) : by);
+                    ctx.rotate(Number(block.angle) || 0);
+                    if (block.type === 'ball') { ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke(); }
+                    else ctx.strokeRect(-20, -20, 40, 40);
+                    ctx.restore();
+                }
+                ctx.strokeStyle = '#ff7043';
+                for (const bullet of bulletsList.concat(hostRemoteBullets)) {
+                    if (!bullet) continue;
+                    ctx.beginPath(); ctx.arc(bullet.x, bullet.y, Number(bullet.radius) || 4, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.restore();
+            }
+
             ctx.restore();
         }
 
@@ -5167,6 +5222,22 @@
                 accumulator -= timeStep;
             }
 
+            debugFrameCount++;
+            if (timestamp - debugLastFpsAt >= 500) {
+                debugFps = Math.round(debugFrameCount * 1000 / (timestamp - debugLastFpsAt));
+                debugFrameCount = 0;
+                debugLastFpsAt = timestamp;
+            }
+            if (debugMenuOpen) {
+                const setDebug = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+                setDebug('debug-fps', debugFps);
+                setDebug('debug-vx', playerMomentumX.toFixed(2));
+                setDebug('debug-vy', playerMomentumY.toFixed(2));
+                setDebug('debug-speed', Math.hypot(playerMomentumX, playerMomentumY).toFixed(2));
+                setDebug('debug-pos-x', Math.round(posX));
+                setDebug('debug-pos-y', Math.round(posY));
+                setDebug('debug-hitboxes', 'ON');
+            }
             renderGameScene();
             renderMinimapScene();
             requestAnimationFrame(gameLoop);
