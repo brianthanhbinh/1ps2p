@@ -618,6 +618,7 @@
             return BOT_DIFFICULTY_SETTINGS[botDifficulty] || BOT_DIFFICULTY_SETTINGS.easy;
         }
         function chooseBotWeapon(bot, distance, skill) {
+            if (skill <= 0) return 'smg'; // Easy keeps the original single-weapon behavior.
             const choices = distance < 115 ? ['shotgun', 'flame', 'smg'] : distance < 260 ? ['smg', 'ak', 'freeze', 'burst'] : distance < 470 ? ['ak', 'burst', 'laser', 'rocket'] : ['sniper', 'laser', 'ak'];
             if (!bot.weaponSwitchAt || Date.now() >= bot.weaponSwitchAt || !bot.heldWeapon) {
                 bot.heldWeapon = skill >= 3 ? choices[Math.floor(Math.random() * choices.length)] : choices[Math.min(choices.length - 1, skill === 2 ? 1 : skill)];
