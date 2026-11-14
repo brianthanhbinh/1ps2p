@@ -194,8 +194,19 @@
         .chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 0 0 8px 8px; padding: 8px; height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: none; flex-direction: column; gap: 3px; }
         .chat-feed.active { display:flex; }
         .chat-line { word-break: break-word; }
-        #friends-panel { display:none; background:rgba(0,0,0,.72); border:1px solid #555; border-radius:0 0 8px 8px; padding:8px; max-height:220px; overflow-y:auto; color:#fff; font-size:12px; }
+        #friends-panel { display:none; background:rgba(0,0,0,.78); border:1px solid #555; border-radius:0 0 8px 8px; padding:8px; color:#fff; font-size:12px; min-height:180px; }
         #friends-panel.active { display:block; }
+        #friends-list { max-height:145px; overflow-y:auto; }
+        .friend-row { cursor:pointer; }
+        .friend-row.selected { background:rgba(65,140,220,.25); border-radius:5px; }
+        #friend-conversation { display:none; border-top:1px solid #444; margin-top:7px; padding-top:7px; }
+        #friend-conversation.active { display:block; }
+        #friend-message-feed { height:115px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding:5px; background:#090d16; border-radius:6px; }
+        .friend-message { overflow-wrap:anywhere; }
+        .friend-message b { color:#8ecbff; }
+        #friend-message-input { width:100%; margin-top:6px; padding:8px; background:#171b27; border:1px solid #555; border-radius:6px; color:white; }
+        #friend-settings { display:none; border-top:1px solid #555; margin-top:8px; padding-top:8px; }
+        #friend-settings.active { display:block; }
         .friend-tools { display:flex; gap:5px; margin-bottom:7px; }
         .friend-tools input { min-width:0; flex:1; background:#171b27; border:1px solid #555; border-radius:5px; color:#fff; padding:6px; font-size:11px; }
         .friend-action { background:#286b9c; color:#fff; border:0; border-radius:5px; padding:6px 8px; font-size:11px; cursor:pointer; }
@@ -367,14 +378,24 @@
             <div class="chat-feed" id="chat-feed-team"></div>
             <div class="chat-feed active" id="chat-feed-all"></div>
             <div id="friends-panel">
-                <div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button class="friend-action" onclick="closeFriendsOverlay()">Close</button></div>
-                <div style="margin-bottom:6px;color:#ddd;">ID prefix (optional)</div>
-                <div class="friend-tools"><input id="device-id-prefix" maxlength="12" placeholder="ARENA-" /><button class="friend-action" onclick="saveDeviceIdPrefix()">Set</button></div>
-                <div style="margin-bottom:6px;color:#ddd;">Your device ID</div>
-                <div class="friend-tools"><input id="my-device-id" readonly /><button class="friend-action" onclick="copyDeviceId()">Copy ID</button></div>
-                <div style="margin:7px 0 5px;color:#ddd;">Add a friend by device ID</div>
-                <div class="friend-tools"><input id="add-friend-id" placeholder="Example: AXRDFGDWMYPC1234" maxlength="32" /><button class="friend-action" onclick="addFriendById()">Add</button></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <b>Direct messages</b>
+                    <button class="friend-action" onclick="toggleFriendSettings()">⚙ Manage friends</button>
+                </div>
                 <div id="friends-list"><div class="friend-offline">Loading friends…</div></div>
+                <div id="friend-conversation">
+                    <div id="friend-conversation-title" style="font-weight:bold;margin-bottom:5px;">Select a friend</div>
+                    <div id="friend-message-feed"></div>
+                    <input id="friend-message-input" maxlength="120" placeholder="Message this friend..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendFriendMessage();}" />
+                </div>
+                <div id="friend-settings">
+                    <div style="margin-bottom:6px;color:#ddd;">Your device ID</div>
+                    <div class="friend-tools"><input id="my-device-id" readonly /><button class="friend-action" onclick="copyDeviceId()">Copy ID</button></div>
+                    <div style="margin:7px 0 5px;color:#ddd;">ID prefix (optional)</div>
+                    <div class="friend-tools"><input id="device-id-prefix" maxlength="12" placeholder="ARENA-" /><button class="friend-action" onclick="saveDeviceIdPrefix()">Set</button></div>
+                    <div style="margin:7px 0 5px;color:#ddd;">Add friend by device ID</div>
+                    <div class="friend-tools"><input id="add-friend-id" placeholder="Example: AXRDFGDWMYPC1234" maxlength="32" /><button class="friend-action" onclick="addFriendById()">Add</button></div>
+                </div>
             </div>
             <input type="text" id="chat-text-input" placeholder="Message everyone..." maxlength="120" />
         </div>
@@ -460,7 +481,6 @@
         </div>
     </div>
 
-    <button id="friends-lobby-button" onclick="openFriendsOverlay()" style="position:fixed!important;right:20px!important;bottom:20px!important;z-index:999999!important;display:block!important;pointer-events:auto!important;background:#1769aa;color:white;border:2px solid #9bd5ff;border-radius:10px;padding:13px 20px;font-size:16px;font-weight:800;box-shadow:0 5px 20px #000b;cursor:pointer;">👥 FRIENDS</button>
 
     <script>
         const canvas = document.getElementById('canvas-main');
@@ -2904,30 +2924,13 @@
         }
 
         let activeChatTab = 'all';
+        let selectedFriendId = '';
+        let friendMessages = {};
         let localChatBubbleText = '';
         let localChatBubbleUntil = 0;
 
-        function openFriendsOverlay() {
-            friendsOverlayOpen = true;
-            const box = document.getElementById('chat-box');
-            box.style.display = 'flex';
-            box.style.left = 'auto';
-            box.style.right = '16px';
-            box.style.bottom = '16px';
-            switchChatTab('friends');
-        }
-
-        function closeFriendsOverlay() {
-            friendsOverlayOpen = false;
-            const box = document.getElementById('chat-box');
-            if (inGameActive) {
-                box.style.left = '16px';
-                box.style.right = 'auto';
-                box.style.bottom = '95px';
-                switchChatTab('all');
-            } else {
-                box.style.display = 'none';
-            }
+        function toggleFriendSettings() {
+            document.getElementById('friend-settings').classList.toggle('active');
         }
 
         function switchChatTab(channel) {
@@ -2951,8 +2954,10 @@
             try {
                 myDeviceId = localStorage.getItem(DEVICE_ID_KEY) || '';
                 friends = JSON.parse(localStorage.getItem(FRIENDS_KEY) || '[]');
+                friendMessages = JSON.parse(localStorage.getItem('arena_friend_messages_v1') || '{}');
                 if (!Array.isArray(friends)) friends = [];
-            } catch (_) { myDeviceId = ''; friends = []; }
+                if (!friendMessages || typeof friendMessages !== 'object') friendMessages = {};
+            } catch (_) { myDeviceId = ''; friends = []; friendMessages = {}; }
             friends = [...new Set(friends.map(id => String(id).toUpperCase()).filter(id => /^[A-Z]{8}[A-Z0-9]{2,12}[0-9]{4}$/.test(id) && id !== myDeviceId))].slice(0, 100);
             if (!myDeviceId || !/^[A-Z]{8}[A-Z0-9]{2,12}[0-9]{4}$/.test(myDeviceId)) {
                 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -3063,6 +3068,14 @@
             });
             conn.on('data', data => {
                 if (!data || data.type !== 'friend_presence') return;
+                if (data.type === 'friend_dm') {
+                    if (friends.includes(id)) {
+                        storeFriendMessage(id, { from:id, username:String(data.username || 'Friend').slice(0,24), text:String(data.message || '').slice(0,120), at:Date.now() });
+                        if (selectedFriendId === id) renderFriendConversation();
+                    }
+                    return;
+                }
+                if (data.type !== 'friend_presence') return;
                 friendPresence[id] = {
                     online: true,
                     username: String(data.username || 'Friend').slice(0, 24),
@@ -3124,7 +3137,8 @@
                 const info = friendPresence[id] || {};
                 const online = !!info.online && Date.now() - (info.lastSeen || 0) < 15000;
                 const row = document.createElement('div');
-                row.className = 'friend-row';
+                row.className = 'friend-row' + (selectedFriendId === id ? ' selected' : '');
+                row.addEventListener('click', () => selectFriendConversation(id));
                 const label = document.createElement('div');
                 label.className = 'friend-name';
                 const name = document.createElement('b');
@@ -3141,6 +3155,13 @@
                     join.addEventListener('click', () => joinFriendRoom(id));
                     row.appendChild(join);
                 }
+                const messageCount = (friendMessages[id] || []).length;
+                if (messageCount) {
+                    const count = document.createElement('span');
+                    count.className = 'friend-offline';
+                    count.textContent = messageCount + ' msg';
+                    row.appendChild(count);
+                }
                 const remove = document.createElement('button');
                 remove.className = 'friend-action';
                 remove.textContent = '×';
@@ -3150,11 +3171,69 @@
                     saveFriends();
                     if (friendConnections[id]) { try { friendConnections[id].close(); } catch (_) {} delete friendConnections[id]; }
                     delete friendPresence[id];
+                    if (selectedFriendId === id) { selectedFriendId = ''; renderFriendConversation(); }
                     renderFriendsList();
                 });
                 row.appendChild(remove);
                 container.appendChild(row);
             });
+            renderFriendConversation();
+        }
+
+        function selectFriendConversation(id) {
+            if (!friends.includes(id)) return;
+            selectedFriendId = id;
+            renderFriendsList();
+            renderFriendConversation();
+        }
+
+        function storeFriendMessage(id, message) {
+            if (!friendMessages[id]) friendMessages[id] = [];
+            friendMessages[id].push(message);
+            if (friendMessages[id].length > 100) friendMessages[id].splice(0, friendMessages[id].length - 100);
+            try { localStorage.setItem('arena_friend_messages_v1', JSON.stringify(friendMessages)); } catch (_) {}
+        }
+
+        function renderFriendConversation() {
+            const panel = document.getElementById('friend-conversation');
+            const feed = document.getElementById('friend-message-feed');
+            const title = document.getElementById('friend-conversation-title');
+            if (!panel || !feed || !title) return;
+            feed.replaceChildren();
+            if (!selectedFriendId || !friends.includes(selectedFriendId)) {
+                panel.classList.remove('active');
+                title.textContent = 'Select a friend to chat';
+                return;
+            }
+            panel.classList.add('active');
+            const info = friendPresence[selectedFriendId] || {};
+            title.textContent = (info.username || selectedFriendId) + (info.online ? ' · Online' : ' · Offline');
+            (friendMessages[selectedFriendId] || []).forEach(message => {
+                const line = document.createElement('div');
+                line.className = 'friend-message';
+                const name = document.createElement('b');
+                name.textContent = (message.from === myDeviceId ? 'You' : (message.username || info.username || 'Friend')) + ': ';
+                line.append(name, document.createTextNode(String(message.text || '')));
+                feed.appendChild(line);
+            });
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function sendFriendMessage() {
+            const input = document.getElementById('friend-message-input');
+            const message = String(input && input.value || '').trim().slice(0,120);
+            if (!message || !selectedFriendId) return;
+            const conn = friendConnections[selectedFriendId];
+            if (!conn || !conn.open) {
+                showNotificationBox('That friend is offline. Messages can only be sent while they are online.');
+                return;
+            }
+            try {
+                conn.send({ type:'friend_dm', username:myUsername || 'Player', message, at:Date.now() });
+                storeFriendMessage(selectedFriendId, { from:myDeviceId, username:myUsername || 'Player', text:message, at:Date.now() });
+                input.value = '';
+                renderFriendConversation();
+            } catch (_) { showNotificationBox('Could not send message.'); }
         }
 
         function joinFriendRoom(id) {
