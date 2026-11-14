@@ -155,7 +155,7 @@
         #hslot-9,#hslot-2 { overflow:visible; }
         #trap-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; padding:8px; background:rgba(15,20,27,.98); border:2px solid #d5a72b; border-radius:10px; z-index:30000; grid-template-columns:repeat(3,1fr); gap:6px; box-shadow:0 5px 20px #000b; }
         #trap-picker.open,#block-picker.open { display:grid; }
-        #block-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; padding:8px; background:rgba(15,20,27,.98); border:2px solid #69b7d1; border-radius:10px; z-index:30000; grid-template-columns:repeat(2,1fr); gap:6px; box-shadow:0 5px 20px #000b; }
+        #block-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; max-height:min(58vh, 420px); padding:8px; background:rgba(15,20,27,.98); border:2px solid #69b7d1; border-radius:10px; z-index:30000; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:min-content; gap:6px; box-shadow:0 5px 20px #000b; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:#69b7d1 #18212a; }
          .block-choice { min-height:66px; background:#252b32; color:#fff; border:1px solid #59636d; border-radius:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10px; cursor:pointer; touch-action:manipulation; padding:3px; }
          .block-choice.selected { border:2px solid #69d8ff; background:#203944; }
          .block-choice canvas { width:32px; height:32px; }
@@ -3878,6 +3878,25 @@
                 }
                 ball.vx = (Number(ball.vx) || 0) * 0.985;
                 ball.vy = (Number(ball.vy) || 0) * 0.985;
+                // Force pads accelerate nearby balls in the direction of their arrow.
+                for (const forceKey in worldBlocks) {
+                    const forceBlock = worldBlocks[forceKey];
+                    if (!forceBlock || !['force','force2','force3'].includes(forceBlock.type)) continue;
+                    const forceParts = forceKey.split(',');
+                    const forceX = parseInt(forceParts[0]) * 40 + 20;
+                    const forceY = parseInt(forceParts[1]) * 40 + 20;
+                    if (Math.hypot(ball.x - forceX, ball.y - forceY) > 48) continue;
+                    const forceAngle = Number(forceBlock.angle) || 0;
+                    const acceleration = forceBlock.type === 'force3' ? 0.85 : forceBlock.type === 'force2' ? 0.48 : 0.22;
+                    ball.vx += Math.cos(forceAngle) * acceleration;
+                    ball.vy += Math.sin(forceAngle) * acceleration;
+                    const maxBallSpeed = forceBlock.type === 'force3' ? 15 : 12;
+                    const ballSpeed = Math.hypot(ball.vx, ball.vy);
+                    if (ballSpeed > maxBallSpeed) {
+                        ball.vx = ball.vx / ballSpeed * maxBallSpeed;
+                        ball.vy = ball.vy / ballSpeed * maxBallSpeed;
+                    }
+                }
                 const dx = posX - ball.x, dy = posY - ball.y;
                 const distance = Math.hypot(dx, dy);
                 const minDistance = RADIUS_PLAYER + 16;
