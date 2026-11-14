@@ -772,7 +772,8 @@
         let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0 };
         let forceBlockRotation = 0;
         // Launch velocity from Force II / Force III blocks.
-        let playerMomentumX = 0, playerMomentumY = 0, nextForceLaunchAt = 0;
+        let playerMomentumX = 0, playerMomentumY = 0;
+        const nextForceLaunchByBlock = {};
         let debugMenuOpen = false;
         let debugFrameCount = 0, debugFps = 0, debugLastFpsAt = performance.now();
         let selectedBuildBlock = 'wood';
@@ -4142,20 +4143,24 @@
                 const parts=k.split(','),fx=Number(parts[0])*40+20,fy=Number(parts[1])*40+20;
                 if(Math.hypot(posX-fx,posY-fy)<31){
                     const a=Number(fb.angle)||0;
-                    if(Date.now()>=nextForceLaunchAt){
-                        // All force pads launch along their arrow direction.
-                        // Regular Force is weaker; Force II and III provide stronger impulses.
-                        const launchImpulse=fb.type==='force3'?27:fb.type==='force2'?18:6.5;
+                    if(fb.type==='force'){
+                        // Regular Force only pushes the player; it does not add momentum.
+                        const push=6.5,px=posX+Math.cos(a)*push,py=posY+Math.sin(a)*push;
+                        if(!checkCollisionWithBlocks(px,posY,RADIUS_PLAYER))posX=px;
+                        if(!checkCollisionWithBlocks(posX,py,RADIUS_PLAYER))posY=py;
+                    } else if(Date.now()>=(nextForceLaunchByBlock[k]||0)){
+                        // Each Force II / III pad has its own cooldown, so touching
+                        // multiple pads adds every pad's directional impulse together.
+                        const launchImpulse=fb.type==='force3'?27:18;
                         playerMomentumX+=Math.cos(a)*launchImpulse;
                         playerMomentumY+=Math.sin(a)*launchImpulse;
-                        // Keep combined momentum controllable even when several pads overlap.
                         const momentumLimit=42;
                         const combinedSpeed=Math.hypot(playerMomentumX,playerMomentumY);
                         if(combinedSpeed>momentumLimit){
                             playerMomentumX=playerMomentumX/combinedSpeed*momentumLimit;
                             playerMomentumY=playerMomentumY/combinedSpeed*momentumLimit;
                         }
-                        nextForceLaunchAt=Date.now()+650;
+                        nextForceLaunchByBlock[k]=Date.now()+650;
                         for(let p=0;p<9;p++)floatingParticles.push({
                             x:fx-Math.cos(a)*12+(Math.random()-.5)*16,
                             y:fy-Math.sin(a)*12+(Math.random()-.5)*16,
