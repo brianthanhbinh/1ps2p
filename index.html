@@ -1112,6 +1112,7 @@
             if (teamName === 'Blue') return { x: MAP_SIZE - 250, y: MAP_SIZE - 250 };
             if (teamName === 'Green') return { x: 250, y: MAP_SIZE - 250 };
             if (teamName === 'Yellow') return { x: MAP_SIZE - 250, y: 250 };
+            if (teamName === 'Raiders') return { x: MAP_SIZE - 250, y: MAP_SIZE - 250 };
             return { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
         }
 
@@ -1892,7 +1893,8 @@
             currentStamina = 100;
             deathLootDropped = false;
             syncSelectedAmmo();
-            const spawnCoords = getTeamSpawnCoords(playerTeam);
+            const respawnMode = isHosting ? currentMode : hostGameMode;
+            const spawnCoords = getTeamSpawnCoords(respawnMode === 'bossfight' ? 'Raiders' : playerTeam);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
             baseLockedOut = false;
@@ -2066,6 +2068,19 @@
                         const dangerRadius = bossEntity.radius + 24;
                         if (closest < dangerRadius) dodgePenalty += (dangerRadius - closest) * 9;
                     }
+                    for (const key in activeTraps) {
+                        const trap = activeTraps[key];
+                        if (!trap || trap.team === 'Raiders') continue;
+                        const d = Math.hypot(nx-trap.x,ny-trap.y);
+                        const safe = trap.type === 'mine' ? 165 : 75;
+                        if (d < safe) dodgePenalty += (safe-d) * (trap.type === 'mine' ? 12 : 5);
+                    }
+                    for (const g of activeGrenades) {
+                        if (!g || (g.team && g.team === 'Raiders')) continue;
+                        const gx = g.x + (g.vx || 0) * 10, gy = g.y + (g.vy || 0) * 10;
+                        const d = Math.hypot(nx-gx,ny-gy);
+                        if (d < 155) dodgePenalty += (155-d) * 10;
+                    }
                     const score = remaining + alignment + dodgePenalty;
                     if (score < chosenScore) { chosenScore = score; chosen = { x: nx, y: ny }; }
                 }
@@ -2198,7 +2213,7 @@
                 if (data.type === 'respawn_request') {
                     const player = remotePlayers[conn.peer];
                     if (player) {
-                        const spawn = getTeamSpawnCoords(player.team);
+                        const spawn = getTeamSpawnCoords(currentMode === 'bossfight' ? 'Raiders' : player.team);
                         player.x = spawn.x; player.y = spawn.y; player.hp = currentMode === 'creative' ? 300 : 100; player.maxHp = player.hp;
                         player.burningUntil = 0; player.nextBurnTick = 0;
                         conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: player.hp });
@@ -2213,6 +2228,10 @@
                         const localDamage=applyBlast({x:posX,y:posY,hp:currentHp,team:playerTeam});
                         if(localDamage)currentHp=Math.max(0,currentHp-localDamage);
                         for(const pid in remotePlayers)applyBlast(remotePlayers[pid]);
+                        if (bossEntity && bossEntity.hp > 0) {
+                            const d = Math.hypot(bossEntity.x-bx,bossEntity.y-by);
+                            if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
+                        }
                         conn.send({type:'trap_damage',hp:triggerPlayer.hp});
                         floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
                         broadcastStateToClients();
@@ -2223,7 +2242,12 @@
                         const radius=Math.min(140,Math.max(40,Number(data.radius)||100)),damage=Math.min(120,Math.max(1,Number(data.damage)||50));
                         const apply=t=>{if(!t||t.hp<=0||(p.team!=='FFA'&&t.team===p.team))return;const d=Math.hypot(t.x-ex,t.y-ey);if(d<radius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(damage*(1-d/radius))));};
                         const dSelf=Math.hypot(posX-ex,posY-ey);if(dSelf<radius&&(p.team==='FFA'||p.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(damage*(1-dSelf/radius))));
-                        for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);broadcastStateToClients();
+                        for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);
+                        if (bossEntity && bossEntity.hp > 0) {
+                            const d = Math.hypot(bossEntity.x-ex,bossEntity.y-ey);
+                            if (d < radius) damageRaidBoss(Math.max(1,Math.round(damage*(1-d/radius))));
+                        }
+                        broadcastStateToClients();
                     }
                 } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
@@ -3113,6 +3137,10 @@
                         if(selfD<radius&&(tr.team==='FFA'||tr.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(maxDamage*(1-selfD/radius))));
                         for(const pid in remotePlayers)applyBlast(remotePlayers[pid]);
                         if(isPractice)aiBots.forEach(applyBlast);
+                        if (bossEntity && bossEntity.hp > 0) {
+                            const d = Math.hypot(bossEntity.x-tr.x,bossEntity.y-tr.y);
+                            if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
+                        }
                         delete activeTraps[tk];
                         floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
                         showNotificationBox('💥 Mine detonated! Ring blast!');
@@ -3170,6 +3198,13 @@
                     const explRadius = 100;
                     if(isHosting){const apply=t=>{if(!t||t.hp<=0||(g.team!=='FFA'&&t.team===g.team))return;const d=Math.hypot(g.x-t.x,g.y-t.y);if(d<explRadius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(70*(1-d/explRadius))));};for(const pid in remotePlayers)apply(remotePlayers[pid]);}
                     else if(hostConnection&&hostConnection.open)hostConnection.send({type:'explosion_request',x:g.x,y:g.y,radius:explRadius,damage:70});
+                    if (bossEntity && bossEntity.hp > 0) {
+                        const d = Math.hypot(g.x-bossEntity.x,g.y-bossEntity.y);
+                        if (d < explRadius) {
+                            const amount = Math.max(1,Math.round(70*(1-d/explRadius)));
+                            if (isHosting) damageRaidBoss(amount);
+                        }
+                    }
                     if (isPractice) {
                         aiBots.forEach(bot => {
                             if (bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
