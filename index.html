@@ -187,8 +187,12 @@
 
         /* Team Chat Box */
         #chat-box { position: absolute; bottom: 95px; left: 16px; width: 310px; pointer-events: auto; z-index: 20; display: flex; flex-direction: column; gap: 4px; }
-        #chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
-        .chat-line { word-break: break-all; }
+        #chat-tabs { display:flex; gap:4px; }
+        .chat-tab { flex:1; padding:6px 9px; border:1px solid #555; border-radius:6px 6px 0 0; background:rgba(15,18,28,.88); color:#bbb; cursor:pointer; font-size:12px; }
+        .chat-tab.active { background:rgba(55,75,105,.96); color:#fff; border-color:#8ab4f8; }
+        .chat-feed { background: rgba(0,0,0,0.55); border: 1px solid #444; border-radius: 0 0 8px 8px; padding: 8px; height: 140px; overflow-y: auto; color: #fff; font-size: 12px; display: none; flex-direction: column; gap: 3px; }
+        .chat-feed.active { display:flex; }
+        .chat-line { word-break: break-word; }
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
         #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
@@ -346,8 +350,13 @@
 
         <!-- Chat Feed & Input -->
         <div id="chat-box">
-            <div id="chat-feed"></div>
-            <input type="text" id="chat-text-input" placeholder="Type chat message..." maxlength="120" />
+            <div id="chat-tabs">
+                <button class="chat-tab" id="chat-tab-team" onclick="switchChatTab('team')">Team</button>
+                <button class="chat-tab active" id="chat-tab-all" onclick="switchChatTab('all')">Chat</button>
+            </div>
+            <div class="chat-feed" id="chat-feed-team"></div>
+            <div class="chat-feed active" id="chat-feed-all"></div>
+            <input type="text" id="chat-text-input" placeholder="Message everyone..." maxlength="120" />
         </div>
 
         <!-- Lobby Setup Panel -->
@@ -2485,12 +2494,15 @@
                 if (data.type === 'chat_message') {
                     const player = remotePlayers[conn.peer];
                     const message = String(data.message || '').trim().slice(0, 120);
+                    const channel = data.channel === 'team' ? 'team' : 'all';
                     if (player && message) {
-                        const chatPacket = { type: 'chat_message', username: String(player.username || 'Player').slice(0, 24), message };
-                        appendChatMessage(chatPacket.username, chatPacket.message);
+                        const chatPacket = { type: 'chat_message', channel, username: String(player.username || 'Player').slice(0, 24), message };
+                        if (channel === 'all' || player.team === playerTeam) appendChatMessage(chatPacket.username, message, channel);
                         for (const pid in peerConnections) {
                             const targetConn = peerConnections[pid];
-                            if (pid !== conn.peer && targetConn && targetConn.open) targetConn.send(chatPacket);
+                            const recipient = remotePlayers[pid];
+                            const sameTeam = recipient && recipient.team === player.team;
+                            if (pid !== conn.peer && targetConn && targetConn.open && (channel === 'all' || sameTeam)) targetConn.send(chatPacket);
                         }
                     }
                 } else if (data.type === 'respawn_request') {
@@ -2659,7 +2671,7 @@
             });
             conn.on('data', (data) => {
                 if (data.type === 'chat_message') {
-                    appendChatMessage(data.username || 'Player', data.message || '');
+                    appendChatMessage(data.username || 'Player', data.message || '', data.channel === 'team' ? 'team' : 'all');
                 } else if (data.type === 'bossfight_timeout') {
                     bossfightTimedOut = true;
                     inGameActive = false;
@@ -2845,8 +2857,20 @@
             if (block && block.type && block.type !== 'wood') spawnWorldLoot('block', block.type, x, y, 1);
         }
 
-        function appendChatMessage(username, message) {
-            const feed = document.getElementById('chat-feed');
+        let activeChatTab = 'all';
+
+        function switchChatTab(channel) {
+            activeChatTab = channel === 'team' ? 'team' : 'all';
+            document.getElementById('chat-tab-team').classList.toggle('active', activeChatTab === 'team');
+            document.getElementById('chat-tab-all').classList.toggle('active', activeChatTab === 'all');
+            document.getElementById('chat-feed-team').classList.toggle('active', activeChatTab === 'team');
+            document.getElementById('chat-feed-all').classList.toggle('active', activeChatTab === 'all');
+            document.getElementById('chat-text-input').placeholder =
+                activeChatTab === 'team' ? 'Message your team...' : 'Message everyone...';
+        }
+
+        function appendChatMessage(username, message, channel = 'all') {
+            const feed = document.getElementById(channel === 'team' ? 'chat-feed-team' : 'chat-feed-all');
             if (!feed) return;
             const line = document.createElement('div');
             line.className = 'chat-line';
@@ -2863,17 +2887,19 @@
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
             if (txt) {
+                const packet = { type: 'chat_message', channel: activeChatTab, message: txt };
                 if (isHosting) {
-                    appendChatMessage(myUsername, txt);
-                    const packet = { type: 'chat_message', username: myUsername, message: txt };
+                    appendChatMessage(myUsername, txt, activeChatTab);
                     for (const pid in peerConnections) {
                         const conn = peerConnections[pid];
-                        if (conn && conn.open) conn.send(packet);
+                        const recipient = remotePlayers[pid];
+                        if (conn && conn.open && (activeChatTab === 'all' || (recipient && recipient.team === playerTeam))) conn.send({ ...packet, username: myUsername });
                     }
                 } else if (hostConnection && hostConnection.open) {
-                    hostConnection.send({ type: 'chat_message', message: txt });
+                    hostConnection.send(packet);
+                    appendChatMessage(myUsername, txt, activeChatTab);
                 } else {
-                    appendChatMessage('System', 'Not connected to a room.');
+                    appendChatMessage('System', 'Not connected to a room.', activeChatTab);
                 }
                 input.value = '';
             }
