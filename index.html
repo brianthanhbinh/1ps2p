@@ -192,7 +192,10 @@
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
 
         #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
-    /* Ensure yellow team button color */
+    /* Force hotbar visible and positioned */
+#hotbar-dock { display:flex !important; }
+
+/* Ensure yellow team button color */
 .btn-team-yellow { background:#fbc02d !important; color:#000 !important; }
 </style>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -456,6 +459,8 @@
         const heldItemCanvas = document.createElement('canvas');
         heldItemCanvas.width = 68; heldItemCanvas.height = 68;
         let heldItemCacheKey = '';
+        const remoteHeldCanvas = document.createElement('canvas');
+        remoteHeldCanvas.width = 68; remoteHeldCanvas.height = 68;
         const isTouchDevice = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches;
         function toggleMobileSprint() {
             mobileSprint = !mobileSprint;
@@ -1044,6 +1049,7 @@
                 <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectLocalMode('zombie')">🧟 Zombie Survival (Defend Wave Hordes)</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP)</button>
+                <button style="background:#00bcd4; color:#fff;" onclick="selectLocalMode('creative_pvp')">⚔️🎨 Creative PvP (Bots + Inf Coins, 300 HP)</button>
                 <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
             `;
             modal.style.display = 'flex';
@@ -1052,17 +1058,17 @@
         function selectLocalMode(localMode) {
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
-            isPractice = (localMode === 'pvp' || localMode === 'zombie');
-            currentMode = localMode === 'creative' ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
+            isPractice = (localMode === 'pvp' || localMode === 'zombie' || localMode === 'creative_pvp');
+            currentMode = (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
             
-            if (localMode === 'creative') {
+            if (localMode === 'creative' || localMode === 'creative_pvp') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = localMode === 'creative' ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (localMode === 'creative' || localMode === 'creative_pvp') ? '∞' : playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -2868,15 +2874,6 @@
                 b.distanceTravelled = (b.distanceTravelled || 0) + Math.hypot(b.vx, b.vy);
                 if (b.distanceTravelled > (b.maxDistance || 900)) { bulletsList.splice(i, 1); continue; }
 
-                // Practice-bot projectiles can hit the local player.
-                if (isPractice && b.isBotBullet && currentHp > 0 &&
-                    (b.team === 'FFA' || b.team !== playerTeam) &&
-                    Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER + 5) {
-                    currentHp = Math.max(0, currentHp - 9);
-                    bulletsList.splice(i, 1);
-                    continue;
-                }
-
                 let hitObs = false;
                 for (let k in worldBlocks) {
                     const parts = k.split(',');
@@ -2933,8 +2930,9 @@
                                 }
                                 if (b.type === 'freeze') {
     hitDmg = 22;
-    // Freeze the AI bot for 3 seconds
+    // Freeze both AI bots and remote players for 3 seconds
     bot.frozenUntil = Date.now() + 3000;
+    rp.frozenUntil = Date.now() + 3000;
     floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true });
 }
                                 if (b.type === 'burst') hitDmg = 30;
@@ -2964,15 +2962,12 @@
                                 floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 58, alpha: 1.0, isShockwave: true });
                                 for (const otherId in remotePlayers) { const other = remotePlayers[otherId]; if (other && other !== rp && other.hp > 0 && Math.hypot(other.x - b.x, other.y - b.y) < 58 && (b.team === 'FFA' || b.team !== other.team)) other.hp -= 18; }
                             }
-                            if (b.type === 'freeze') {
-                                hitDmg = 22;
-                                // rp is the remote player currently being checked in this loop.
-                                if (isHosting && rp) rp.frozenUntil = Date.now() + 3000;
-                            }
+                            if (b.type === 'freeze') { hitDmg = 22; rp.frozenUntil = Date.now() + 3000; floatingParticles.push({ x: b.x, y: b.y, radius: 8, maxRadius: 46, alpha: 1.0, isShockwave: true }); }
                             if (b.type === 'burst') hitDmg = 30;
                             if (b.type === 'flame') hitDmg = 18;
                             if (isHosting) {
                                 if(b.type==='flame'){rp.burningUntil=Date.now()+5000;rp.nextBurnTick=Date.now()+1000;}
+                                if(b.type==='freeze'){rp.frozenUntil=Date.now()+3000;}
                                 rp.hp = Math.max(0, rp.hp - hitDmg);
                                 if (rp.hp <= 0) onEnemyEliminated();
                                 broadcastStateToClients();
@@ -3073,38 +3068,8 @@
                                 showNotificationBox('🧟 Zombie horde is attacking you!');
                             }
                         } else {
-                            // Combat bots pursue, hold range, and strafe instead of wandering randomly.
-                            const targetDistance = Math.hypot(posX - bot.x, posY - bot.y);
-                            const targetAngle = Math.atan2(posY - bot.y, posX - bot.x);
-                            const preferredRange = 230;
-                            const botIndex = Number(String(bot.id).replace(/\\D/g, '')) || 0;
-                            const strafeSide = Math.sin(Date.now() / 650 + botIndex) >= 0 ? 1 : -1;
-                            let moveAngle = targetAngle;
-                            let moveAmount = targetDistance > preferredRange + 35 ? 1 : (targetDistance < preferredRange - 55 ? -0.65 : 0);
-                            if (moveAmount === 0) moveAngle += Math.PI / 2 * strafeSide;
-                            else if (moveAmount < 0) moveAngle += Math.PI;
-                            const botSpeed = 2.15;
-                            const stepX = Math.cos(moveAngle) * botSpeed * Math.abs(moveAmount);
-                            const stepY = Math.sin(moveAngle) * botSpeed * Math.abs(moveAmount);
-                            const tryX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.x + stepX));
-                            const tryY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.y + stepY));
-                            if (!checkCollisionWithBlocks(tryX, bot.y, RADIUS_PLAYER)) bot.x = tryX;
-                            if (!checkCollisionWithBlocks(bot.x, tryY, RADIUS_PLAYER)) bot.y = tryY;
-
-                            // Aimed practice-bot shots have limited range and a cooldown.
-                            if (targetDistance < 620 && targetDistance > 38 && nowBurn >= (bot.nextShotAt || 0) &&
-                                !checkInsideBase(posX, posY, playerTeam)) {
-                                const shotAngle = targetAngle + (Math.random() - 0.5) * 0.12;
-                                bulletsList.push({
-                                    id: 'bot-' + bot.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                                    x: bot.x, y: bot.y,
-                                    vx: Math.cos(shotAngle) * 7.2,
-                                    vy: Math.sin(shotAngle) * 7.2,
-                                    type: 'smg', team: bot.team, isBotBullet: true,
-                                    distanceTravelled: 0, maxDistance: 680
-                                });
-                                bot.nextShotAt = nowBurn + 900 + Math.random() * 450;
-                            }
+                            bot.x += (Math.random() - 0.5) * 2;
+                            bot.y += (Math.random() - 0.5) * 2;
                         }
                     }
                 });
