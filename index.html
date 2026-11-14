@@ -621,7 +621,7 @@
             if (skill <= 0) return 'smg'; // Easy keeps the original single-weapon behavior.
             const choices = distance < 115 ? ['shotgun', 'flame', 'smg'] : distance < 260 ? ['smg', 'ak', 'freeze', 'burst'] : distance < 470 ? ['ak', 'burst', 'laser', 'rocket'] : ['sniper', 'laser', 'ak'];
             if (!bot.weaponSwitchAt || Date.now() >= bot.weaponSwitchAt || !bot.heldWeapon) {
-                bot.heldWeapon = skill >= 3 ? choices[Math.floor(Math.random() * choices.length)] : choices[Math.min(choices.length - 1, skill === 2 ? 1 : skill)];
+                bot.heldWeapon = skill >= 3 ? choices[0] : choices[Math.min(choices.length - 1, skill === 2 ? 1 : skill)];
                 bot.weaponSwitchAt = Date.now() + (skill >= 3 ? 850 : skill >= 2 ? 1450 : 2600);
             }
             return bot.heldWeapon || 'smg';
@@ -3202,6 +3202,7 @@
                                     }
                                 }
                                 const dodgeLen = Math.hypot(dodgeX, dodgeY);
+                                bot.underFire = dodgeLen > 0.01;
                                 if (dodgeLen > 0.01) {
                                     const strength = botSettings.dodge >= 2 ? 2.8 : 1.8;
                                     moveX += dodgeX / dodgeLen * strength;
@@ -3214,7 +3215,7 @@
                             if (!checkCollisionWithBlocks(tryX, bot.y, RADIUS_PLAYER)) bot.x = tryX;
                             if (!checkCollisionWithBlocks(bot.x, tryY, RADIUS_PLAYER)) bot.y = tryY;
 
-                            if (targetDistance < 430) botTryPlaceCover(bot, targetAngle, nowAI, botSettings);
+                            if (targetDistance < 430 && (bot.underFire || bot.hp < (bot.maxHp || 100) * 0.78)) botTryPlaceCover(bot, targetAngle, nowAI, botSettings);
                             const predictionSeconds = Math.min(0.8, targetDistance / Math.max(8, botSettings.bulletSpeed));
                             const predictedX = posX + targetVX * predictionSeconds * botSettings.predict;
                             const predictedY = posY + targetVY * predictionSeconds * botSettings.predict;
