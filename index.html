@@ -151,10 +151,15 @@
         .hotbar-slot span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: #aaa; z-index: 2; }
         .hotbar-canvas { width: 34px; height: 34px; display: block; margin-top: 4px; }
         #trap-type-select { display:none !important; }
-        #hslot-9 { overflow:visible; }
+        #hslot-9,#hslot-2 { overflow:visible; }
         #trap-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; padding:8px; background:rgba(15,20,27,.98); border:2px solid #d5a72b; border-radius:10px; z-index:30000; grid-template-columns:repeat(3,1fr); gap:6px; box-shadow:0 5px 20px #000b; }
-        #trap-picker.open { display:grid; }
-        .trap-choice { min-height:62px; background:#252b32; color:#fff; border:1px solid #59636d; border-radius:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10px; cursor:pointer; touch-action:manipulation; padding:3px; }
+        #trap-picker.open,#block-picker.open { display:grid; }
+        #block-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; padding:8px; background:rgba(15,20,27,.98); border:2px solid #69b7d1; border-radius:10px; z-index:30000; grid-template-columns:repeat(2,1fr); gap:6px; box-shadow:0 5px 20px #000b; }
+         .block-choice { min-height:66px; background:#252b32; color:#fff; border:1px solid #59636d; border-radius:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10px; cursor:pointer; touch-action:manipulation; padding:3px; }
+         .block-choice.selected { border:2px solid #69d8ff; background:#203944; }
+         .block-choice canvas { width:32px; height:32px; }
+         .block-choice small { color:#8de5ff; font-size:10px; }
+         .trap-choice { min-height:62px; background:#252b32; color:#fff; border:1px solid #59636d; border-radius:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10px; cursor:pointer; touch-action:manipulation; padding:3px; }
         .trap-choice.selected { border:2px solid #ffca28; background:#3b3524; }
         .trap-choice canvas { width:32px; height:32px; }
         .trap-choice small { color:#ffd54f; font-size:10px; }
@@ -392,7 +397,7 @@
         <div id="hotbar-dock">
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button></div></div>
             <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
@@ -549,6 +554,8 @@
         function addTraps(type,count){if(!Object.prototype.hasOwnProperty.call(trapInventory,type))type='spike';trapInventory[type]+=Math.max(0,Number(count)||0);updateTrapTotal();refreshHotbarUI();}
         function consumeTrap(type){if(!trapInventory[type])return false;trapInventory[type]--;updateTrapTotal();refreshHotbarUI();return true;}
         function setSelectedTrapType(type){if(!Object.prototype.hasOwnProperty.call(trapInventory,type))return;selectedTrapType=type;refreshHotbarUI();refreshAmmoHud();}
+        function toggleBlockPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('block-picker');if(p)p.classList.toggle('open');}
+        function chooseBlockFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}if(type!=='wood'&&(!blockInventory[type]||blockInventory[type]<=0)){showNotificationBox('You do not own that block. Buy it in the Block shop first.');return;}selectedBuildBlock=type;refreshHotbarUI();const p=document.getElementById('block-picker');if(p)p.classList.remove('open');selectHotbarSlot(2);}
         function toggleTrapPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('trap-picker');if(p)p.classList.toggle('open');}
         function chooseTrapFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}setSelectedTrapType(type);const p=document.getElementById('trap-picker');if(p)p.classList.remove('open');selectHotbarSlot(9);}
         let playerSlowUntil = 0;
@@ -831,7 +838,9 @@
         function refreshHotbarUI() {
             drawItemArtOnCanvas(document.getElementById('hcanvas-0'), 'sword', null);
             drawItemArtOnCanvas(document.getElementById('hcanvas-1'), 'pickaxe', null);
-            drawItemArtOnCanvas(document.getElementById('hcanvas-2'), 'block', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-2'), 'block', selectedBuildBlock);
+            for(const type of ['wood',...Object.keys(blockInventory)]){const icon=document.getElementById('block-icon-'+type);if(icon)drawItemArtOnCanvas(icon,'block',type);const count=document.getElementById('block-count-'+type);if(count)count.textContent=blockInventory[type]||0;}
+            document.querySelectorAll('.block-choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.block===selectedBuildBlock));
 
             for (let i = 0; i < 3; i++) {
                 const slotCanvas = document.getElementById(`hcanvas-${i + 3}`);
@@ -877,7 +886,7 @@
             dock.dataset.mobileInputBound = '1';
             dock.querySelectorAll('.hotbar-slot').forEach((slot, index) => {
                 const choose = event => {
-                    if(event.target.closest('#trap-picker')) return;
+                    if(event.target.closest('#trap-picker,#block-picker')) return;
                     event.preventDefault();
                     event.stopPropagation();
                     selectHotbarSlot(index);
