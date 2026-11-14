@@ -1881,10 +1881,17 @@
                 addTraps(subtypeName, packCount);
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${packCount}). Selected trap: ${selectedTrapType.toUpperCase()}`);
             } else if (itemType === 'block') {
-                if (!Object.prototype.hasOwnProperty.call(blockInventory, subtypeName)) return;
+                if (!Object.prototype.hasOwnProperty.call(blockInventory, subtypeName)) {
+                    showNotificationBox('Purchase failed: unknown block type.');
+                    return;
+                }
                 blockInventory[subtypeName] = (blockInventory[subtypeName] || 0) + 1;
                 selectedBuildBlock = subtypeName;
-                showNotificationBox(`Purchased 1 ${subtypeName.toUpperCase()} block. Place it with the block slot; remaining: ${blockInventory[subtypeName]}.`);
+                // Buying a block should immediately switch to the build hotbar slot.
+                // The force-block placement ghost is rendered while this slot is active.
+                selectHotbarSlot(2);
+                refreshHotbarUI();
+                showNotificationBox(`Purchased 1 ${subtypeName.toUpperCase()} block. Build slot selected; remaining: ${blockInventory[subtypeName]}.`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
