@@ -607,13 +607,53 @@
         let aiBots = [];
         let pendingLocalMode = null;
         let botDifficulty = 'normal';
+        // Every tier uses the same bot stats; difficulty changes AI decisions only.
         const BOT_DIFFICULTY_SETTINGS = {
-            easy:   { label: 'Easy',   botHp: 80,  moveSpeed: 1.45, preferredRange: 260, spread: 0.30, shotDelay: 1650, shotJitter: 650, bulletSpeed: 6.2, damage: 5 },
-            normal: { label: 'Normal', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900,  shotJitter: 450, bulletSpeed: 7.2, damage: 9 },
-            hard:   { label: 'Hard',   botHp: 140, moveSpeed: 2.80, preferredRange: 210, spread: 0.04, shotDelay: 550,  shotJitter: 250, bulletSpeed: 8.3, damage: 13 }
+            easy:    { label: 'Easy', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900, shotJitter: 450, bulletSpeed: 7.2, damage: 9, dodge: 0, predict: 0, block: false, traps: false, weaponSkill: 0 },
+            normal:  { label: 'Normal', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900, shotJitter: 450, bulletSpeed: 7.2, damage: 9, dodge: 1, predict: 0.15, block: true, traps: false, weaponSkill: 1 },
+            hard:    { label: 'Hard', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900, shotJitter: 450, bulletSpeed: 7.2, damage: 9, dodge: 1.7, predict: 0.65, block: true, traps: false, weaponSkill: 2 },
+            extreme: { label: 'Extreme', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900, shotJitter: 450, bulletSpeed: 7.2, damage: 9, dodge: 2.4, predict: 1, block: true, traps: true, weaponSkill: 3 }
         };
         function getBotDifficultySettings() {
-            return BOT_DIFFICULTY_SETTINGS[botDifficulty] || BOT_DIFFICULTY_SETTINGS.normal;
+            return BOT_DIFFICULTY_SETTINGS[botDifficulty] || BOT_DIFFICULTY_SETTINGS.easy;
+        }
+        function chooseBotWeapon(bot, distance, skill) {
+            const choices = distance < 115 ? ['shotgun', 'flame', 'smg'] : distance < 260 ? ['smg', 'ak', 'freeze', 'burst'] : distance < 470 ? ['ak', 'burst', 'laser', 'rocket'] : ['sniper', 'laser', 'ak'];
+            if (!bot.weaponSwitchAt || Date.now() >= bot.weaponSwitchAt || !bot.heldWeapon) {
+                bot.heldWeapon = skill >= 3 ? choices[Math.floor(Math.random() * choices.length)] : choices[Math.min(choices.length - 1, skill === 2 ? 1 : skill)];
+                bot.weaponSwitchAt = Date.now() + (skill >= 3 ? 850 : skill >= 2 ? 1450 : 2600);
+            }
+            return bot.heldWeapon || 'smg';
+        }
+        function getBotProjectileSpeed(weapon) {
+            return ({ sniper: 25, laser: 30, plasma: 12, flame: 9, freeze: 13, rocket: 13, ak: 20, shotgun: 16, burst: 18, minigun: 18, smg: 18 })[weapon] || 18;
+        }
+        function botTryPlaceCover(bot, targetAngle, now, settings) {
+            if (!settings.block || now < (bot.nextBlockAt || 0) || (bot.coverBlocksPlaced || 0) >= 2) return;
+            const side = (Number(String(bot.id).replace(/\\D/g, '')) % 2 ? 1 : -1);
+            const bx = bot.x + Math.cos(targetAngle + Math.PI / 2 * side) * 38;
+            const by = bot.y + Math.sin(targetAngle + Math.PI / 2 * side) * 38;
+            const key = Math.floor(bx / 40) + ',' + Math.floor(by / 40);
+            if (!worldBlocks[key]) {
+                worldBlocks[key] = { type: 'wood', hp: 100, maxHp: 100, team: bot.team, botCover: true };
+                bot.coverBlocksPlaced = (bot.coverBlocksPlaced || 0) + 1;
+            }
+            bot.nextBlockAt = now + 4200;
+        }
+        function botTryPlaceTrap(bot, targetX, targetY, now, settings) {
+            if (!settings.traps || now < (bot.nextTrapAt || 0)) return;
+            bot.trapStock = bot.trapStock || { mine: 2, glue: 2 };
+            const trapType = Math.hypot(targetX - bot.x, targetY - bot.y) < 190 ? 'mine' : 'glue';
+            if (!bot.trapStock[trapType]) return;
+            const angle = Math.atan2(targetY - bot.y, targetX - bot.x);
+            const lead = Math.min(115, Math.max(55, Math.hypot(targetX - bot.x, targetY - bot.y) * 0.22));
+            const tx = Math.max(24, Math.min(MAP_SIZE - 24, targetX + Math.cos(angle) * lead));
+            const ty = Math.max(24, Math.min(MAP_SIZE - 24, targetY + Math.sin(angle) * lead));
+            if (Math.hypot(tx - bot.x, ty - bot.y) > 42) {
+                activeTraps['bot-trap-' + bot.id + '-' + now] = { x: tx, y: ty, team: bot.team, type: trapType, hp: 80, maxHp: 80, botPlaced: true };
+                bot.trapStock[trapType]--;
+                bot.nextTrapAt = now + 6500;
+            }
         }
         let worldBlocks = {};
         let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0 };
@@ -1083,7 +1123,8 @@
                 <p style="color:#aaa;font-size:12px;margin:-5px 0 12px;">Choose how challenging the practice bots will be.</p>
                 <button style="background:#43a047;color:#fff;" onclick="chooseBotDifficulty('easy')">🟢 Easy — slower bots, lighter damage</button>
                 <button style="background:#2196f3;color:#fff;" onclick="chooseBotDifficulty('normal')">🔵 Normal — balanced challenge</button>
-                <button style="background:#e53935;color:#fff;" onclick="chooseBotDifficulty('hard')">🔴 Hard — faster, tougher, more accurate</button>
+                <button style="background:#e53935;color:#fff;" onclick="chooseBotDifficulty('hard')">🔴 Hard — predicts, dodges and switches weapons</button>
+                <button style="background:#7b1fa2;color:#fff;" onclick="chooseBotDifficulty('extreme')">🟣 Extreme — near-perfect dodging, predictive aim, elite weapon switching and traps</button>
                 <button style="background:#555;color:#fff;margin-top:10px;" onclick="pendingLocalMode=null;promptLocalPlayMode()">Back</button>
             `;
             modal.style.display = 'flex';
@@ -2920,7 +2961,7 @@
                 if (isPractice && b.isBotBullet && currentHp > 0 &&
                     (b.team === 'FFA' || b.team !== playerTeam) &&
                     Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER + 5) {
-                    currentHp = Math.max(0, currentHp - getBotDifficultySettings().damage);
+                    currentHp = Math.max(0, currentHp - (Number(b.botDamage) || getBotDifficultySettings().damage));
                     bulletsList.splice(i, 1);
                     continue;
                 }
@@ -3118,42 +3159,105 @@
                                 showNotificationBox('🧟 Zombie horde is attacking you!');
                             }
                         } else {
-                            // Combat bots pursue, hold range, and strafe instead of wandering randomly.
+                            // Shared bot archetype; higher tiers add tactical decisions, not extra stats.
+                            const nowAI = Date.now();
                             const targetDistance = Math.hypot(posX - bot.x, posY - bot.y);
                             const targetAngle = Math.atan2(posY - bot.y, posX - bot.x);
                             const botSettings = getBotDifficultySettings();
-                            const preferredRange = botSettings.preferredRange;
                             const botIndex = Number(String(bot.id).replace(/\\D/g, '')) || 0;
-                            const strafeSide = Math.sin(Date.now() / 650 + botIndex) >= 0 ? 1 : -1;
-                            let moveAngle = targetAngle;
-                            let moveAmount = targetDistance > preferredRange + 35 ? 1 : (targetDistance < preferredRange - 55 ? -0.65 : 0);
-                            if (moveAmount === 0) moveAngle += Math.PI / 2 * strafeSide;
-                            else if (moveAmount < 0) moveAngle += Math.PI;
-                            const botSpeed = botSettings.moveSpeed;
-                            const stepX = Math.cos(moveAngle) * botSpeed * Math.abs(moveAmount);
-                            const stepY = Math.sin(moveAngle) * botSpeed * Math.abs(moveAmount);
-                            const tryX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.x + stepX));
-                            const tryY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.y + stepY));
+                            const strafeSide = Math.sin(nowAI / 650 + botIndex) >= 0 ? 1 : -1;
+                            let targetVX = 0, targetVY = 0;
+                            if (bot.lastTargetSampleAt && nowAI - bot.lastTargetSampleAt >= 80) {
+                                const dt = Math.max(0.08, (nowAI - bot.lastTargetSampleAt) / 1000);
+                                targetVX = Math.max(-8, Math.min(8, (posX - bot.lastTargetX) / dt));
+                                targetVY = Math.max(-8, Math.min(8, (posY - bot.lastTargetY) / dt));
+                                bot.lastTargetX = posX; bot.lastTargetY = posY; bot.lastTargetSampleAt = nowAI;
+                            } else if (!bot.lastTargetSampleAt) {
+                                bot.lastTargetX = posX; bot.lastTargetY = posY; bot.lastTargetSampleAt = nowAI;
+                            }
+                            let moveX = 0, moveY = 0;
+                            const preferredRange = botSettings.preferredRange;
+                            const approach = targetDistance > preferredRange + 35 ? 1 : (targetDistance < preferredRange - 55 ? -0.65 : 0);
+                            let moveAngle = targetAngle + (approach < 0 ? Math.PI : 0);
+                            if (approach === 0) moveAngle += Math.PI / 2 * strafeSide;
+                            moveX += Math.cos(moveAngle) * Math.abs(approach);
+                            moveY += Math.sin(moveAngle) * Math.abs(approach);
+
+                            // Dodge hostile bullets by predicting their closest approach to this bot.
+                            if (botSettings.dodge > 0) {
+                                let dodgeX = 0, dodgeY = 0;
+                                const horizon = botSettings.dodge >= 2 ? 26 : 17;
+                                for (const bullet of bulletsList) {
+                                    if (!bullet || bullet.isBotBullet || (bullet.team !== 'FFA' && bullet.team === bot.team)) continue;
+                                    const vx = bullet.vx || 0, vy = bullet.vy || 0, speedSq = vx * vx + vy * vy;
+                                    if (speedSq < 0.01) continue;
+                                    const rx = bot.x - bullet.x, ry = bot.y - bullet.y;
+                                    const t = Math.max(0, Math.min(horizon, -(rx * vx + ry * vy) / speedSq));
+                                    const dx = bot.x - (bullet.x + vx * t), dy = bot.y - (bullet.y + vy * t);
+                                    const miss = Math.hypot(dx, dy), danger = botSettings.dodge >= 2 ? 37 : 29;
+                                    if (miss < danger) {
+                                        const weight = (danger - miss) / danger, len = Math.max(1, miss);
+                                        dodgeX += dx / len * weight; dodgeY += dy / len * weight;
+                                    }
+                                }
+                                const dodgeLen = Math.hypot(dodgeX, dodgeY);
+                                if (dodgeLen > 0.01) {
+                                    const strength = botSettings.dodge >= 2 ? 2.8 : 1.8;
+                                    moveX += dodgeX / dodgeLen * strength;
+                                    moveY += dodgeY / dodgeLen * strength;
+                                }
+                            }
+                            const moveLen = Math.hypot(moveX, moveY) || 1;
+                            const tryX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.x + moveX / moveLen * botSettings.moveSpeed));
+                            const tryY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.y + moveY / moveLen * botSettings.moveSpeed));
                             if (!checkCollisionWithBlocks(tryX, bot.y, RADIUS_PLAYER)) bot.x = tryX;
                             if (!checkCollisionWithBlocks(bot.x, tryY, RADIUS_PLAYER)) bot.y = tryY;
 
-                            // Aimed practice-bot shots have limited range and a cooldown.
-                            if (targetDistance < 620 && targetDistance > 38 && nowBurn >= (bot.nextShotAt || 0) &&
+                            if (targetDistance < 430) botTryPlaceCover(bot, targetAngle, nowAI, botSettings);
+                            const predictionSeconds = Math.min(0.8, targetDistance / Math.max(8, botSettings.bulletSpeed));
+                            const predictedX = posX + targetVX * predictionSeconds * botSettings.predict;
+                            const predictedY = posY + targetVY * predictionSeconds * botSettings.predict;
+                            if (botSettings.traps && targetDistance < 520) botTryPlaceTrap(bot, predictedX, predictedY, nowAI, botSettings);
+
+                            const weapon = chooseBotWeapon(bot, targetDistance, botSettings.weaponSkill);
+                            bot.aimAngle = Math.atan2(predictedY - bot.y, predictedX - bot.x);
+                            if (targetDistance < 650 && targetDistance > 35 && nowAI >= (bot.nextShotAt || 0) &&
                                 !checkInsideBase(posX, posY, playerTeam)) {
-                                const shotAngle = targetAngle + (Math.random() - 0.5) * botSettings.spread;
-                                bulletsList.push({
-                                    id: 'bot-' + bot.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                                    x: bot.x, y: bot.y,
-                                    vx: Math.cos(shotAngle) * botSettings.bulletSpeed,
-                                    vy: Math.sin(shotAngle) * botSettings.bulletSpeed,
-                                    type: 'smg', team: bot.team, isBotBullet: true,
-                                    distanceTravelled: 0, maxDistance: 680
-                                });
-                                bot.nextShotAt = nowBurn + botSettings.shotDelay + Math.random() * botSettings.shotJitter;
+                                const projectileSpeed = getBotProjectileSpeed(weapon);
+                                const travelSeconds = targetDistance / Math.max(1, projectileSpeed * 60);
+                                const aimX = posX + targetVX * travelSeconds * botSettings.predict;
+                                const aimY = posY + targetVY * travelSeconds * botSettings.predict;
+                                const aim = Math.atan2(aimY - bot.y, aimX - bot.x);
+                                const spread = botSettings.weaponSkill >= 3 ? 0.002 : botSettings.weaponSkill >= 2 ? 0.025 : botSettings.weaponSkill >= 1 ? 0.07 : 0.12;
+                                const shotAngle = aim + (Math.random() - 0.5) * spread;
+                                const count = weapon === 'shotgun' ? 4 : weapon === 'burst' ? 3 : 1;
+                                for (let shot = 0; shot < count; shot++) {
+                                    const angle = shotAngle + (weapon === 'shotgun' ? (shot - 1.5) * 0.12 : 0);
+                                    bulletsList.push({ id: 'bot-' + bot.id + '-' + nowAI + '-' + shot + '-' + Math.random().toString(36).slice(2, 6), x: bot.x, y: bot.y, vx: Math.cos(angle) * projectileSpeed, vy: Math.sin(angle) * projectileSpeed, type: weapon, team: bot.team, isBotBullet: true, botDamage: botSettings.damage, distanceTravelled: 0, maxDistance: weapon === 'flame' ? 260 : 900 });
+                                }
+                                bot.nextShotAt = nowAI + (botSettings.weaponSkill >= 3 ? 390 : botSettings.weaponSkill >= 2 ? 570 : botSettings.weaponSkill >= 1 ? 760 : 900) + Math.random() * (botSettings.weaponSkill >= 2 ? 100 : 350);
                             }
                         }
                     }
                 });
+            }
+
+            // Extreme bots' traps affect the local player when stepped on.
+            if (isPractice) {
+                for (const trapKey of Object.keys(activeTraps)) {
+                    const trap = activeTraps[trapKey];
+                    if (!trap || !trap.botPlaced || (trap.team !== 'FFA' && trap.team === playerTeam)) continue;
+                    if (Math.hypot(posX - trap.x, posY - trap.y) > 23) continue;
+                    if (trap.type === 'mine') {
+                        const radius = 125, distance = Math.hypot(posX - trap.x, posY - trap.y);
+                        currentHp = Math.max(0, currentHp - Math.max(1, Math.round(72 * (1 - distance / radius))));
+                        floatingParticles.push({ x: trap.x, y: trap.y, radius: 8, maxRadius: radius, alpha: 1, isShockwave: true });
+                    } else {
+                        currentHp = Math.max(0, currentHp - (trap.type === 'bear' ? 18 : 8));
+                        playerSlowUntil = Math.max(playerSlowUntil || 0, Date.now() + (trap.type === 'glue' ? 1800 : 900));
+                    }
+                    delete activeTraps[trapKey];
+                }
             }
 
             updateCtfObjective();
@@ -3413,6 +3517,13 @@
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
+                if (bot.heldWeapon) {
+                    ctx.save(); ctx.rotate(bot.aimAngle || 0);
+                    ctx.fillStyle = '#252a32';
+                    ctx.fillRect(7, -4, bot.heldWeapon === 'sniper' || bot.heldWeapon === 'laser' ? 24 : 17, 6);
+                    ctx.fillStyle = bot.heldWeapon === 'rocket' ? '#d97706' : bot.heldWeapon === 'freeze' ? '#7dd3fc' : '#9ca3af';
+                    ctx.fillRect(12, -3, 7, 4); ctx.restore();
+                }
                 if(bot.burningUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=18;ctx.fillStyle='#ff6d00';for(let f=0;f<5;f++){const a=f*1.25+Date.now()/180;ctx.beginPath();ctx.ellipse(Math.cos(a)*13,Math.sin(a)*12,5,10,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
