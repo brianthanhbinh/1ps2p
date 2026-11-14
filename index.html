@@ -242,6 +242,11 @@
             </div>
         </div>
 
+<div id="velocity-hud" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,.72);border:1px solid #546e7a;border-radius:7px;padding:7px 10px;color:#fff;font:11px/1.6 monospace;display:none;min-width:132px;pointer-events:none;">
+            <div style="color:#80deea;font-weight:bold;margin-bottom:2px;">VELOCITY</div>
+            <div>Velocity X: <span id="velocity-x">0.00</span></div>
+            <div>Velocity Y: <span id="velocity-y">0.00</span></div>
+        </div>
         <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
         <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
         <button id="skin-toggle-btn" onclick="toggleSkinModal()">🎨 Custom PNG Skin</button>
@@ -4106,7 +4111,9 @@
             }
 
             if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER, posX, posY)) posX = nextX;
+            else if (Math.abs(playerMomentumX) > 0.01) playerMomentumX = 0;
             if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER, posX, posY)) posY = nextY;
+            else if (Math.abs(playerMomentumY) > 0.01) playerMomentumY = 0;
             for(const k in worldBlocks){
                 const fb=worldBlocks[k];
                 if(!fb||!['force','force2','force3'].includes(fb.type))continue;
@@ -4120,9 +4127,18 @@
                     } else if(Date.now()>=nextForceLaunchAt){
                         // The arrow direction is the launch direction. Momentum carries
                         // the player beyond the pad and gradually fades with friction.
-                        const launchSpeed=fb.type==='force3'?27:18;
-                        playerMomentumX=Math.cos(a)*launchSpeed;
-                        playerMomentumY=Math.sin(a)*launchSpeed;
+                        // Force pads ADD velocity, preserving momentum from previous pads.
+                        // Force III contributes a stronger impulse than Force II.
+                        const launchImpulse=fb.type==='force3'?27:18;
+                        playerMomentumX+=Math.cos(a)*launchImpulse;
+                        playerMomentumY+=Math.sin(a)*launchImpulse;
+                        // Keep combined momentum controllable even when several pads overlap.
+                        const momentumLimit=42;
+                        const combinedSpeed=Math.hypot(playerMomentumX,playerMomentumY);
+                        if(combinedSpeed>momentumLimit){
+                            playerMomentumX=playerMomentumX/combinedSpeed*momentumLimit;
+                            playerMomentumY=playerMomentumY/combinedSpeed*momentumLimit;
+                        }
                         nextForceLaunchAt=Date.now()+650;
                         for(let p=0;p<9;p++)floatingParticles.push({
                             x:fx-Math.cos(a)*12+(Math.random()-.5)*16,
@@ -4139,6 +4155,14 @@
             playerMomentumY*=0.94;
             if(Math.abs(playerMomentumX)<0.12)playerMomentumX=0;
             if(Math.abs(playerMomentumY)<0.12)playerMomentumY=0;
+            const velocityHud=document.getElementById('velocity-hud');
+            if(velocityHud){
+                velocityHud.style.display='block';
+                const velocityXLabel=document.getElementById('velocity-x');
+                const velocityYLabel=document.getElementById('velocity-y');
+                if(velocityXLabel)velocityXLabel.textContent=playerMomentumX.toFixed(2);
+                if(velocityYLabel)velocityYLabel.textContent=playerMomentumY.toFixed(2);
+            }
             if(Date.now()>=nextDamageBlockAt){for(const k in worldBlocks){const db=worldBlocks[k];if(!db||db.type!=='damage')continue;const parts=k.split(','),cx=Number(parts[0])*40+20,cy=Number(parts[1])*40+20;if(Math.hypot(posX-cx,posY-cy)<31&&(db.team==='FFA'||db.team!==playerTeam)){currentHp=Math.max(0,currentHp-12);nextDamageBlockAt=Date.now()+900;showNotificationBox('☠ Damage block!');break;}}}
 
             for (let tk in activeTraps) {
