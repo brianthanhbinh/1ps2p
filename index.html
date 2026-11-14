@@ -300,6 +300,7 @@
                 <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItem('block', 'crystal', 125)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ball', 75)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -655,7 +656,7 @@
             for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0 };
             grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
@@ -748,7 +749,7 @@
             }
         }
         let worldBlocks = {};
-        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0 };
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0 };
         let forceBlockRotation = 0;
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
@@ -1363,7 +1364,7 @@
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
             trapInventory.spike = 2;
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0 };
             selectedBuildBlock = 'wood';
             updateTrapTotal();
             activeHotbar = 0;
@@ -1849,7 +1850,7 @@
 
         function buyStoreItem(itemType, subtypeName, price) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -3692,7 +3693,7 @@
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
-                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180 };
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100 };
                 if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
                     selectedBuildBlock = 'wood';
                     showNotificationBox('That purchased block is out of stock. Using basic wood.');
@@ -3700,7 +3701,7 @@
                 }
                 if (worldBlocks[bKey]) { showNotificationBox('There is already a block there!'); return; }
                 const maxHp = buildStats[buildType] || 100;
-                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, ...(buildType === 'force' ? { angle: forceBlockRotation } : {}) };
+                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, ...(buildType === 'force' ? { angle: forceBlockRotation } : {}), ...(buildType === 'ball' ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
                 worldBlocks[bKey] = newBlock;
                 if (buildType !== 'wood') {
                     blockInventory[buildType]--;
@@ -3833,7 +3834,7 @@
                 const closestX = Math.max(bx, Math.min(x, bx + 40));
                 const closestY = Math.max(by, Math.min(y, by + 40));
 
-                if(worldBlocks[k] && worldBlocks[k].type === 'force') continue;
+                if(worldBlocks[k] && (worldBlocks[k].type === 'force' || worldBlocks[k].type === 'ball')) continue;
                 const dist = Math.hypot(x - closestX, y - closestY);
                 if (dist < radius) {
                     return true;
@@ -3842,8 +3843,41 @@
             return false;
         }
 
+        function updatePushableBalls() {
+            for (const key in worldBlocks) {
+                const ball = worldBlocks[key];
+                if (!ball || ball.type !== 'ball') continue;
+                if (!Number.isFinite(Number(ball.x)) || !Number.isFinite(Number(ball.y))) {
+                    const parts = key.split(',');
+                    ball.x = parseInt(parts[0]) * 40 + 20;
+                    ball.y = parseInt(parts[1]) * 40 + 20;
+                }
+                ball.vx = (Number(ball.vx) || 0) * 0.985;
+                ball.vy = (Number(ball.vy) || 0) * 0.985;
+                const dx = posX - ball.x, dy = posY - ball.y;
+                const distance = Math.hypot(dx, dy);
+                const minDistance = RADIUS_PLAYER + 16;
+                if (distance > 0 && distance < minDistance) {
+                    const nx = dx / distance, ny = dy / distance;
+                    const overlap = minDistance - distance;
+                    posX += nx * overlap * 0.65;
+                    posY += ny * overlap * 0.65;
+                    ball.vx -= nx * Math.min(2.8, overlap * 0.18 + 0.8);
+                    ball.vy -= ny * Math.min(2.8, overlap * 0.18 + 0.8);
+                }
+                const nextX = ball.x + ball.vx, nextY = ball.y + ball.vy;
+                ball.x = Math.max(18, Math.min(MAP_SIZE - 18, nextX));
+                ball.y = Math.max(18, Math.min(MAP_SIZE - 18, nextY));
+                if (ball.x !== nextX) ball.vx *= -0.55;
+                if (ball.y !== nextY) ball.vy *= -0.55;
+                if (Math.abs(ball.vx) < 0.025) ball.vx = 0;
+                if (Math.abs(ball.vy) < 0.025) ball.vy = 0;
+            }
+        }
+
         function updateGameLogic() {
             if (!inGameActive) return;
+            updatePushableBalls();
             if ((isHosting || isPractice) && nextAirdropAt && Date.now() >= nextAirdropAt) triggerAirdropSpawn();
             refreshAmmoHud();
             updateAirdropHud();
@@ -4540,6 +4574,19 @@
                 const blk=worldBlocks[k]; if(!blk||typeof blk!=='object')continue;
                 const parts=k.split(','),bx=parseInt(parts[0])*40,by=parseInt(parts[1])*40;
                 const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5'],obsidian:['#242034','#a68cff'],glass:['rgba(105,210,255,.32)','#b7efff'],bounce:['#542d83','#e0a5ff'],ice:['#367f9e','#a8f1ff'],crystal:['#573b8c','#e3b5ff'],bunker:['#46515b','#b5c2ce'],force:['rgba(20,220,255,.22)','#5df5ff']};
+                if (blk.type === 'ball') {
+                    const cx = Number.isFinite(Number(blk.x)) ? Number(blk.x) : bx + 20;
+                    const cy = Number.isFinite(Number(blk.y)) ? Number(blk.y) : by + 20;
+                    ctx.save();
+                    ctx.fillStyle = '#f5f5f5'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI * 2); ctx.clip();
+                    ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.arc(cx - 7, cy - 4, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(cx + 8, cy + 7, 7, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + 7, cy - 9, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore(); ctx.restore();
+                    continue;
+                }
                 const style=styles[blk.type]||styles.wood;
                 ctx.save();ctx.fillStyle=style[0];ctx.strokeStyle=style[1];ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(bx+2,by+2,36,36,7);ctx.fill();ctx.stroke();
                 if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
@@ -4554,7 +4601,7 @@
                  else if(blk.type==='force'){const a=Number(blk.angle)||0;ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(a);ctx.shadowColor='#00eaff';ctx.shadowBlur=12;ctx.fillStyle='rgba(0,234,255,.28)';ctx.fillRect(-16,-16,32,32);ctx.strokeStyle='#70f7ff';ctx.lineWidth=2;ctx.strokeRect(-16,-16,32,32);ctx.fillStyle='#d9ffff';ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-4,-8);ctx.lineTo(-4,8);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.restore();}
                  else{ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.roundRect(bx+7,by+6,26,5,3);ctx.fill();}
                 ctx.restore();
-                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900,force:180}[blk.type]||100);
+                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900,force:180,ball:100}[blk.type]||100);
                 if(blk.hp<maxHp){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by-8,40,5);ctx.fillStyle='#4caf50';ctx.fillRect(bx,by-8,(Math.max(0,blk.hp)/maxHp)*40,5);}
             }
 
