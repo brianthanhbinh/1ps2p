@@ -4047,8 +4047,54 @@
                 const nextX = ball.x + ball.vx, nextY = ball.y + ball.vy;
                 ball.x = Math.max(18, Math.min(MAP_SIZE - 18, nextX));
                 ball.y = Math.max(18, Math.min(MAP_SIZE - 18, nextY));
-                if (ball.x !== nextX) ball.vx *= -0.55;
-                if (ball.y !== nextY) ball.vy *= -0.55;
+                if (ball.x !== nextX) ball.vx *= -0.65;
+                if (ball.y !== nextY) ball.vy *= -0.65;
+
+                // Balls bounce off solid placed blocks (40x40 tiles).
+                // Check nearby tiles only, using circle-vs-rectangle collision.
+                for (let pass = 0; pass < 2; pass++) {
+                    const minGX = Math.floor((ball.x - 16) / 40);
+                    const maxGX = Math.floor((ball.x + 16) / 40);
+                    const minGY = Math.floor((ball.y - 16) / 40);
+                    const maxGY = Math.floor((ball.y + 16) / 40);
+                    let collided = false;
+                    for (let gy = minGY; gy <= maxGY; gy++) {
+                        for (let gx = minGX; gx <= maxGX; gx++) {
+                            const wall = worldBlocks[gx + ',' + gy];
+                            if (!wall || wall.type === 'ball' || wall.passThrough || wall.type === 'trap') continue;
+                            const left = gx * 40, top = gy * 40;
+                            const closestX = Math.max(left, Math.min(ball.x, left + 40));
+                            const closestY = Math.max(top, Math.min(ball.y, top + 40));
+                            let dx = ball.x - closestX, dy = ball.y - closestY;
+                            let distance = Math.hypot(dx, dy);
+                            if (distance >= 16) continue;
+                            if (distance < 0.001) {
+                                const distances = [
+                                    { d: Math.abs(ball.x - left), nx: -1, ny: 0 },
+                                    { d: Math.abs(left + 40 - ball.x), nx: 1, ny: 0 },
+                                    { d: Math.abs(ball.y - top), nx: 0, ny: -1 },
+                                    { d: Math.abs(top + 40 - ball.y), nx: 0, ny: 1 }
+                                ].sort((a, b) => a.d - b.d);
+                                dx = distances[0].nx;
+                                dy = distances[0].ny;
+                                distance = 1;
+                            }
+                            const nx = dx / distance, ny = dy / distance;
+                            const overlap = 16 - distance;
+                            ball.x += nx * overlap;
+                            ball.y += ny * overlap;
+                            const velocityIntoWall = ball.vx * nx + ball.vy * ny;
+                            if (velocityIntoWall < 0) {
+                                ball.vx -= 1.65 * velocityIntoWall * nx;
+                                ball.vy -= 1.65 * velocityIntoWall * ny;
+                            }
+                            collided = true;
+                        }
+                    }
+                    if (!collided) break;
+                }
+                ball.x = Math.max(18, Math.min(MAP_SIZE - 18, ball.x));
+                ball.y = Math.max(18, Math.min(MAP_SIZE - 18, ball.y));
                 if (Math.abs(ball.vx) < 0.025) ball.vx = 0;
                 if (Math.abs(ball.vy) < 0.025) ball.vy = 0;
                 balls.push({ key, ball });
