@@ -218,6 +218,7 @@
                 <button class="shop-tab active" onclick="switchShopTab('gear', this)">Weapons</button>
                 <button class="shop-tab" onclick="switchShopTab('traps', this)">🪤 Traps</button>
                 <button class="shop-tab" onclick="switchShopTab('rides', this)">🚗 Vehicles</button>
+                <button class="shop-tab" onclick="switchShopTab('blocks', this)">🧱 Block</button>
             </div>
 
             <div id="shop-tab-gear" class="shop-content active">
@@ -252,6 +253,11 @@
                 <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
+            </div>
+            <div id="shop-tab-blocks" class="shop-content">
+                <div class="shop-item-card"><span>🪨 Reinforced Block (220 HP)</span><div><b style="color:#ffca28;">45 🪙</b> <button onclick="buyStoreItem('block', 'reinforced', 45)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>💚 Healing Block (160 HP · heals nearby owner)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'healing', 110)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -564,6 +570,8 @@
             for(let i=0;i<backpackInventory.length;i++){const it=backpackInventory[i];if(it){spawnWorldLoot(it.type,it.subtype||null,posX+(Math.random()-.5)*55,posY+(Math.random()-.5)*55,it.count||1);backpackInventory[i]=null;}}
             for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            blockInventory = { reinforced: 0, metal: 0, healing: 0 };
             grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
@@ -580,6 +588,9 @@
         let remotePlayers = {};
         let aiBots = [];
         let worldBlocks = {};
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0 };
+        let selectedBuildBlock = 'wood';
+        let nextBlockHealAt = 0;
         let droppedLoot = {};
         let supplyCrates = [];
         let bulletsList = [];
@@ -1104,6 +1115,8 @@
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
             trapInventory.spike = 2;
+            blockInventory = { reinforced: 0, metal: 0, healing: 0 };
+            selectedBuildBlock = 'wood';
             updateTrapTotal();
             activeHotbar = 0;
             refreshHotbarUI();
@@ -1591,6 +1604,11 @@
                 const packCount = subtypeName === 'mine' ? 1 : 2;
                 addTraps(subtypeName, packCount);
                 showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${packCount}). Selected trap: ${selectedTrapType.toUpperCase()}`);
+            } else if (itemType === 'block') {
+                if (!Object.prototype.hasOwnProperty.call(blockInventory, subtypeName)) return;
+                blockInventory[subtypeName] = (blockInventory[subtypeName] || 0) + 1;
+                selectedBuildBlock = subtypeName;
+                showNotificationBox(`Purchased 1 ${subtypeName.toUpperCase()} block. Place it with the block slot; remaining: ${blockInventory[subtypeName]}.`);
             } else if (itemType === 'vehicle') {
                 activeRide = subtypeName;
                 let capacity = 1;
@@ -1826,6 +1844,19 @@
                         conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: 100 });
                         broadcastStateToClients();
                     }
+                } else if (data.type === 'trap_trigger') {
+                    const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
+                    if (trap && trap.type === 'mine' && triggerPlayer && trap.team !== triggerPlayer.team && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<34) {
+                        const bx=trap.x,by=trap.y,radius=125,maxDamage=72;
+                        delete activeTraps[data.key];
+                        const applyBlast=p=>{if(!p||p.hp<=0||(trap.team!=='FFA'&&p.team===trap.team))return 0;const d=Math.hypot(p.x-bx,p.y-by);if(d>=radius)return 0;const amount=Math.max(1,Math.round(maxDamage*(1-d/radius)));p.hp=Math.max(0,p.hp-amount);return amount;};
+                        const localDamage=applyBlast({x:posX,y:posY,hp:currentHp,team:playerTeam});
+                        if(localDamage)currentHp=Math.max(0,currentHp-localDamage);
+                        for(const pid in remotePlayers)applyBlast(remotePlayers[pid]);
+                        conn.send({type:'trap_damage',hp:triggerPlayer.hp});
+                        floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
+                        broadcastStateToClients();
+                    }
                 } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
                     const targetIsHost = data.targetId === peerInstance.id;
@@ -1928,7 +1959,9 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'hit_confirm') {
+                if (data.type === 'trap_damage') {
+                    if (typeof data.hp === 'number') currentHp = data.hp;
+                } else if (data.type === 'hit_confirm') {
                     showNotificationBox(`Hit confirmed! -${data.damage} HP`);
                 } else if (data.type === 'crate_reward') {
                     pendingCrateClaims.delete(data.id);
@@ -2316,6 +2349,12 @@
                         bandagesCount += Number(item.value)||1; refreshHotbarUI();
                     } else if (item.type === 'trap') {
                         addTraps(item.subtype || 'spike', Number(item.value)||1);
+                    } else if (item.type === 'block') {
+                        if (Object.prototype.hasOwnProperty.call(blockInventory, item.subtype)) {
+                            blockInventory[item.subtype] = (blockInventory[item.subtype] || 0) + (Number(item.value) || 1);
+                            selectedBuildBlock = item.subtype;
+                            showNotificationBox(`Picked up ${item.subtype} block x${Number(item.value)||1}!`);
+                        }
                     } else if (item.type === 'gun') {
                         const emptyIdx = weaponBarSlots.findIndex(w => w === null);
                         if (emptyIdx !== -1) {
@@ -2394,6 +2433,7 @@
                             showNotificationBox(`Mined block! HP: ${Math.max(0, blk.hp)}`);
                             if (blk.hp <= 0) {
                                 delete worldBlocks[k];
+                                if (blk.type && blk.type !== 'wood') spawnWorldLoot('block', blk.type, bx + 20, by + 20, 1);
                                 playerCoins += 15;
                                 document.getElementById('coin-num').innerText = playerCoins;
                                 showNotificationBox('Block destroyed (+15 🪙)!');
@@ -2415,11 +2455,21 @@
             else if (activeHotbar === 2 && !actionCdBuild) {
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
-                const newBlock = { type: 'wood', hp: activeMode === 'creative' ? 1 : 100 };
+                const buildType = selectedBuildBlock;
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160 };
+                if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
+                    selectedBuildBlock = 'wood';
+                    showNotificationBox('That purchased block is out of stock. Using basic wood.');
+                    return;
+                }
+                if (worldBlocks[bKey]) { showNotificationBox('There is already a block there!'); return; }
+                const maxHp = buildStats[buildType] || 100;
+                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam };
                 worldBlocks[bKey] = newBlock;
+                if (buildType !== 'wood' && activeMode !== 'creative') blockInventory[buildType]--;
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
-                showNotificationBox('🧱 Block placed!');
+                showNotificationBox(`🧱 ${buildType.toUpperCase()} block placed! ${buildType === 'wood' ? 'Basic wood is unlimited.' : 'Remaining: ' + blockInventory[buildType]}`);
                 actionCdBuild = true;
                 setTimeout(() => { actionCdBuild = false; }, 300);
             }
@@ -2592,6 +2642,16 @@
                 currentStamina = Math.min(100, currentStamina + 0.08);
             }
             if (activeMode === 'creative') currentStamina = 100;
+            if (Date.now() >= nextBlockHealAt) {
+                for (const key in worldBlocks) {
+                    const block = worldBlocks[key], parts = key.split(',');
+                    if (block && block.type === 'healing' && block.team === playerTeam &&
+                        Math.hypot(posX-(parseInt(parts[0])*40+20),posY-(parseInt(parts[1])*40+20))<58) {
+                        currentHp = Math.min(activeMode === 'creative' ? 300 : 100,currentHp+2);
+                    }
+                }
+                nextBlockHealAt = Date.now()+1000;
+            }
 
             if (boardedVehicle) {
                 sprintMultiplier = 1.95;
@@ -2627,11 +2687,31 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (tr && tr.team !== playerTeam && Math.hypot(posX - tr.x, posY - tr.y) < 25) {
+                if (!tr || tr.team === playerTeam || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending) continue;
+                if (tr.type === 'mine') {
+                    if (isHosting) {
+                        const radius=125,maxDamage=72;
+                        const applyBlast=p=>{if(!p||p.hp<=0||(tr.team!=='FFA'&&p.team===tr.team))return;const d=Math.hypot(p.x-tr.x,p.y-tr.y);if(d<radius)p.hp=Math.max(0,p.hp-Math.max(1,Math.round(maxDamage*(1-d/radius))));};
+                        const selfD=Math.hypot(posX-tr.x,posY-tr.y);
+                        if(selfD<radius&&(tr.team==='FFA'||tr.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(maxDamage*(1-selfD/radius))));
+                        for(const pid in remotePlayers)applyBlast(remotePlayers[pid]);
+                        if(isPractice)aiBots.forEach(applyBlast);
+                        delete activeTraps[tk];
+                        floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
+                        showNotificationBox('💥 Mine detonated! Ring blast!');
+                        broadcastStateToClients();
+                    } else if(hostConnection&&hostConnection.open) {
+                        tr.triggerPending=true;
+                        hostConnection.send({type:'trap_trigger',key:tk});
+                        floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:125,alpha:1,isShockwave:true});
+                        showNotificationBox('💥 Mine detonated!');
+                    }
+                } else {
                     if (tr.type === 'glue') { playerSlowUntil = Date.now() + 2500; showNotificationBox('Glue trap! Movement slowed.'); }
-                    else if (tr.type === 'bounce') { const a = Math.atan2(posY - tr.y, posX - tr.x); posX += Math.cos(a) * 55; posY += Math.sin(a) * 55; showNotificationBox('Bounce trap!'); }
-                    else { currentHp -= tr.type === 'mine' ? 35 : tr.type === 'bear' ? 28 : 20; showNotificationBox(`Triggered ${String(tr.type || 'spike').toUpperCase()} trap!`); }
+                    else if (tr.type === 'bounce') { const a = Math.atan2(posY-tr.y,posX-tr.x); posX += Math.cos(a)*55; posY += Math.sin(a)*55; showNotificationBox('Bounce trap!'); }
+                    else { currentHp -= tr.type === 'bear' ? 28 : 20; showNotificationBox(`Triggered ${String(tr.type || 'spike').toUpperCase()} trap!`); }
                     delete activeTraps[tk];
+                    if(isHosting)broadcastStateToClients();
                 }
             }
 
@@ -3005,21 +3085,18 @@
             }
 
             for (let k in worldBlocks) {
-                const blk = worldBlocks[k];
-                if (!blk || typeof blk !== 'object') continue;
-                const parts = k.split(',');
-                const bx = parseInt(parts[0]) * 40;
-                const by = parseInt(parts[1]) * 40;
-                ctx.save(); ctx.fillStyle='#a8794f'; ctx.strokeStyle='#e0bd91'; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.roundRect(bx+2,by+2,36,36,7); ctx.fill(); ctx.stroke();
-                ctx.fillStyle='rgba(255,255,255,0.14)'; ctx.beginPath(); ctx.roundRect(bx+7,by+6,26,5,3); ctx.fill(); ctx.restore();
-
-                if (blk.hp < 100) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                    ctx.fillRect(bx, by - 8, 40, 5);
-                    ctx.fillStyle = '#4caf50';
-                    ctx.fillRect(bx, by - 8, (Math.max(0, blk.hp) / 100) * 40, 5);
-                }
+                const blk=worldBlocks[k]; if(!blk||typeof blk!=='object')continue;
+                const parts=k.split(','),bx=parseInt(parts[0])*40,by=parseInt(parts[1])*40;
+                const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5']};
+                const style=styles[blk.type]||styles.wood;
+                ctx.save();ctx.fillStyle=style[0];ctx.strokeStyle=style[1];ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(bx+2,by+2,36,36,7);ctx.fill();ctx.stroke();
+                if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
+                else if(blk.type==='reinforced'){ctx.strokeStyle='#e1e6eb';ctx.lineWidth=3;ctx.strokeRect(bx+9,by+9,22,22);ctx.beginPath();ctx.moveTo(bx+8,by+20);ctx.lineTo(bx+32,by+20);ctx.stroke();}
+                else if(blk.type==='healing'){ctx.fillStyle='#d9ffe8';ctx.fillRect(bx+17,by+8,6,24);ctx.fillRect(bx+8,by+17,24,6);ctx.shadowColor='#46ff9a';ctx.shadowBlur=9;ctx.strokeStyle='#8affb9';ctx.strokeRect(bx+3,by+3,34,34);ctx.shadowBlur=0;}
+                else{ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.roundRect(bx+7,by+6,26,5,3);ctx.fill();}
+                ctx.restore();
+                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160}[blk.type]||100);
+                if(blk.hp<maxHp){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by-8,40,5);ctx.fillStyle='#4caf50';ctx.fillRect(bx,by-8,(Math.max(0,blk.hp)/maxHp)*40,5);}
             }
 
             for (let tk in activeTraps) {
@@ -3049,25 +3126,18 @@
                     }
                     ctx.fillStyle = '#dce5e9';
                     ctx.beginPath(); ctx.arc(tr.x, tr.y, 3, 0, Math.PI * 2); ctx.fill();
-                } else if (tr.type === 'spike') {
-                    ctx.fillStyle = '#b83232';
-                    ctx.fillRect(tr.x - 15, tr.y + 8, 30, 5);
-                    ctx.fillStyle = '#aebbc2';
-                    ctx.strokeStyle = '#263238';
-                    ctx.beginPath();
-                    for (let p = 0; p < 3; p++) {
-                        const x = tr.x - 13 + p * 13;
-                        ctx.moveTo(x - 5, tr.y + 8);
-                        ctx.lineTo(x, tr.y - 13);
-                        ctx.lineTo(x + 5, tr.y + 8);
-                    }
-                    ctx.fill(); ctx.stroke();
-                } else {
-                    ctx.fillStyle = tr.type === 'glue' ? '#8d6e63' : tr.type === 'bounce' ? '#00acc1' : '#ef6c00';
-                    ctx.beginPath();
-                    if (tr.type === 'mine' || tr.type === 'bounce') ctx.arc(tr.x, tr.y, 13, 0, Math.PI * 2);
-                    else if (tr.type === 'glue') ctx.roundRect(tr.x - 13, tr.y - 9, 26, 18, 8);
-                    ctx.fill(); ctx.stroke();
+                } else if(tr.type==='spike'){
+                    ctx.fillStyle='#b83232';ctx.fillRect(tr.x-17,tr.y+9,34,6);ctx.fillStyle='#aebbc2';ctx.strokeStyle='#263238';ctx.beginPath();
+                    for(let p=0;p<4;p++){const x=tr.x-14+p*9;ctx.moveTo(x-4,tr.y+9);ctx.lineTo(x,tr.y-15);ctx.lineTo(x+4,tr.y+9);}ctx.fill();ctx.stroke();ctx.fillStyle='#f5c7c7';ctx.fillRect(tr.x-14,tr.y+11,28,2);
+                }else if(tr.type==='mine'){
+                    ctx.fillStyle='#343b43';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff7043';ctx.lineWidth=2;ctx.stroke();
+                    ctx.fillStyle='#e65100';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffcc80';ctx.lineWidth=2;ctx.stroke();
+                    ctx.strokeStyle='#263238';ctx.lineWidth=2;for(let p=0;p<8;p++){const a=p*Math.PI/4;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*12,tr.y+Math.sin(a)*12);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}
+                    ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(tr.x,tr.y,3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffab91';ctx.lineWidth=1;ctx.beginPath();ctx.arc(tr.x,tr.y,19,0,Math.PI*2);ctx.stroke();
+                }else if(tr.type==='glue'){
+                    ctx.fillStyle='#6d4c41';ctx.beginPath();ctx.roundRect(tr.x-15,tr.y-10,30,20,7);ctx.fill();ctx.stroke();ctx.fillStyle='#80cbc4';for(let p=-1;p<=1;p++){ctx.beginPath();ctx.arc(tr.x+p*8,tr.y,4,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#b2dfdb';ctx.beginPath();ctx.moveTo(tr.x-10,tr.y+13);ctx.lineTo(tr.x+10,tr.y+13);ctx.stroke();
+                }else if(tr.type==='bounce'){
+                    ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
                 ctx.restore();
             }
