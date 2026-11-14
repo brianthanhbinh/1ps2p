@@ -2496,8 +2496,8 @@
                     const message = String(data.message || '').trim().slice(0, 120);
                     const channel = data.channel === 'team' ? 'team' : 'all';
                     if (player && message) {
-                        const chatPacket = { type: 'chat_message', channel, username: String(player.username || 'Player').slice(0, 24), message };
-                        if (channel === 'all' || player.team === playerTeam) appendChatMessage(chatPacket.username, message, channel);
+                        const chatPacket = { type: 'chat_message', channel, username: String(player.username || 'Player').slice(0, 24), teamColor: player.color || '#ffffff', trophies: Math.max(0, Math.floor(Number(player.trophies) || 0)), message };
+                        if (channel === 'all' || player.team === playerTeam) appendChatMessage(chatPacket.username, message, channel, chatPacket.teamColor, chatPacket.trophies);
                         for (const pid in peerConnections) {
                             const targetConn = peerConnections[pid];
                             const recipient = remotePlayers[pid];
@@ -2671,7 +2671,7 @@
             });
             conn.on('data', (data) => {
                 if (data.type === 'chat_message') {
-                    appendChatMessage(data.username || 'Player', data.message || '', data.channel === 'team' ? 'team' : 'all');
+                    appendChatMessage(data.username || 'Player', data.message || '', data.channel === 'team' ? 'team' : 'all', data.teamColor, data.trophies);
                 } else if (data.type === 'bossfight_timeout') {
                     bossfightTimedOut = true;
                     inGameActive = false;
@@ -2869,13 +2869,16 @@
                 activeChatTab === 'team' ? 'Message your team...' : 'Message everyone...';
         }
 
-        function appendChatMessage(username, message, channel = 'all') {
+        function appendChatMessage(username, message, channel = 'all', teamColor = '#ffffff', trophies = 0) {
             const feed = document.getElementById(channel === 'team' ? 'chat-feed-team' : 'chat-feed-all');
             if (!feed) return;
             const line = document.createElement('div');
             line.className = 'chat-line';
             const name = document.createElement('b');
-            name.textContent = String(username || 'Player').slice(0, 24) + ': ';
+            const safeColor = /^#[0-9a-f]{3,8}$/i.test(String(teamColor || '')) ? String(teamColor) : '#ffffff';
+            const trophyCount = Math.max(0, Math.floor(Number(trophies) || 0));
+            name.style.color = safeColor;
+            name.textContent = String(username || 'Player').slice(0, 24) + (trophyCount > 0 ? ' 🏆' + trophyCount : '') + ': ';
             line.appendChild(name);
             line.appendChild(document.createTextNode(String(message || '').slice(0, 120)));
             feed.appendChild(line);
@@ -2887,13 +2890,13 @@
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
             if (txt) {
-                const packet = { type: 'chat_message', channel: activeChatTab, message: txt };
+                const packet = { type: 'chat_message', channel: activeChatTab, message: txt, teamColor: playerColor, trophies: getBossTrophies() };
                 if (isHosting) {
-                    appendChatMessage(myUsername, txt, activeChatTab);
+                    appendChatMessage(myUsername, txt, activeChatTab, playerColor, getBossTrophies());
                     for (const pid in peerConnections) {
                         const conn = peerConnections[pid];
                         const recipient = remotePlayers[pid];
-                        if (conn && conn.open && (activeChatTab === 'all' || (recipient && recipient.team === playerTeam))) conn.send({ ...packet, username: myUsername });
+                        if (conn && conn.open && (activeChatTab === 'all' || (recipient && recipient.team === playerTeam))) conn.send({ ...packet, username: myUsername, teamColor: playerColor, trophies: getBossTrophies() });
                     }
                 } else if (hostConnection && hostConnection.open) {
                     hostConnection.send(packet);
