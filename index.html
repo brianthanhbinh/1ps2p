@@ -2496,7 +2496,9 @@
                     const message = String(data.message || '').trim().slice(0, 120);
                     const channel = data.channel === 'team' ? 'team' : 'all';
                     if (player && message) {
-                        const chatPacket = { type: 'chat_message', channel, username: String(player.username || 'Player').slice(0, 24), teamColor: player.color || '#ffffff', trophies: Math.max(0, Math.floor(Number(player.trophies) || 0)), message };
+                        const chatPacket = { type: 'chat_message', channel, senderId: conn.peer, username: String(player.username || 'Player').slice(0, 24), teamColor: player.color || '#ffffff', trophies: Math.max(0, Math.floor(Number(player.trophies) || 0)), message };
+                        player.chatBubbleText = message;
+                        player.chatBubbleUntil = Date.now() + 4500;
                         if (channel === 'all' || player.team === playerTeam) appendChatMessage(chatPacket.username, message, channel, chatPacket.teamColor, chatPacket.trophies);
                         for (const pid in peerConnections) {
                             const targetConn = peerConnections[pid];
@@ -2672,6 +2674,10 @@
             conn.on('data', (data) => {
                 if (data.type === 'chat_message') {
                     appendChatMessage(data.username || 'Player', data.message || '', data.channel === 'team' ? 'team' : 'all', data.teamColor, data.trophies);
+                    if (data.senderId && remotePlayers[data.senderId]) {
+                        remotePlayers[data.senderId].chatBubbleText = String(data.message || '').slice(0, 120);
+                        remotePlayers[data.senderId].chatBubbleUntil = Date.now() + 4500;
+                    }
                 } else if (data.type === 'bossfight_timeout') {
                     bossfightTimedOut = true;
                     inGameActive = false;
@@ -2759,7 +2765,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, trophies: getBossTrophies(), x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2858,6 +2864,8 @@
         }
 
         let activeChatTab = 'all';
+        let localChatBubbleText = '';
+        let localChatBubbleUntil = 0;
 
         function switchChatTab(channel) {
             activeChatTab = channel === 'team' ? 'team' : 'all';
@@ -2891,15 +2899,17 @@
             const txt = input.value.trim().slice(0, 120);
             if (txt) {
                 const packet = { type: 'chat_message', channel: activeChatTab, message: txt, teamColor: playerColor, trophies: getBossTrophies() };
+                localChatBubbleText = txt;
+                localChatBubbleUntil = Date.now() + 4500;
                 if (isHosting) {
                     appendChatMessage(myUsername, txt, activeChatTab, playerColor, getBossTrophies());
                     for (const pid in peerConnections) {
                         const conn = peerConnections[pid];
                         const recipient = remotePlayers[pid];
-                        if (conn && conn.open && (activeChatTab === 'all' || (recipient && recipient.team === playerTeam))) conn.send({ ...packet, username: myUsername, teamColor: playerColor, trophies: getBossTrophies() });
+                        if (conn && conn.open && (activeChatTab === 'all' || (recipient && recipient.team === playerTeam))) conn.send({ ...packet, senderId: peerInstance && peerInstance.id, username: myUsername, teamColor: playerColor, trophies: getBossTrophies() });
                     }
                 } else if (hostConnection && hostConnection.open) {
-                    hostConnection.send(packet);
+                    hostConnection.send({ ...packet, senderId: peerInstance && peerInstance.id, username: myUsername });
                     appendChatMessage(myUsername, txt, activeChatTab);
                 } else {
                     appendChatMessage('System', 'Not connected to a room.', activeChatTab);
@@ -3996,6 +4006,44 @@
             ctx.restore();
         }
 
+        function drawChatBubble(message, until) {
+            if (!message || until <= Date.now()) return;
+            const text = String(message).slice(0, 120);
+            const maxChars = 26;
+            const lines = [];
+            for (let i = 0; i < text.length; i += maxChars) lines.push(text.slice(i, i + maxChars));
+            const shown = lines.slice(0, 3);
+            ctx.save();
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            const width = Math.min(210, Math.max(54, ...shown.map(line => ctx.measureText(line).width + 20)));
+            const height = shown.length * 15 + 14;
+            const x = -width / 2;
+            const y = -58 - height;
+            ctx.fillStyle = 'rgba(255,255,255,0.96)';
+            ctx.strokeStyle = 'rgba(25,25,25,0.85)';
+            ctx.lineWidth = 1.5;
+            const radius = 8;
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(5, y + height);
+            ctx.lineTo(0, y + height + 7);
+            ctx.lineTo(-5, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#171717';
+            shown.forEach((line, i) => ctx.fillText(line, 0, y + 18 + i * 15));
+            ctx.restore();
+        }
+
         function renderGameScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (!inGameActive) return;
@@ -4177,6 +4225,7 @@
                 if (!rp || rp.hp <= 0) continue;
                 ctx.save();
                 ctx.translate(rp.x, rp.y);
+                drawChatBubble(rp.chatBubbleText, rp.chatBubbleUntil || 0);
 
                 const remoteSkinImg = getTeamSkinImage(rp.color || '#e53935');
                 if (remoteSkinImg && remoteSkinImg.complete && remoteSkinImg.naturalWidth > 0) {
@@ -4265,6 +4314,7 @@
                 // Camera transform is already active: draw the player in local coordinates.
                 ctx.save();
                 ctx.translate(posX, posY);
+                drawChatBubble(localChatBubbleText, localChatBubbleUntil);
                 ctx.rotate(aimAngle);
 
                 const heldWeapon = (activeHotbar >= 3 && activeHotbar <= 5) ? weaponBarSlots[activeHotbar - 3] : null;
