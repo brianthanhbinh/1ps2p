@@ -165,7 +165,7 @@
         .trap-choice small { color:#ffd54f; font-size:10px; }
 
         /* Inventory Panel (32 Slots, Draggable) */
-        #inventory-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
+        #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(14,18,28,0.97); border: 2px solid #ffca28; border-radius: 14px; padding: 22px; width: 450px; color: #fff; display: none; pointer-events: auto; z-index: 60; box-shadow: 0 15px 50px rgba(0,0,0,0.95); text-align: center; }
         #inventory-panel h3 { color: #ffca28; margin-bottom: 12px; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 6px; }
         .inv-grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
         .inventory-slot { width: 44px; height: 44px; background: #222; border: 2px solid #444; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; cursor: grab; position: relative; }
@@ -1392,6 +1392,7 @@
         }
 
         function showUIInGame(active) {
+            if(!active){const inventoryPanel=document.getElementById('inventory-panel');if(inventoryPanel)inventoryPanel.style.display='none';}
             document.getElementById('lobby-box').style.display = active ? 'none' : 'block';
             document.getElementById('stats-hud').style.display = active ? 'flex' : 'none';
             document.getElementById('wallet-badge').style.display = active ? 'flex' : 'none';
@@ -1449,7 +1450,7 @@
 
         function toggleInventoryPanel() {
             const panel = document.getElementById('inventory-panel');
-            if (!panel) return;
+            if (!panel || !inGameActive) return;
             const isOpen = panel.style.display === 'block';
             panel.style.display = isOpen ? 'none' : 'block';
             if (!isOpen) renderBackpackGrid();
