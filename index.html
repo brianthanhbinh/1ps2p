@@ -4155,12 +4155,6 @@
                         const launchImpulse=fb.type==='force3'?27:18;
                         playerMomentumX+=Math.cos(a)*launchImpulse;
                         playerMomentumY+=Math.sin(a)*launchImpulse;
-                        const momentumLimit=42;
-                        const combinedSpeed=Math.hypot(playerMomentumX,playerMomentumY);
-                        if(combinedSpeed>momentumLimit){
-                            playerMomentumX=playerMomentumX/combinedSpeed*momentumLimit;
-                            playerMomentumY=playerMomentumY/combinedSpeed*momentumLimit;
-                        }
                         nextForceLaunchByBlock[k]=Date.now()+650;
                         for(let p=0;p<9;p++)floatingParticles.push({
                             x:fx-Math.cos(a)*12+(Math.random()-.5)*16,
