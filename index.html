@@ -1957,13 +1957,14 @@
             const now = Date.now();
             const tier = bossEntity.difficulty || botDifficulty || 'normal';
             const settings = {
-                easy:    { lead: 0, pathLookahead: 0, speed: 1.35, attackDelay: 1050, rethink: 110 },
-                normal:  { lead: 0.18, pathLookahead: 36, speed: 1.8, attackDelay: 850, rethink: 85 },
-                hard:    { lead: 0.38, pathLookahead: 70, speed: 2.35, attackDelay: 700, rethink: 55 },
-                extreme: { lead: 0.72, pathLookahead: 115, speed: 2.9, attackDelay: 560, rethink: 32 }
-            }[tier] || { lead: 0, pathLookahead: 0, speed: 1.35, attackDelay: 1050, rethink: 110 };
+                easy:    { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0 },
+                normal:  { lead: 0.10, speed: 1.8, attackDelay: 850, rethink: 66, samples: 5, accel: 0.10 },
+                hard:    { lead: 0.16, speed: 2.35, attackDelay: 650, rethink: 33, samples: 9, accel: 0.22 },
+                extreme: { lead: 0.13, speed: 2.9, attackDelay: 300, rethink: 0, samples: 24, accel: 0.38 }
+            }[tier] || { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0 };
 
-            // Track player movement on the host, then estimate where each target is heading.
+            // Sample every living player each simulation tick. Keeping histories for all
+            // players prevents stale velocity estimates when the boss changes targets.
             if (!bossEntity.targetHistory) bossEntity.targetHistory = {};
             const targets = [{ x: posX, y: posY, hp: currentHp, id: peerInstance && peerInstance.id }];
             for (const pid in remotePlayers) {
@@ -1973,40 +1974,59 @@
             const living = targets.filter(p => p.hp > 0 && Number.isFinite(p.x) && Number.isFinite(p.y));
             if (!living.length) return;
 
+            for (const p of living) {
+                if (!p.id) continue;
+                const old = bossEntity.targetHistory[p.id];
+                if (!old) {
+                    bossEntity.targetHistory[p.id] = { x: p.x, y: p.y, at: now, vx: 0, vy: 0, ax: 0, ay: 0 };
+                    continue;
+                }
+                const elapsed = Math.max(1, Math.min(100, now - old.at));
+                const rawVx = (p.x - old.x) / elapsed;
+                const rawVy = (p.y - old.y) / elapsed;
+                const instantVx = Math.max(-0.65, Math.min(0.65, rawVx));
+                const instantVy = Math.max(-0.65, Math.min(0.65, rawVy));
+                const nextVx = old.vx * 0.35 + instantVx * 0.65;
+                const nextVy = old.vy * 0.35 + instantVy * 0.65;
+                const instantAx = (nextVx - old.vx) / elapsed;
+                const instantAy = (nextVy - old.vy) / elapsed;
+                old.ax = old.ax * 0.45 + Math.max(-0.012, Math.min(0.012, instantAx)) * 0.55;
+                old.ay = old.ay * 0.45 + Math.max(-0.012, Math.min(0.012, instantAy)) * 0.55;
+                old.vx = nextVx;
+                old.vy = nextVy;
+                old.x = p.x;
+                old.y = p.y;
+                old.at = now;
+            }
+
             let target = living[0], best = Infinity;
             for (const p of living) {
                 const d = Math.hypot(p.x - bossEntity.x, p.y - bossEntity.y);
                 if (d < best) { best = d; target = p; }
             }
-            const history = bossEntity.targetHistory[target.id] || { x: target.x, y: target.y, at: now, vx: 0, vy: 0 };
-            const elapsed = Math.max(1, Math.min(250, now - history.at));
-            const instantVx = (target.x - history.x) / elapsed;
-            const instantVy = (target.y - history.y) / elapsed;
-            history.vx = history.vx * 0.45 + instantVx * 0.55;
-            history.vy = history.vy * 0.45 + instantVy * 0.55;
-            history.x = target.x;
-            history.y = target.y;
-            history.at = now;
-            bossEntity.targetHistory[target.id] = history;
-
-            const leadMs = settings.lead * 1000;
-            const predicted = {
-                x: Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, target.x + history.vx * leadMs)),
-                y: Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, target.y + history.vy * leadMs))
+            const history = bossEntity.targetHistory[target.id] || { vx: 0, vy: 0, ax: 0, ay: 0 };
+            // Predict a short, continuously updated intercept. Acceleration helps the boss
+            // recognize starts, stops and direction changes instead of extending old velocity.
+            const horizon = settings.lead;
+            const predictAxis = (position, velocity, acceleration, max) => {
+                const projected = position + velocity * horizon + 0.5 * acceleration * horizon * horizon * 1000;
+                return Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, projected));
             };
-            const distanceToTarget = Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y);
+            const predicted = {
+                x: predictAxis(target.x, history.vx || 0, (history.ax || 0) * settings.accel, MAP_SIZE),
+                y: predictAxis(target.y, history.vy || 0, (history.ay || 0) * settings.accel, MAP_SIZE)
+            };
             const attackReach = bossEntity.radius + RADIUS_PLAYER + 7;
 
-            // Choose a clear movement direction that closes distance to the predicted intercept.
-            // Extreme checks more candidate directions and replans more often instead of walking
-            // straight into walls or blindly following the player's last position.
+            // Extreme replans on every 60 Hz simulation tick and checks many approach
+            // angles, scoring each candidate against the predicted intercept and obstacles.
             if (now >= (bossEntity.nextMoveAt || 0)) {
                 const desiredAngle = Math.atan2(predicted.y - bossEntity.y, predicted.x - bossEntity.x);
                 const candidateOffsets = tier === 'extreme'
-                    ? [0, -0.22, 0.22, -0.48, 0.48, -0.82, 0.82, -1.2, 1.2, Math.PI]
+                    ? Array.from({ length: settings.samples }, (_, i) => i * Math.PI * 2 / settings.samples)
                     : tier === 'hard'
-                        ? [0, -0.3, 0.3, -0.7, 0.7, Math.PI]
-                        : tier === 'normal' ? [0, -0.5, 0.5, Math.PI] : [0];
+                        ? [0, -0.25, 0.25, -0.55, 0.55, -0.95, 0.95, Math.PI]
+                        : tier === 'normal' ? [0, -0.45, 0.45, Math.PI] : [0];
                 let chosen = null, chosenScore = Infinity;
                 for (const offset of candidateOffsets) {
                     const angle = desiredAngle + offset;
@@ -2016,7 +2036,7 @@
                         checkCollisionWithBlocks(bossEntity.x, ny, bossEntity.radius) ||
                         checkCollisionWithBlocks(nx, ny, bossEntity.radius)) continue;
                     const remaining = Math.hypot(predicted.x - nx, predicted.y - ny);
-                    const alignment = Math.abs(offset) * settings.pathLookahead;
+                    const alignment = Math.abs(offset) * (tier === 'extreme' ? 0.15 : tier === 'hard' ? 24 : 40);
                     const score = remaining + alignment;
                     if (score < chosenScore) { chosenScore = score; chosen = { x: nx, y: ny }; }
                 }
@@ -2026,10 +2046,10 @@
                     bossEntity.stuckSince = 0;
                 } else {
                     bossEntity.stuckSince = bossEntity.stuckSince || now;
-                    if (tier === 'extreme' && now - bossEntity.stuckSince > 300) {
-                        // A blocked direct route? Reposition toward the nearest clear side.
-                        const escapeAngles = Array.from({ length: 16 }, (_, i) => i * Math.PI / 8);
-                        for (const angle of escapeAngles) {
+                    if (tier === 'extreme' && now - bossEntity.stuckSince > 180) {
+                        // Search for a clear escape step rather than repeatedly pushing into a wall.
+                        for (let i = 0; i < 24; i++) {
+                            const angle = i * Math.PI * 2 / 24;
                             const nx = bossEntity.x + Math.cos(angle) * settings.speed * 2;
                             const ny = bossEntity.y + Math.sin(angle) * settings.speed * 2;
                             if (nx > bossEntity.radius && ny > bossEntity.radius &&
@@ -2043,8 +2063,8 @@
                 bossEntity.nextMoveAt = now + settings.rethink;
             }
 
-            // Re-check the actual target position for melee contact; prediction is for movement,
-            // not for granting hits from a distance.
+            // Contact is still checked against the real player position; prediction only
+            // guides pursuit. Extreme's shorter cooldown makes close-range reactions quicker.
             const actualDistance = Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y);
             if (actualDistance < attackReach && now >= (bossEntity.nextAttackAt || 0)) {
                 const damage = 15;
