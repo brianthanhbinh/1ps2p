@@ -308,7 +308,7 @@
             <div id="shop-tab-blocks" class="shop-content">
                 <div class="shop-item-card"><span>🪨 Reinforced Block (220 HP)</span><div><b style="color:#ffca28;">45 🪙</b> <button onclick="buyStoreItem('block', 'reinforced', 45)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>💚 Healing Block (160 HP · heals nearby owner)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'healing', 110)">Buy</button></div></div>
+                <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItem('block', 'healing', 1000)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'obsidian', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItem('block', 'glass', 35)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('block', 'bounce', 100)">Buy</button></div></div>
@@ -1907,7 +1907,7 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:110,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:450,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -4092,14 +4092,21 @@
             }
             if (activeMode === 'creative') currentStamina = 100;
             if (Date.now() >= nextBlockHealAt) {
+                let touchingHealingBlock = false;
                 for (const key in worldBlocks) {
                     const block = worldBlocks[key], parts = key.split(',');
-                    if (block && block.type === 'healing' && block.team === playerTeam &&
-                        Math.hypot(posX-(parseInt(parts[0])*40+20),posY-(parseInt(parts[1])*40+20))<58) {
-                        currentHp = Math.min(activeMode === 'creative' ? 300 : 100,currentHp+2);
+                    if (!block || block.type !== 'healing' || block.team !== playerTeam) continue;
+                    const blockX = Number(parts[0]) * 40 + 20;
+                    const blockY = Number(parts[1]) * 40 + 20;
+                    if (Math.hypot(posX - blockX, posY - blockY) < 62) {
+                        touchingHealingBlock = true;
+                        break;
                     }
                 }
-                nextBlockHealAt = Date.now()+1000;
+                if (touchingHealingBlock) {
+                    currentHp = Math.min(activeMode === 'creative' ? 300 : 100, currentHp + 5);
+                }
+                nextBlockHealAt = Date.now() + 250;
             }
 
             if (boardedVehicle) {
