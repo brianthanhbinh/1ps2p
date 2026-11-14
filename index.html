@@ -4064,7 +4064,7 @@
                 nextY = posY;
             }
 
-            if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER)) posX = nextX;
+            if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER, posX, posY)) posX = nextX;
             if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER, posX, posY)) posY = nextY;
             for(const k in worldBlocks){
                 const fb=worldBlocks[k];
