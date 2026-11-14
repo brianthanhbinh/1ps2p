@@ -533,8 +533,12 @@
 
         const MAP_SIZE = 2600;
         let mobileMoveX = 0, mobileMoveY = 0, mobileSprint = false;
+        // Remote players share this scratch canvas; the local player has its own
+        // canvas so remote rendering cannot overwrite the locally equipped item.
         const heldItemCanvas = document.createElement('canvas');
         heldItemCanvas.width = 68; heldItemCanvas.height = 68;
+        const localHeldItemCanvas = document.createElement('canvas');
+        localHeldItemCanvas.width = 68; localHeldItemCanvas.height = 68;
         let heldItemCacheKey = '';
         const remoteHeldCanvas = document.createElement('canvas');
         remoteHeldCanvas.width = 68; remoteHeldCanvas.height = 68;
@@ -5106,8 +5110,8 @@
                 ctx.translate(13, 0);
                 const heldCacheKey = (activeKey || 'empty') + ':' + (activeSubType || '');
                 if (heldItemCacheKey !== heldCacheKey) {
-                    if(activeKey) drawItemArtOnCanvas(heldItemCanvas, activeKey, activeSubType);
-                    else {const hc=heldItemCanvas.getContext('2d');hc.clearRect(0,0,heldItemCanvas.width,heldItemCanvas.height);}
+                    if(activeKey) drawItemArtOnCanvas(localHeldItemCanvas, activeKey, activeSubType);
+                    else {const hc=localHeldItemCanvas.getContext('2d');hc.clearRect(0,0,localHeldItemCanvas.width,localHeldItemCanvas.height);}
                     heldItemCacheKey = heldCacheKey;
                 }
                 if(activeKey){
@@ -5117,7 +5121,7 @@
                     ctx.beginPath(); ctx.arc(13, 8, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                     ctx.save();
                     ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 5;
-                    ctx.drawImage(heldItemCanvas, 7, -23, 46, 46);
+                    ctx.drawImage(localHeldItemCanvas, 7, -23, 46, 46);
                     ctx.restore();
                 }
                 ctx.restore();
