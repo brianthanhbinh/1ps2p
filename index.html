@@ -1130,7 +1130,7 @@
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
             trapInventory.spike = 2;
-            blockInventory = { reinforced: 0, metal: 0, healing: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0 };
             selectedBuildBlock = 'wood';
             updateTrapTotal();
             activeHotbar = 0;
@@ -3202,7 +3202,7 @@
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
                 if (item.type === 'block') {
-                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b' };
+                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0' };
                     ctx.save(); ctx.fillStyle = colors[item.subtype] || '#a8794f'; ctx.strokeStyle = '#eef7ff'; ctx.lineWidth = 2;
                     ctx.fillRect(item.x-10,item.y-10,20,20); ctx.strokeRect(item.x-10,item.y-10,20,20);
                     if(item.subtype==='healing'){ctx.fillStyle='#fff';ctx.fillRect(item.x-2,item.y-7,4,14);ctx.fillRect(item.x-7,item.y-2,14,4);}
