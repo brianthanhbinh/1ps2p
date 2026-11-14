@@ -366,6 +366,8 @@
             <div class="chat-feed" id="chat-feed-team"></div>
             <div class="chat-feed active" id="chat-feed-all"></div>
             <div id="friends-panel">
+                <div style="margin-bottom:6px;color:#ddd;">ID prefix (optional)</div>
+                <div class="friend-tools"><input id="device-id-prefix" maxlength="12" placeholder="ARENA-" /><button class="friend-action" onclick="saveDeviceIdPrefix()">Set</button></div>
                 <div style="margin-bottom:6px;color:#ddd;">Your device ID</div>
                 <div class="friend-tools"><input id="my-device-id" readonly /><button class="friend-action" onclick="copyDeviceId()">Copy ID</button></div>
                 <div style="margin:7px 0 5px;color:#ddd;">Add a friend by device ID</div>
@@ -550,6 +552,8 @@
         let myPeerId = '';
         const DEVICE_ID_KEY = 'arena_device_id_v1';
         const FRIENDS_KEY = 'arena_friends_v1';
+        const DEVICE_PREFIX_KEY = 'arena_device_id_prefix_v1';
+        let deviceIdPrefix = '';
         let myDeviceId = '';
         let friends = [];
         let presencePeer = null;
@@ -2926,8 +2930,10 @@
                 try { localStorage.setItem(DEVICE_ID_KEY, myDeviceId); } catch (_) {}
             }
             saveFriends();
-            const idInput = document.getElementById('my-device-id');
-            if (idInput) idInput.value = myDeviceId;
+            try { deviceIdPrefix = localStorage.getItem(DEVICE_PREFIX_KEY) || ''; } catch (_) { deviceIdPrefix = ''; }
+            const prefixInput = document.getElementById('device-id-prefix');
+            if (prefixInput) prefixInput.value = deviceIdPrefix;
+            updateDisplayedDeviceId();
             startPresencePeer();
             renderFriendsList();
             window.setInterval(friendHeartbeat, 4000);
@@ -2937,9 +2943,24 @@
             try { localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends)); } catch (_) {}
         }
 
+        function updateDisplayedDeviceId() {
+            const field = document.getElementById('my-device-id');
+            if (field) field.value = deviceIdPrefix + myDeviceId;
+        }
+
+        function saveDeviceIdPrefix() {
+            const field = document.getElementById('device-id-prefix');
+            deviceIdPrefix = String(field && field.value || '').trim().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 12);
+            if (field) field.value = deviceIdPrefix;
+            try { localStorage.setItem(DEVICE_PREFIX_KEY, deviceIdPrefix); } catch (_) {}
+            updateDisplayedDeviceId();
+            showNotificationBox('ID prefix updated!');
+        }
+
         function copyDeviceId() {
+            const displayId = deviceIdPrefix + myDeviceId;
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(myDeviceId).then(() => showNotificationBox('Device ID copied!')).catch(() => showNotificationBox('Could not copy ID. Select and copy it manually.'));
+                navigator.clipboard.writeText(displayId).then(() => showNotificationBox('Device ID copied!')).catch(() => showNotificationBox('Could not copy ID. Select and copy it manually.'));
             } else {
                 const field = document.getElementById('my-device-id');
                 field.select();
@@ -2949,7 +2970,8 @@
 
         function addFriendById() {
             const input = document.getElementById('add-friend-id');
-            const id = String(input.value || '').trim().toUpperCase();
+            let id = String(input.value || '').trim().toUpperCase();
+            id = id.replace(/^[A-Z0-9_-]{1,12}-/, '');
             if (!/^[A-Z]{8}[A-Z0-9]{2,12}[0-9]{4}$/.test(id)) {
                 showNotificationBox('Invalid ID. Use 8 letters + device name + 4 digits.');
                 return;
