@@ -4155,7 +4155,7 @@
                         playerMomentumX+=Math.cos(a)*launchImpulse;
                         playerMomentumY+=Math.sin(a)*launchImpulse;
                         // Keep combined momentum controllable even when several pads overlap.
-                        const momentumLimit=42;
+                        const momentumLimit=60;
                         const combinedSpeed=Math.hypot(playerMomentumX,playerMomentumY);
                         if(combinedSpeed>momentumLimit){
                             playerMomentumX=playerMomentumX/combinedSpeed*momentumLimit;
@@ -4172,11 +4172,13 @@
                     }
                 }
             }
-            // Momentum is damped gradually, rather than stopping immediately.
-            playerMomentumX*=0.94;
-            playerMomentumY*=0.94;
-            if(Math.abs(playerMomentumX)<0.12)playerMomentumX=0;
-            if(Math.abs(playerMomentumY)<0.12)playerMomentumY=0;
+            // Preserve inertia: momentum should carry the player across the map,
+            // not disappear after a short hop. Apply gentle drag each simulation tick.
+            const momentumDrag = 0.985;
+            playerMomentumX *= momentumDrag;
+            playerMomentumY *= momentumDrag;
+            if (Math.abs(playerMomentumX) < 0.02) playerMomentumX = 0;
+            if (Math.abs(playerMomentumY) < 0.02) playerMomentumY = 0;
             const velocityHud=document.getElementById('velocity-hud');
             if(velocityHud){
                 velocityHud.style.display='block';
