@@ -302,8 +302,8 @@
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ball', 75)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force II (strong push)</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force III (maximum push)</span><div><b style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItem('block', 'force3', 380)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force III (power launcher)</span><div><b style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItem('block', 'force3', 380)">Buy</button></div></div>
                 <div class="shop-item-card"><span>↧ One-Way Block (pass from below)</span><div><b style="color:#ffca28;">85 🪙</b> <button onclick="buyStoreItem('block', 'oneway', 85)">Buy</button></div></div>
                 <div class="shop-item-card"><span>☠ Damage Block (hurts on touch)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'damage', 140)">Buy</button></div></div>
             </div>
@@ -756,6 +756,8 @@
         let worldBlocks = {};
         let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0 };
         let forceBlockRotation = 0;
+        // Launch velocity from Force II / Force III blocks.
+        let playerMomentumX = 0, playerMomentumY = 0, nextForceLaunchAt = 0;
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
         let nextDamageBlockAt = 0;
@@ -3989,8 +3991,8 @@
                 dx /= length;
                 dy /= length;
             }
-            let nextX = posX + dx * moveSpeed * sprintMultiplier;
-            let nextY = posY + dy * moveSpeed * sprintMultiplier;
+            let nextX = posX + dx * moveSpeed * sprintMultiplier + playerMomentumX;
+            let nextY = posY + dy * moveSpeed * sprintMultiplier + playerMomentumY;
 
             nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
             nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
@@ -4004,7 +4006,38 @@
 
             if (!checkCollisionWithBlocks(nextX, posY, RADIUS_PLAYER)) posX = nextX;
             if (!checkCollisionWithBlocks(posX, nextY, RADIUS_PLAYER, posX, posY)) posY = nextY;
-            for(const k in worldBlocks){const fb=worldBlocks[k];if(!fb||!['force','force2','force3'].includes(fb.type))continue;const parts=k.split(','),fx=Number(parts[0])*40+20,fy=Number(parts[1])*40+20;if(Math.hypot(posX-fx,posY-fy)<31){const a=Number(fb.angle)||0;const push=fb.type==='force3'?12:fb.type==='force2'?9:6.5;const px=posX+Math.cos(a)*push,py=posY+Math.sin(a)*push;if(!checkCollisionWithBlocks(px,posY,RADIUS_PLAYER))posX=px;if(!checkCollisionWithBlocks(posX,py,RADIUS_PLAYER))posY=py;floatingParticles.push({x:fx-Math.cos(a)*12,y:fy-Math.sin(a)*12,vx:Math.cos(a)*1.2,vy:Math.sin(a)*1.2,radius:2,alpha:.55,smoke:true});}}
+            for(const k in worldBlocks){
+                const fb=worldBlocks[k];
+                if(!fb||!['force','force2','force3'].includes(fb.type))continue;
+                const parts=k.split(','),fx=Number(parts[0])*40+20,fy=Number(parts[1])*40+20;
+                if(Math.hypot(posX-fx,posY-fy)<31){
+                    const a=Number(fb.angle)||0;
+                    if(fb.type==='force'){
+                        const push=6.5,px=posX+Math.cos(a)*push,py=posY+Math.sin(a)*push;
+                        if(!checkCollisionWithBlocks(px,posY,RADIUS_PLAYER))posX=px;
+                        if(!checkCollisionWithBlocks(posX,py,RADIUS_PLAYER))posY=py;
+                    } else if(Date.now()>=nextForceLaunchAt){
+                        // The arrow direction is the launch direction. Momentum carries
+                        // the player beyond the pad and gradually fades with friction.
+                        const launchSpeed=fb.type==='force3'?27:18;
+                        playerMomentumX=Math.cos(a)*launchSpeed;
+                        playerMomentumY=Math.sin(a)*launchSpeed;
+                        nextForceLaunchAt=Date.now()+650;
+                        for(let p=0;p<9;p++)floatingParticles.push({
+                            x:fx-Math.cos(a)*12+(Math.random()-.5)*16,
+                            y:fy-Math.sin(a)*12+(Math.random()-.5)*16,
+                            vx:-Math.cos(a)*(1.5+Math.random()*2),
+                            vy:-Math.sin(a)*(1.5+Math.random()*2),
+                            radius:2+Math.random()*2,alpha:.85,smoke:true
+                        });
+                    }
+                }
+            }
+            // Momentum is damped gradually, rather than stopping immediately.
+            playerMomentumX*=0.94;
+            playerMomentumY*=0.94;
+            if(Math.abs(playerMomentumX)<0.12)playerMomentumX=0;
+            if(Math.abs(playerMomentumY)<0.12)playerMomentumY=0;
             if(Date.now()>=nextDamageBlockAt){for(const k in worldBlocks){const db=worldBlocks[k];if(!db||db.type!=='damage')continue;const parts=k.split(','),cx=Number(parts[0])*40+20,cy=Number(parts[1])*40+20;if(Math.hypot(posX-cx,posY-cy)<31&&(db.team==='FFA'||db.team!==playerTeam)){currentHp=Math.max(0,currentHp-12);nextDamageBlockAt=Date.now()+900;showNotificationBox('☠ Damage block!');break;}}}
 
             for (let tk in activeTraps) {
