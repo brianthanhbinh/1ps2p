@@ -4083,7 +4083,7 @@
             // Entity cramping: dense piles of pushable balls slowly break apart.
             // Spatial buckets keep the density check efficient even with many balls.
             let crampedBall = null;
-            if (balls.length >= 8 && Date.now() >= (window.nextBallCrampBreakAt || 0)) {
+            if (balls.length >= 20 && Date.now() >= (window.nextBallCrampBreakAt || 0)) {
                 const cellSize = 100;
                 const buckets = new Map();
                 for (const entry of balls) {
@@ -4093,7 +4093,7 @@
                     if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
                     buckets.get(bucketKey).push(entry);
                 }
-                let mostCrowdedCount = 7;
+                let mostCrowdedCount = 19;
                 for (const entry of balls) {
                     const cx = Math.floor(entry.ball.x / cellSize);
                     const cy = Math.floor(entry.ball.y / cellSize);
