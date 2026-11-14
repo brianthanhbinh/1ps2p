@@ -2482,7 +2482,18 @@
                 });
             });
             conn.on('data', (data) => {
-                if (data.type === 'respawn_request') {
+                if (data.type === 'chat_message') {
+                    const player = remotePlayers[conn.peer];
+                    const message = String(data.message || '').trim().slice(0, 120);
+                    if (player && message) {
+                        const chatPacket = { type: 'chat_message', username: String(player.username || 'Player').slice(0, 24), message };
+                        appendChatMessage(chatPacket.username, chatPacket.message);
+                        for (const pid in peerConnections) {
+                            const targetConn = peerConnections[pid];
+                            if (pid !== conn.peer && targetConn && targetConn.open) targetConn.send(chatPacket);
+                        }
+                    }
+                } else if (data.type === 'respawn_request') {
                     const player = remotePlayers[conn.peer];
                     if (player) {
                         const spawn = getTeamSpawnCoords(currentMode === 'bossfight' ? 'Raiders' : player.team);
@@ -2647,7 +2658,9 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'bossfight_timeout') {
+                if (data.type === 'chat_message') {
+                    appendChatMessage(data.username || 'Player', data.message || '');
+                } else if (data.type === 'bossfight_timeout') {
                     bossfightTimedOut = true;
                     inGameActive = false;
                     showUIInGame(false);
@@ -2832,21 +2845,45 @@
             if (block && block.type && block.type !== 'wood') spawnWorldLoot('block', block.type, x, y, 1);
         }
 
+        function appendChatMessage(username, message) {
+            const feed = document.getElementById('chat-feed');
+            if (!feed) return;
+            const line = document.createElement('div');
+            line.className = 'chat-line';
+            const name = document.createElement('b');
+            name.textContent = String(username || 'Player').slice(0, 24) + ': ';
+            line.appendChild(name);
+            line.appendChild(document.createTextNode(String(message || '').slice(0, 120)));
+            feed.appendChild(line);
+            while (feed.children.length > 60) feed.removeChild(feed.firstChild);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
-            const txt = input.value.trim();
+            const txt = input.value.trim().slice(0, 120);
             if (txt) {
-                const feed = document.getElementById('chat-feed');
-                feed.innerHTML += `<div class="chat-line"><b>${myUsername}:</b> ${escapeHtml(txt)}</div>`;
-                feed.scrollTop = feed.scrollHeight;
+                if (isHosting) {
+                    appendChatMessage(myUsername, txt);
+                    const packet = { type: 'chat_message', username: myUsername, message: txt };
+                    for (const pid in peerConnections) {
+                        const conn = peerConnections[pid];
+                        if (conn && conn.open) conn.send(packet);
+                    }
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'chat_message', message: txt });
+                } else {
+                    appendChatMessage('System', 'Not connected to a room.');
+                }
                 input.value = '';
             }
             input.blur();
             input.style.display = 'none';
+            canvas.focus({ preventScroll: true });
         }
 
         function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
         function clientToCanvasPoint(clientX, clientY) {
@@ -2875,13 +2912,16 @@
             const chatInput = document.getElementById('chat-text-input');
             const movementKeys = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'];
             if (chatInput === document.activeElement) {
-                if (e.code === 'Enter') { sendChatMessage(); return; }
+                if (e.code === 'Enter') { e.preventDefault(); sendChatMessage(); return; }
                 if (e.code === 'Escape') {
+                    e.preventDefault();
                     chatInput.blur();
+                    chatInput.style.display = 'none';
+                    canvas.focus({ preventScroll: true });
                     return;
                 }
-                if (!movementKeys.includes(e.code)) return;
-                chatInput.blur();
+                // Keep game controls from reacting while the player is typing.
+                return;
             }
 
             keyboardInput[e.code] = true;
