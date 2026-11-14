@@ -1096,11 +1096,27 @@
             modal.style.display = 'flex';
         }
 
+        function resetPlayerInventoryForNewMatch() {
+            weaponBarSlots = [null, null, null];
+            backpackInventory = Array(20).fill(null);
+            grenadesCount = 3;
+            bandagesCount = 2;
+            smokeBombsCount = 0;
+            for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
+            trapInventory.spike = 2;
+            updateTrapTotal();
+            activeHotbar = 0;
+            refreshHotbarUI();
+            renderBackpackGrid();
+            syncSelectedAmmo();
+        }
+
         function assignTeamAndSpawn(teamName, hexColor) {
             playerTeam = teamName;
             playerColor = hexColor;
             document.getElementById('modal-screen').style.display = 'none';
 
+            resetPlayerInventoryForNewMatch();
             const spawnCoords = getTeamSpawnCoords(teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
@@ -1672,6 +1688,13 @@
             posX = spawnCoords.x;
             posY = spawnCoords.y;
             baseLockedOut = false;
+            window.localBurnUntil = 0;
+            window.localBurnTick = 0;
+            if (!isHosting && hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'respawn_request' });
+            } else if (isHosting && peerInstance) {
+                broadcastStateToClients();
+            }
             showNotificationBox(`Respawned at ${playerTeam} Base!`);
         }
 
@@ -1794,7 +1817,16 @@
                 });
             });
             conn.on('data', (data) => {
-                if (data.type === 'hit_request') {
+                if (data.type === 'respawn_request') {
+                    const player = remotePlayers[conn.peer];
+                    if (player) {
+                        const spawn = getTeamSpawnCoords(player.team);
+                        player.x = spawn.x; player.y = spawn.y; player.hp = 100;
+                        player.burningUntil = 0; player.nextBurnTick = 0;
+                        conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: 100 });
+                        broadcastStateToClients();
+                    }
+                } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
                     const targetIsHost = data.targetId === peerInstance.id;
                     const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp } : remotePlayers[data.targetId];
