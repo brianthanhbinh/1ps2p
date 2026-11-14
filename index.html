@@ -2339,6 +2339,9 @@
                     bossEntity.stuckSince = 0;
                 } else {
                     bossEntity.stuckSince = bossEntity.stuckSince || now;
+                    // No clear movement step: damage the blocking tile instead of
+                    // endlessly pushing against it.
+                    bossBreakBlockAhead(desiredAngle, now);
                     if (tier === 'extreme' && now - bossEntity.stuckSince > 180) {
                         // Search for a clear escape step rather than repeatedly pushing into a wall.
                         for (let i = 0; i < 24; i++) {
@@ -2376,9 +2379,6 @@
                 bossEntity.nextShotAt = now + fireDelay;
             }
             updateBossProjectiles(now);
-            // If it cannot step around the wall in front of it, it smashes the block.
-            if (!chosen) bossBreakBlockAhead(desiredAngle,now);
-
             // Contact is still checked against the real player position; prediction only
             // guides pursuit. Extreme's shorter cooldown makes close-range reactions quicker.
             const actualDistance = target ? Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y) : Infinity;
