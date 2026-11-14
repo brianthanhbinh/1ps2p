@@ -2029,6 +2029,8 @@
                 bossEntity.defeated = true;
                 bossVictoryId = 'boss-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
                 if (bossEntity.difficulty === 'extreme') awardBossTrophy(bossVictoryId);
+                const bossTimerHud = document.getElementById('bossfight-timer');
+                if (bossTimerHud) bossTimerHud.style.display = 'none';
                 showNotificationBox('🏆 The Boss has been defeated! The raid is over!');
             }
             broadcastStateToClients();
@@ -2520,6 +2522,11 @@
 
         function exitToLobby() {
             inGameActive = false;
+            const bossTimerHud = document.getElementById('bossfight-timer');
+            if (bossTimerHud) bossTimerHud.style.display = 'none';
+            bossEntity = null;
+            bossVictoryId = null;
+            bossfightTimedOut = false;
             showUIInGame(false);
             if (peerInstance) {
                 peerInstance.destroy();
@@ -3818,7 +3825,10 @@
                 if (!bossEntity || !bossEntity.timeoutHandled) updateBossFightAI();
             }
             const bossTimerHud = document.getElementById('bossfight-timer');
-            if (bossTimerHud) bossTimerHud.style.display = activeMode === 'bossfight' && inGameActive ? 'block' : 'none';
+            if (bossTimerHud) {
+                const bossStillActive = !!(bossEntity && !bossEntity.defeated && !bossEntity.timeoutHandled) && !bossfightTimedOut;
+                bossTimerHud.style.display = activeMode === 'bossfight' && inGameActive && bossStillActive ? 'block' : 'none';
+            }
             if (activeMode === 'bossfight' && bossEntity && bossEntity.endsAt) {
                 const seconds = Math.max(0, Math.ceil((bossEntity.endsAt - Date.now()) / 1000));
                 const timerText = document.getElementById('bossfight-time-left');
