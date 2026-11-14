@@ -317,6 +317,7 @@
         </div>
 
         <div id="airdrop-banner">✈️ Airdrop: <span id="airdrop-countdown">30s</span></div>
+        <div id="bossfight-timer" style="display:none;position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(35,8,48,.9);border:2px solid #ce93d8;border-radius:20px;padding:7px 18px;color:#fff;font-weight:900;font-size:16px;z-index:26;pointer-events:none;box-shadow:0 4px 14px #0008;">👑 Bossfight: <span id="bossfight-time-left">05:00</span></div>
         <div id="self-destruct-banner">⚠️ Base Exited! Re-entry locked (<span id="sd-countdown">30s</span>)</div>
         <div id="ammo-hud-badge">Ammo: <span id="ammo-num">—</span><br/><span id="ammo-hint" style="font-size:10px;color:#aaa;">Select an item</span></div>
 
@@ -609,6 +610,7 @@
         let botDifficulty = 'normal';
         let bossEntity = null;
         let bossVictoryId = null;
+        let bossfightTimedOut = false;
         const BOSS_TROPHY_KEY = 'arena_bossfight_trophies_v1';
         function getBossTrophies() {
             try { return Math.max(0, Math.floor(Number(localStorage.getItem(BOSS_TROPHY_KEY)) || 0)); }
@@ -1218,6 +1220,9 @@
             // A new match must never reuse a defeated or stale boss from a prior room.
             bossEntity = null;
             bossVictoryId = null;
+            bossfightTimedOut = false;
+            const bossTimerHud = document.getElementById('bossfight-timer');
+            if (bossTimerHud) bossTimerHud.style.display = 'none';
             currentMode = 'bossfight';
             hostGameMode = 'bossfight';
             ctfFlags = null;
@@ -1332,8 +1337,10 @@
                 spawnPracticeBots();
             }
             if (activeMode === 'bossfight' && isHosting && !bossEntity) {
-                bossEntity = { id: 'raid-boss', username: 'THE BOSS', x: MAP_SIZE / 2, y: MAP_SIZE / 2, hp: 300, maxHp: 300, radius: RADIUS_PLAYER * 1.5, damage: 15, difficulty: botDifficulty, color: '#8e24aa', nextAttackAt: 0, nextMoveAt: 0, defeated: false };
+                bossEntity = { id: 'raid-boss', username: 'THE BOSS', x: MAP_SIZE / 2, y: MAP_SIZE / 2, hp: 300, maxHp: 300, radius: RADIUS_PLAYER * 1.5, damage: 15, difficulty: botDifficulty, color: '#8e24aa', nextAttackAt: 0, nextMoveAt: 0, defeated: false, endsAt: Date.now() + 300000, path: null, nextPathAt: 0 };
                 bossVictoryId = null;
+                const bossTimerHud = document.getElementById('bossfight-timer');
+                if (bossTimerHud) bossTimerHud.style.display = 'block';
                 showNotificationBox('👑 Bossfight started! Work together to defeat the boss!');
             }
 
@@ -1970,6 +1977,124 @@
             return false;
         }
 
+        // Breadth-first grid pathfinding (40px cells) around blocks and protected bases.
+        // Returns waypoints from the boss toward the goal, or null when unreachable.
+        function findBossPath(startX, startY, goalX, goalY) {
+            const cellSize = 40;
+            const cols = Math.ceil(MAP_SIZE / cellSize);
+            const rows = cols;
+            const total = cols * rows;
+            const toCell = (v, max) => Math.max(0, Math.min(max - 1, Math.floor(v / cellSize)));
+            const cellCenter = (index) => ({
+                x: (index % cols) * cellSize + cellSize / 2,
+                y: Math.floor(index / cols) * cellSize + cellSize / 2
+            });
+            const start = toCell(startY, rows) * cols + toCell(startX, cols);
+            const rawGoal = toCell(goalY, rows) * cols + toCell(goalX, cols);
+            const isWalkable = (index) => {
+                const p = cellCenter(index);
+                return !isBossInsideAnyBase(p.x, p.y) &&
+                    !checkCollisionWithBlocks(p.x, p.y, bossEntity.radius);
+            };
+
+            // If the target stands inside an occupied tile, choose its nearest walkable tile.
+            let goal = rawGoal;
+            if (!isWalkable(goal)) {
+                let nearest = null, nearestDistance = Infinity;
+                const gx = rawGoal % cols, gy = Math.floor(rawGoal / cols);
+                for (let radius = 1; radius <= 5 && nearest === null; radius++) {
+                    for (let oy = -radius; oy <= radius; oy++) {
+                        for (let ox = -radius; ox <= radius; ox++) {
+                            if (Math.max(Math.abs(ox), Math.abs(oy)) !== radius) continue;
+                            const x = gx + ox, y = gy + oy;
+                            if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
+                            const candidate = y * cols + x;
+                            if (!isWalkable(candidate)) continue;
+                            const p = cellCenter(candidate);
+                            const d = Math.hypot(p.x - goalX, p.y - goalY);
+                            if (d < nearestDistance) { nearestDistance = d; nearest = candidate; }
+                        }
+                    }
+                    if (nearest !== null) goal = nearest;
+                }
+                if (nearest === null) return null;
+            }
+
+            if (start === goal) return [];
+            const previous = new Int32Array(total);
+            previous.fill(-2);
+            const queue = new Int32Array(total);
+            let head = 0, tail = 0;
+            queue[tail++] = start;
+            previous[start] = -1;
+            const directions = [
+                [1,0],[-1,0],[0,1],[0,-1],
+                [1,1],[1,-1],[-1,1],[-1,-1]
+            ];
+
+            while (head < tail && previous[goal] === -2) {
+                const current = queue[head++];
+                const cx = current % cols, cy = Math.floor(current / cols);
+                for (const [dx, dy] of directions) {
+                    const nx = cx + dx, ny = cy + dy;
+                    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+                    const next = ny * cols + nx;
+                    if (previous[next] !== -2 || !isWalkable(next)) continue;
+                    // Do not cut diagonally through the corner of two solid cells.
+                    if (dx && dy) {
+                        const sideA = cy * cols + nx, sideB = ny * cols + cx;
+                        if (!isWalkable(sideA) || !isWalkable(sideB)) continue;
+                    }
+                    previous[next] = current;
+                    queue[tail++] = next;
+                    if (next === goal) break;
+                }
+            }
+            if (previous[goal] === -2) return null;
+
+            const reversed = [];
+            for (let at = goal; at !== start && at !== -1; at = previous[at]) {
+                reversed.push(cellCenter(at));
+            }
+            reversed.reverse();
+            return reversed;
+        }
+
+        function updateBossFightTimer() {
+            if (!isHosting || currentMode !== 'bossfight' || !bossEntity || bossEntity.defeated) return;
+            if (!bossEntity.endsAt) bossEntity.endsAt = Date.now() + 300000;
+            const remaining = Math.max(0, bossEntity.endsAt - Date.now());
+            const timer = document.getElementById('bossfight-time-left');
+            if (timer) {
+                const seconds = Math.ceil(remaining / 1000);
+                timer.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+            }
+            if (remaining <= 0 && !bossEntity.timeoutHandled) {
+                bossEntity.timeoutHandled = true;
+                // Timeout is a failed raid: no victory ID and no trophy award.
+                bossVictoryId = null;
+                showNotificationBox('⏱️ Time is up! The raid failed. Everyone is being returned to the lobby.');
+                for (const pid in peerConnections) {
+                    const conn = peerConnections[pid];
+                    if (conn && conn.open) {
+                        try { conn.send({ type: 'bossfight_timeout' }); } catch (_) {}
+                        setTimeout(() => { try { conn.close(); } catch (_) {} }, 300);
+                    }
+                }
+                setTimeout(() => {
+                    for (const pid in peerConnections) {
+                        try { if (peerConnections[pid]) peerConnections[pid].close(); } catch (_) {}
+                    }
+                    peerConnections = {};
+                    remotePlayers = {};
+                    exitToLobby();
+                    const hud = document.getElementById('bossfight-timer');
+                    if (hud) hud.style.display = 'none';
+                    showNotificationBox('Raid failed — no trophy awarded.');
+                }, 450);
+            }
+        }
+
         function updateBossFightAI() {
             if (!isHosting || !bossEntity || bossEntity.hp <= 0 || bossEntity.defeated) return;
             const now = Date.now();
@@ -2012,7 +2137,6 @@
                 if (p && p.hp > 0) targets.push({ x: p.x, y: p.y, hp: p.hp, id: pid });
             }
             const living = targets.filter(p => p.hp > 0 && Number.isFinite(p.x) && Number.isFinite(p.y));
-            if (!living.length) return;
 
             for (const p of living) {
                 if (!p.id) continue;
@@ -2039,12 +2163,36 @@
                 old.at = now;
             }
 
-            let target = living[0], best = Infinity;
-            for (const p of living) {
-                const d = Math.hypot(p.x - bossEntity.x, p.y - bossEntity.y);
-                if (d < best) { best = d; target = p; }
+            // Rebuild the route periodically. Try living players from nearest to farthest;
+            // if a wall/base layout makes one unreachable, try the next one.
+            if (!bossEntity.path || now >= (bossEntity.nextPathAt || 0)) {
+                const candidates = living.slice().sort((a, b) =>
+                    Math.hypot(a.x - bossEntity.x, a.y - bossEntity.y) -
+                    Math.hypot(b.x - bossEntity.x, b.y - bossEntity.y));
+                let selected = null, selectedPath = null;
+                for (const candidate of candidates) {
+                    const path = findBossPath(bossEntity.x, bossEntity.y, candidate.x, candidate.y);
+                    if (path !== null) { selected = candidate; selectedPath = path; break; }
+                }
+                if (selected) {
+                    bossEntity.pathTargetId = selected.id;
+                    bossEntity.path = selectedPath;
+                } else {
+                    // No reachable players (or no living players): retreat to the map center.
+                    bossEntity.pathTargetId = null;
+                    bossEntity.path = findBossPath(bossEntity.x, bossEntity.y, MAP_SIZE / 2, MAP_SIZE / 2);
+                }
+                bossEntity.nextPathAt = now + 450;
             }
-            const history = bossEntity.targetHistory[target.id] || { vx: 0, vy: 0, ax: 0, ay: 0 };
+
+            let target = living.find(p => p.id === bossEntity.pathTargetId) || null;
+            // If nobody is reachable, use the map center as the navigation goal.
+            const path = Array.isArray(bossEntity.path) ? bossEntity.path : [];
+            while (path.length && Math.hypot(path[0].x - bossEntity.x, path[0].y - bossEntity.y) < 18) path.shift();
+            const navigationGoal = path.length ? path[0] : (target || { x: MAP_SIZE / 2, y: MAP_SIZE / 2 });
+            const history = target && bossEntity.targetHistory[target.id]
+                ? bossEntity.targetHistory[target.id]
+                : { vx: 0, vy: 0, ax: 0, ay: 0 };
             // Predict a short, continuously updated intercept. Acceleration helps the boss
             // recognize starts, stops and direction changes instead of extending old velocity.
             const horizonMs = settings.lead * 1000;
@@ -2052,16 +2200,19 @@
                 const projected = position + velocity * horizonMs + 0.5 * acceleration * horizonMs * horizonMs;
                 return Math.max(bossEntity.radius, Math.min(MAP_SIZE - bossEntity.radius, projected));
             };
-            const predicted = {
+            const predicted = target ? {
                 x: predictAxis(target.x, history.vx || 0, (history.ax || 0) * settings.accel, MAP_SIZE),
                 y: predictAxis(target.y, history.vy || 0, (history.ay || 0) * settings.accel, MAP_SIZE)
-            };
+            } : { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
+            // Follow the next route waypoint; once the route is clear, prediction can
+            // steer the final approach toward the selected player's future position.
+            const steeringPoint = path.length ? navigationGoal : predicted;
             const attackReach = bossEntity.radius + RADIUS_PLAYER + 7;
 
             // Extreme replans on every 60 Hz simulation tick and checks many approach
             // angles, scoring each candidate against the predicted intercept and obstacles.
             if (now >= (bossEntity.nextMoveAt || 0)) {
-                const desiredAngle = Math.atan2(predicted.y - bossEntity.y, predicted.x - bossEntity.x);
+                const desiredAngle = Math.atan2(steeringPoint.y - bossEntity.y, steeringPoint.x - bossEntity.x);
                 const candidateOffsets = tier === 'extreme'
                     ? Array.from({ length: settings.samples }, (_, i) => i * Math.PI * 2 / settings.samples)
                     : tier === 'hard'
@@ -2148,8 +2299,8 @@
 
             // Contact is still checked against the real player position; prediction only
             // guides pursuit. Extreme's shorter cooldown makes close-range reactions quicker.
-            const actualDistance = Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y);
-            if (actualDistance < attackReach && now >= (bossEntity.nextAttackAt || 0)) {
+            const actualDistance = target ? Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y) : Infinity;
+            if (target && actualDistance < attackReach && now >= (bossEntity.nextAttackAt || 0)) {
                 const damage = 15;
                 if (target.id === (peerInstance && peerInstance.id)) currentHp = Math.max(0, currentHp - damage);
                 else if (remotePlayers[target.id]) remotePlayers[target.id].hp = Math.max(0, remotePlayers[target.id].hp - damage);
@@ -2414,7 +2565,16 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'trap_damage') {
+                if (data.type === 'bossfight_timeout') {
+                    bossfightTimedOut = true;
+                    inGameActive = false;
+                    showUIInGame(false);
+                    const timerHud = document.getElementById('bossfight-timer');
+                    if (timerHud) timerHud.style.display = 'none';
+                    showNotificationBox('⏱️ Bossfight time expired. Raid failed — no trophy awarded.');
+                    try { conn.close(); } catch (_) {}
+                    document.getElementById('net-status').innerText = 'Bossfight expired. Returned to lobby.';
+                } else if (data.type === 'trap_damage') {
                     if (typeof data.hp === 'number') currentHp = data.hp;
                 } else if (data.type === 'hit_confirm') {
                     showNotificationBox(`Hit confirmed! -${data.damage} HP`);
@@ -2466,6 +2626,10 @@
                 }
             });
             conn.on('close', () => {
+                if (bossfightTimedOut) {
+                    document.getElementById('net-status').innerText = 'Bossfight expired. Returned to lobby.';
+                    return;
+                }
                 showNotificationBox('Host disconnected! Migrating server host...');
                 if (!isHosting && roomCode) {
                     isHosting = true;
@@ -3088,7 +3252,17 @@
                 currentStamina = 100;
             }
 
-            if (activeMode === 'bossfight' && isHosting) updateBossFightAI();
+            if (activeMode === 'bossfight' && isHosting) {
+                updateBossFightTimer();
+                if (!bossEntity || !bossEntity.timeoutHandled) updateBossFightAI();
+            }
+            const bossTimerHud = document.getElementById('bossfight-timer');
+            if (bossTimerHud) bossTimerHud.style.display = activeMode === 'bossfight' && inGameActive ? 'block' : 'none';
+            if (activeMode === 'bossfight' && bossEntity && bossEntity.endsAt) {
+                const seconds = Math.max(0, Math.ceil((bossEntity.endsAt - Date.now()) / 1000));
+                const timerText = document.getElementById('bossfight-time-left');
+                if (timerText) timerText.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+            }
             if (currentHp <= 0) {
                 dropAllPlayerLoot();
                 document.getElementById('death-modal').style.display = 'flex';
