@@ -2384,7 +2384,7 @@
             const actualDistance = target ? Math.hypot(target.x - bossEntity.x, target.y - bossEntity.y) : Infinity;
             if (target && actualDistance < attackReach && now >= (bossEntity.nextAttackAt || 0)) {
                 const damage = 15;
-                if (target.id === (peerInstance && peerInstance.id)) currentHp = Math.max(0, currentHp - damage);
+                if (target.id === (peerInstance && peerInstance.id)) currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage));
                 else if (remotePlayers[target.id]) remotePlayers[target.id].hp = Math.max(0, remotePlayers[target.id].hp - damage);
                 bossEntity.nextAttackAt = now + settings.attackDelay;
                 showNotificationBox('The Boss hit a Raider! -15 HP');
@@ -2547,7 +2547,7 @@
                         Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 48 &&
                         (shooter.team === 'FFA' || shooter.team !== target.team);
                     if (validHit) {
-                        if (targetIsHost) { currentHp = Math.max(0, currentHp - damage); if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
+                        if (targetIsHost) { currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage)); if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
                         else { target.hp = Math.max(0, target.hp - damage); if(weapon==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;} }
                         let splashDamage = 0;
                         if (weapon === 'rocket') {
@@ -3110,6 +3110,18 @@
             }
         }
 
+        function getVehicleDamageReduction() {
+            if (!boardedVehicle) return 0;
+            if (boardedVehicle.type === 'hovercraft') return 0.15;
+            if (boardedVehicle.type === 'mech') return 0.30;
+            return 0;
+        }
+        function getVehicleAdjustedDamage(amount) {
+            return Math.max(0, amount * (1 - getVehicleDamageReduction()));
+        }
+        function getVehicleDamageOutputMultiplier() {
+            return boardedVehicle && boardedVehicle.type === 'mech' ? 1.20 : 1;
+        }
         function getEquippedWeapon() {
             return activeHotbar >= 3 && activeHotbar <= 5 ? weaponBarSlots[activeHotbar - 3] : null;
         }
@@ -3286,7 +3298,7 @@
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let shotAngle = aimAngle;
                         if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
-                        bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
+                        bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, damageMultiplier: getVehicleDamageOutputMultiplier(), distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
                     }
                     if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
                         for (let puff=0;puff<(gunEquipped==='shotgun'?3:2);puff++) floatingParticles.push({x:posX+Math.cos(aimAngle)*20,y:posY+Math.sin(aimAngle)*20,vx:-Math.cos(aimAngle)*(0.4+Math.random()),vy:-Math.sin(aimAngle)*(0.4+Math.random()),radius:3+Math.random()*3,alpha:0.32,smoke:true});
@@ -3399,6 +3411,8 @@
 
             if (boardedVehicle) {
                 const vehicleSpeedBonus = boardedVehicle.type === 'car' ? 1.50 :
+                    boardedVehicle.type === 'hovercraft' ? 1.75 :
+                    boardedVehicle.type === 'mech' ? 1.50 :
                     boardedVehicle.type === 'bike' ? 1.15 : 1.95;
                 sprintMultiplier = vehicleSpeedBonus * (sprintKeyDown && hasMovementInput ? 1.15 : 1);
             }
@@ -3519,7 +3533,7 @@
                     }
                     const selfDist=Math.hypot(g.x-posX,g.y-posY);
                     if(selfDist<explRadius&&(g.team==='FFA'||g.team!==playerTeam)){
-                        currentHp=Math.max(0,currentHp-Math.max(1,Math.round(70*(1-selfDist/explRadius))));
+                        currentHp=Math.max(0,currentHp-getVehicleAdjustedDamage(Math.max(1,Math.round(70*(1-selfDist/explRadius)))));
                         if (currentHp <= 0) showNotificationBox('You were blown up by a grenade!');
                     }
 
@@ -3562,7 +3576,7 @@
                 if (isPractice && b.isBotBullet && currentHp > 0 &&
                     (b.team === 'FFA' || b.team !== playerTeam) &&
                     Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER + 5) {
-                    currentHp = Math.max(0, currentHp - (Number(b.botDamage) || getBotDifficultySettings().damage));
+                    currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(Number(b.botDamage) || getBotDifficultySettings().damage));
                     bulletsList.splice(i, 1);
                     continue;
                 }
@@ -3589,7 +3603,7 @@
                             floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
                             if (isPractice) aiBots.forEach(bot => { if (bot && bot.hp > 0 && (b.team === 'FFA' || b.team !== bot.team)) { const d=Math.hypot(bot.x-b.x,bot.y-b.y); if(d<120) damagePracticeBot(bot,Math.round(65*(1-d/120))); } });
                             if (isHosting) {
-                                const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.round(65*(1-dSelf/120)));
+                                const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-getVehicleAdjustedDamage(Math.round(65*(1-dSelf/120))));
                                 for (const pid in remotePlayers) { const p=remotePlayers[pid]; if (p && p.hp>0 && (b.team==='FFA'||b.team!==p.team)) { const d=Math.hypot(p.x-b.x,p.y-b.y); if(d<120) p.hp=Math.max(0,p.hp-Math.round(65*(1-d/120))); } }
                             } else if(hostConnection&&hostConnection.open) hostConnection.send({type:'explosion_request',x:b.x,y:b.y,radius:120,damage:65});
                         }
@@ -3605,7 +3619,7 @@
                 }
 
                 if (bossEntity && bossEntity.hp > 0 && Math.hypot(b.x - bossEntity.x, b.y - bossEntity.y) < bossEntity.radius + 8) {
-                    if (isHosting) damageRaidBoss(({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 })[b.type] || 20);
+                    if (isHosting) damageRaidBoss((({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 })[b.type] || 20) * (Number(b.damageMultiplier) || 1));
                     else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'hit_request', targetId: 'boss', hitX: b.x, hitY: b.y, weapon: b.type });
                     showNotificationBox('Hit THE BOSS!');
                     bulletsList.splice(i, 1);
@@ -3637,7 +3651,7 @@
                                 }
                                 if (b.type === 'burst') hitDmg = 30;
                                 if (b.type === 'flame') { hitDmg = 18; bot.burningUntil=Date.now()+5000; bot.nextBurnTick=Date.now()+1000; }
-                                damagePracticeBot(bot, hitDmg);
+                                damagePracticeBot(bot, hitDmg * (Number(b.damageMultiplier) || 1));
                                 showNotificationBox(`Hit ${bot.username}! HP: ${Math.max(0, Math.floor(bot.hp))}`);
                                 hitObs = true;
                             }
@@ -3654,7 +3668,7 @@
                             if (b.type === 'rocket') {
                                 hitDmg = 65;
                                 floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
-                                if(isHosting){const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.round(45*(1-dSelf/120)));for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==pid&&other&&other.hp>0&&(b.team==='FFA'||b.team!==other.team)){const d=Math.hypot(other.x-b.x,other.y-b.y);if(d<120)other.hp=Math.max(0,other.hp-Math.round(45*(1-d/120)));}}}
+                                if(isHosting){const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-getVehicleAdjustedDamage(Math.round(45*(1-dSelf/120))));for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==pid&&other&&other.hp>0&&(b.team==='FFA'||b.team!==other.team)){const d=Math.hypot(other.x-b.x,other.y-b.y);if(d<120)other.hp=Math.max(0,other.hp-Math.round(45*(1-d/120)));}}}
                             }
                             if (b.type === 'laser') hitDmg = 40;
                             if (b.type === 'plasma') {
@@ -3707,7 +3721,7 @@
                 }
             };
             if(window.localBurnUntil>nowBurn){
-                if(nowBurn>=(window.localBurnTick||0)){currentHp=Math.max(0,currentHp-5);window.localBurnTick=nowBurn+1000;if(isHosting)broadcastStateToClients();}
+                if(nowBurn>=(window.localBurnTick||0)){currentHp=Math.max(0,currentHp-getVehicleAdjustedDamage(5));window.localBurnTick=nowBurn+1000;if(isHosting)broadcastStateToClients();}
                 for(const pid in remotePlayers){const p=remotePlayers[pid];if(p&&p.hp>0&&Math.hypot(posX-p.x,posY-p.y)<RADIUS_PLAYER*1.8&&(playerTeam==='FFA'||playerTeam!==p.team))ignite(p);}
                 if(isPractice)aiBots.forEach(bot=>{if(bot&&bot.hp>0&&Math.hypot(posX-bot.x,posY-bot.y)<RADIUS_PLAYER*1.8)bot.burningUntil=nowBurn+5000;});
             }
@@ -3860,10 +3874,10 @@
                     if (Math.hypot(posX - trap.x, posY - trap.y) > 23) continue;
                     if (trap.type === 'mine') {
                         const radius = 125, distance = Math.hypot(posX - trap.x, posY - trap.y);
-                        currentHp = Math.max(0, currentHp - Math.max(1, Math.round(72 * (1 - distance / radius))));
+                        currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(Math.max(1, Math.round(72 * (1 - distance / radius)))));
                         floatingParticles.push({ x: trap.x, y: trap.y, radius: 8, maxRadius: radius, alpha: 1, isShockwave: true });
                     } else {
-                        currentHp = Math.max(0, currentHp - (trap.type === 'bear' ? 18 : 8));
+                        currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(trap.type === 'bear' ? 18 : 8));
                         playerSlowUntil = Math.max(playerSlowUntil || 0, Date.now() + (trap.type === 'glue' ? 1800 : 900));
                     }
                     delete activeTraps[trapKey];
