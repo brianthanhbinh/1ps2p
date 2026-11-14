@@ -1967,7 +1967,26 @@
                 extreme: { lead: 0.13, speed: 2.9, attackDelay: 300, rethink: 0, samples: 24, accel: 0.38, dodge: true }
             }[tier] || { lead: 0, speed: 1.35, attackDelay: 1050, rethink: 110, samples: 1, accel: 0, dodge: false };
             // Boss gets +50% movement speed on every difficulty.
-            const bossMoveSpeed = settings.speed * 1.5;
+            let bossMoveSpeed = settings.speed * 1.5;
+            if (now < (bossEntity.slowedUntil || 0)) bossMoveSpeed *= 0.5;
+
+            // Contact with a trap applies its effect to the boss too.
+            for (const key in activeTraps) {
+                const trap = activeTraps[key];
+                if (!trap || trap.team === 'Raiders' || Math.hypot(bossEntity.x-trap.x,bossEntity.y-trap.y) > bossEntity.radius + 18) continue;
+                if (trap.type === 'mine') {
+                    const d = Math.hypot(bossEntity.x-trap.x,bossEntity.y-trap.y);
+                    const radius = 125, maxDamage = 72;
+                    damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
+                    floatingParticles.push({x:trap.x,y:trap.y,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
+                } else if (trap.type === 'glue') {
+                    bossEntity.slowedUntil = now + 2500;
+                } else {
+                    damageRaidBoss(trap.type === 'bear' ? 28 : 20);
+                }
+                delete activeTraps[key];
+                broadcastStateToClients();
+            }
 
             // Sample every living player each simulation tick. Keeping histories for all
             // players prevents stale velocity estimates when the boss changes targets.
