@@ -1854,9 +1854,9 @@
                     const player = remotePlayers[conn.peer];
                     if (player) {
                         const spawn = getTeamSpawnCoords(player.team);
-                        player.x = spawn.x; player.y = spawn.y; player.hp = 100;
+                        player.x = spawn.x; player.y = spawn.y; player.hp = currentMode === 'creative' ? 300 : 100; player.maxHp = player.hp;
                         player.burningUntil = 0; player.nextBurnTick = 0;
-                        conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: 100 });
+                        conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: player.hp });
                         broadcastStateToClients();
                     }
                 } else if (data.type === 'trap_trigger') {
@@ -1878,7 +1878,7 @@
                         const radius=Math.min(140,Math.max(40,Number(data.radius)||100)),damage=Math.min(120,Math.max(1,Number(data.damage)||50));
                         const apply=t=>{if(!t||t.hp<=0||(p.team!=='FFA'&&t.team===p.team))return;const d=Math.hypot(t.x-ex,t.y-ey);if(d<radius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(damage*(1-d/radius))));};
                         const dSelf=Math.hypot(posX-ex,posY-ey);if(dSelf<radius&&(p.team==='FFA'||p.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(damage*(1-dSelf/radius))));
-                        for(const pid in remotePlayers)apply(remotePlayers[pid]);broadcastStateToClients();
+                        for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);broadcastStateToClients();
                     }
                 } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
@@ -2058,7 +2058,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, team: playerTeam, color: playerColor, x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -2867,7 +2867,10 @@
                         if (b.type === 'rocket') {
                             floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
                             if (isPractice) aiBots.forEach(bot => { if (bot && bot.hp > 0 && (b.team === 'FFA' || b.team !== bot.team)) { const d=Math.hypot(bot.x-b.x,bot.y-b.y); if(d<120) damagePracticeBot(bot,Math.round(65*(1-d/120))); } });
-                            if (isHosting) for (const pid in remotePlayers) { const p=remotePlayers[pid]; if (p && p.hp>0 && (b.team==='FFA'||b.team!==p.team)) { const d=Math.hypot(p.x-b.x,p.y-b.y); if(d<120) p.hp=Math.max(0,p.hp-Math.round(65*(1-d/120))); } }
+                            if (isHosting) {
+                                const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.round(65*(1-dSelf/120)));
+                                for (const pid in remotePlayers) { const p=remotePlayers[pid]; if (p && p.hp>0 && (b.team==='FFA'||b.team!==p.team)) { const d=Math.hypot(p.x-b.x,p.y-b.y); if(d<120) p.hp=Math.max(0,p.hp-Math.round(65*(1-d/120))); } }
+                            } else if(hostConnection&&hostConnection.open) hostConnection.send({type:'explosion_request',x:b.x,y:b.y,radius:120,damage:65});
                         }
 
                         hitObs = true;
@@ -2917,6 +2920,7 @@
                             if (b.type === 'rocket') {
                                 hitDmg = 65;
                                 floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true });
+                                if(isHosting){const dSelf=Math.hypot(posX-b.x,posY-b.y);if(dSelf<120&&(b.team==='FFA'||b.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.round(45*(1-dSelf/120)));for(const otherId in remotePlayers){const other=remotePlayers[otherId];if(otherId!==pid&&other&&other.hp>0&&(b.team==='FFA'||b.team!==other.team)){const d=Math.hypot(other.x-b.x,other.y-b.y);if(d<120)other.hp=Math.max(0,other.hp-Math.round(45*(1-d/120)));}}}
                             }
                             if (b.type === 'laser') hitDmg = 40;
                             if (b.type === 'plasma') {
