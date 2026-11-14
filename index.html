@@ -285,6 +285,9 @@
                 <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Burst Carbine</span><div><b style="color:#ffca28;">850 🪙</b> <button onclick="buyStoreItem('gun', 'burst', 850)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Freeze Blaster</span><div><b style="color:#ffca28;">950 🪙</b> <button onclick="buyStoreItem('gun', 'freeze', 950)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Ricochet Cannon</span><div><b style="color:#ffca28;">700 🪙</b> <button onclick="buyStoreItem('gun', 'ricochet', 700)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Gravity Projector</span><div><b style="color:#ffca28;">1250 🪙</b> <button onclick="buyStoreItem('gun', 'gravity', 1250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Sonic Emitter</span><div><b style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItem('gun', 'sonic', 1050)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div>
@@ -684,7 +687,7 @@
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10, maxAmmo = 10, isReloading = false;
-        const ammoCapacity = {pistol:12,smg:30,ak:30,shotgun:8,sniper:5,rocket:4,minigun:100,laser:24,plasma:20,flame:60,burst:24,freeze:18};
+        const ammoCapacity = {pistol:12,smg:30,ak:30,shotgun:8,sniper:5,rocket:4,minigun:100,laser:24,plasma:20,flame:60,burst:24,freeze:18,ricochet:18,gravity:12,sonic:20};
         const ammoByWeapon = {};
         let deathLootDropped = false;
         function getAmmoCapacity(w){return ammoCapacity[w]||10;}
@@ -1947,7 +1950,7 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -2751,7 +2754,7 @@
                     const shooter = remotePlayers[conn.peer];
                     if (data.targetId === 'boss' && bossEntity && bossEntity.hp > 0 && shooter) {
                         const hitX = Number(data.hitX), hitY = Number(data.hitY);
-                        const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
+                        const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22, ricochet:32, gravity:12, sonic:26 };
                         const damage = damageByWeapon[data.weapon] || 0;
                         if (damage > 0 && Number.isFinite(hitX) && Number.isFinite(hitY) &&
                             Math.hypot(shooter.x-hitX, shooter.y-hitY) < 1000 &&
@@ -3937,13 +3940,13 @@
                     currentAmmo--;
                     saveSelectedAmmo();
                     refreshAmmoHud();
-                    const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 5 : 1;
-                    const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : 18;
+                    const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 5 : gunEquipped === 'sonic' ? 1 : 1;
+                    const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : gunEquipped === 'gravity' ? 11 : gunEquipped === 'sonic' ? 15 : 18;
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
                         let shotAngle = aimAngle;
                         if (gunEquipped === 'shotgun' && bIdx > 0) shotAngle += (Math.random() * 2 - 1) * 0.22;
                         if (gunEquipped === 'burst') shotAngle += (bIdx - 2) * 0.025;
-                        bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, damageMultiplier: getVehicleDamageOutputMultiplier(), distanceTravelled: 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
+                        bulletsList.push({ id: 'b'+(nextBulletId++), x: posX, y: posY, vx: Math.cos(shotAngle) * projectileSpeed, vy: Math.sin(shotAngle) * projectileSpeed, type: gunEquipped, team: playerTeam, damageMultiplier: getVehicleDamageOutputMultiplier(), distanceTravelled: 0, ricochets: gunEquipped === 'ricochet' ? 2 : 0, maxDistance: gunEquipped === 'flame' ? 260 : 900 });
                     }
                     if (['shotgun','sniper','ak','burst','minigun','rocket'].includes(gunEquipped)) {
                         for (let puff=0;puff<(gunEquipped==='shotgun'?3:2);puff++) floatingParticles.push({x:posX+Math.cos(aimAngle)*20,y:posY+Math.sin(aimAngle)*20,vx:-Math.cos(aimAngle)*(0.4+Math.random()),vy:-Math.sin(aimAngle)*(0.4+Math.random()),radius:3+Math.random()*3,alpha:0.32,smoke:true});
@@ -3957,6 +3960,9 @@
                     if (gunEquipped === 'burst') cdTime = 420;
                     if (gunEquipped === 'ak') cdTime = 145;
                     if (gunEquipped === 'rocket') cdTime = 600;
+                    if (gunEquipped === 'ricochet') cdTime = 260;
+                    if (gunEquipped === 'gravity') cdTime = 650;
+                    if (gunEquipped === 'sonic') cdTime = 420;
 
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
                 }
@@ -4555,7 +4561,7 @@
 
                 if (bossEntity && bossEntity.hp > 0 && Math.hypot(b.x - bossEntity.x, b.y - bossEntity.y) < bossEntity.radius + 8) {
                     if (b.type === 'rocket') { damageBlocksInRocketBlast(b.x, b.y); floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 120, alpha: 1.0, isShockwave: true }); }
-                    if (isHosting) damageRaidBoss((({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 })[b.type] || 20) * (Number(b.damageMultiplier) || 1));
+                    if (isHosting) damageRaidBoss((({ pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22, ricochet:32, gravity:12, sonic:26 })[b.type] || 20) * (Number(b.damageMultiplier) || 1));
                     else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'hit_request', targetId: 'boss', hitX: b.x, hitY: b.y, weapon: b.type });
                     showNotificationBox('Hit THE BOSS!');
                     bulletsList.splice(i, 1);
