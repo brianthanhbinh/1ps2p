@@ -605,6 +605,16 @@
 
         let remotePlayers = {};
         let aiBots = [];
+        let pendingLocalMode = null;
+        let botDifficulty = 'normal';
+        const BOT_DIFFICULTY_SETTINGS = {
+            easy:   { label: 'Easy',   botHp: 80,  moveSpeed: 1.45, preferredRange: 260, spread: 0.30, shotDelay: 1650, shotJitter: 650, bulletSpeed: 6.2, damage: 5 },
+            normal: { label: 'Normal', botHp: 100, moveSpeed: 2.15, preferredRange: 230, spread: 0.12, shotDelay: 900,  shotJitter: 450, bulletSpeed: 7.2, damage: 9 },
+            hard:   { label: 'Hard',   botHp: 140, moveSpeed: 2.80, preferredRange: 210, spread: 0.04, shotDelay: 550,  shotJitter: 250, bulletSpeed: 8.3, damage: 13 }
+        };
+        function getBotDifficultySettings() {
+            return BOT_DIFFICULTY_SETTINGS[botDifficulty] || BOT_DIFFICULTY_SETTINGS.normal;
+        }
         let worldBlocks = {};
         let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0 };
         let selectedBuildBlock = 'wood';
@@ -1056,11 +1066,42 @@
         }
 
         function selectLocalMode(localMode) {
+            if (localMode === 'pvp' || localMode === 'creative_pvp') {
+                pendingLocalMode = localMode;
+                promptBotDifficultySelection();
+                return;
+            }
+            applyLocalMode(localMode);
+        }
+
+        function promptBotDifficultySelection() {
+            const modal = document.getElementById('modal-screen');
+            const title = document.getElementById('modal-title');
+            const opts = document.getElementById('modal-options');
+            title.innerText = 'Choose Bot Difficulty';
+            opts.innerHTML = `
+                <p style="color:#aaa;font-size:12px;margin:-5px 0 12px;">Choose how challenging the practice bots will be.</p>
+                <button style="background:#43a047;color:#fff;" onclick="chooseBotDifficulty('easy')">🟢 Easy — slower bots, lighter damage</button>
+                <button style="background:#2196f3;color:#fff;" onclick="chooseBotDifficulty('normal')">🔵 Normal — balanced challenge</button>
+                <button style="background:#e53935;color:#fff;" onclick="chooseBotDifficulty('hard')">🔴 Hard — faster, tougher, more accurate</button>
+                <button style="background:#555;color:#fff;margin-top:10px;" onclick="pendingLocalMode=null;promptLocalPlayMode()">Back</button>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function chooseBotDifficulty(level) {
+            botDifficulty = BOT_DIFFICULTY_SETTINGS[level] ? level : 'normal';
+            const mode = pendingLocalMode;
+            pendingLocalMode = null;
+            if (mode) applyLocalMode(mode);
+        }
+
+        function applyLocalMode(localMode) {
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = (localMode === 'pvp' || localMode === 'zombie' || localMode === 'creative_pvp');
             currentMode = (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
-            
+
             if (localMode === 'creative' || localMode === 'creative_pvp') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
@@ -2145,7 +2186,8 @@
                         color: bColor,
                         x: spawn.x,
                         y: spawn.y,
-                        hp: 100,
+                        hp: getBotDifficultySettings().botHp,
+                        maxHp: getBotDifficultySettings().botHp,
                         radius: RADIUS_PLAYER
                     });
                 }
@@ -2878,7 +2920,7 @@
                 if (isPractice && b.isBotBullet && currentHp > 0 &&
                     (b.team === 'FFA' || b.team !== playerTeam) &&
                     Math.hypot(b.x - posX, b.y - posY) < RADIUS_PLAYER + 5) {
-                    currentHp = Math.max(0, currentHp - 9);
+                    currentHp = Math.max(0, currentHp - getBotDifficultySettings().damage);
                     bulletsList.splice(i, 1);
                     continue;
                 }
@@ -3079,14 +3121,15 @@
                             // Combat bots pursue, hold range, and strafe instead of wandering randomly.
                             const targetDistance = Math.hypot(posX - bot.x, posY - bot.y);
                             const targetAngle = Math.atan2(posY - bot.y, posX - bot.x);
-                            const preferredRange = 230;
+                            const botSettings = getBotDifficultySettings();
+                            const preferredRange = botSettings.preferredRange;
                             const botIndex = Number(String(bot.id).replace(/\\D/g, '')) || 0;
                             const strafeSide = Math.sin(Date.now() / 650 + botIndex) >= 0 ? 1 : -1;
                             let moveAngle = targetAngle;
                             let moveAmount = targetDistance > preferredRange + 35 ? 1 : (targetDistance < preferredRange - 55 ? -0.65 : 0);
                             if (moveAmount === 0) moveAngle += Math.PI / 2 * strafeSide;
                             else if (moveAmount < 0) moveAngle += Math.PI;
-                            const botSpeed = 2.15;
+                            const botSpeed = botSettings.moveSpeed;
                             const stepX = Math.cos(moveAngle) * botSpeed * Math.abs(moveAmount);
                             const stepY = Math.sin(moveAngle) * botSpeed * Math.abs(moveAmount);
                             const tryX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, bot.x + stepX));
@@ -3097,16 +3140,16 @@
                             // Aimed practice-bot shots have limited range and a cooldown.
                             if (targetDistance < 620 && targetDistance > 38 && nowBurn >= (bot.nextShotAt || 0) &&
                                 !checkInsideBase(posX, posY, playerTeam)) {
-                                const shotAngle = targetAngle + (Math.random() - 0.5) * 0.12;
+                                const shotAngle = targetAngle + (Math.random() - 0.5) * botSettings.spread;
                                 bulletsList.push({
                                     id: 'bot-' + bot.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                                     x: bot.x, y: bot.y,
-                                    vx: Math.cos(shotAngle) * 7.2,
-                                    vy: Math.sin(shotAngle) * 7.2,
+                                    vx: Math.cos(shotAngle) * botSettings.bulletSpeed,
+                                    vy: Math.sin(shotAngle) * botSettings.bulletSpeed,
                                     type: 'smg', team: bot.team, isBotBullet: true,
                                     distanceTravelled: 0, maxDistance: 680
                                 });
-                                bot.nextShotAt = nowBurn + 900 + Math.random() * 450;
+                                bot.nextShotAt = nowBurn + botSettings.shotDelay + Math.random() * botSettings.shotJitter;
                             }
                         }
                     }
@@ -3379,7 +3422,7 @@
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(-18, -20, 36, 4);
                 ctx.fillStyle = '#e53935';
-                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / 100) * 36, 4);
+                ctx.fillRect(-18, -20, (Math.max(0, bot.hp) / (bot.maxHp || 100)) * 36, 4);
                 ctx.restore();
             });
 
