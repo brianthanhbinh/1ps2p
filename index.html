@@ -858,6 +858,23 @@
             return tinted && tinted.complete && tinted.naturalWidth > 0 ? tinted : source;
         }
 
+        function drawPlayerSkinTexture(context, image, radius) {
+            if (!context || !image || !image.complete || !image.naturalWidth || !image.naturalHeight) return false;
+            const diameter = radius * 2;
+            const scale = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
+            const width = image.naturalWidth * scale;
+            const height = image.naturalHeight * scale;
+            context.save();
+            context.beginPath();
+            context.arc(0, 0, radius, 0, Math.PI * 2);
+            context.clip();
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+            context.drawImage(image, -width / 2, -height / 2, width, height);
+            context.restore();
+            return true;
+        }
+
         function loadTrackedImage(url, fallbackText, registryKey) {
             const fallback = new Image();
             fallback.src = createCheckerboardAssetCanvas(fallbackText);
@@ -3868,7 +3885,21 @@
                 const closestY = Math.max(by, Math.min(y, by + 40));
 
                 if(worldBlocks[k] && ['force','force2','force3','ball'].includes(worldBlocks[k].type)) continue;
-                if (worldBlocks[k]?.type === 'oneway') { const oldBottom = Number(prevY) + radius, newBottom = y + radius; if (prevY !== null && oldBottom <= by + 7 && newBottom > by + 7 && x + radius > bx && x - radius < bx + 40) return true; continue; }
+                if (worldBlocks[k]?.type === 'oneway') {
+                    // A one-way platform is a 32px line segment. Its blocking normal
+                    // rotates with the block, so players can land on any oriented face.
+                    const angle = Number(worldBlocks[k].angle) || 0;
+                    const nx = Math.sin(angle), ny = -Math.cos(angle);
+                    const tx = Math.cos(angle), ty = Math.sin(angle);
+                    const cx = bx + 20, cy = by + 8;
+                    if (prevX !== null && prevY !== null) {
+                        const oldSide = (Number(prevX) - cx) * nx + (Number(prevY) - cy) * ny;
+                        const newSide = (x - cx) * nx + (y - cy) * ny;
+                        const along = (x - cx) * tx + (y - cy) * ty;
+                        if (oldSide >= radius && newSide < radius && along >= -16 - radius && along <= 16 + radius) return true;
+                    }
+                    continue;
+                }
                 const dist = Math.hypot(x - closestX, y - closestY);
                 if (dist < radius) {
                     return true;
@@ -4684,7 +4715,7 @@
                  else if(blk.type==='crystal'){ctx.fillStyle='rgba(230,190,255,.45)';ctx.beginPath();ctx.moveTo(bx+20,by+5);ctx.lineTo(bx+33,by+17);ctx.lineTo(bx+24,by+34);ctx.lineTo(bx+10,by+27);ctx.lineTo(bx+8,by+15);ctx.closePath();ctx.fill();ctx.strokeStyle='#f0d7ff';ctx.stroke();}
                  else if(blk.type==='bunker'){ctx.strokeStyle='#d1d9df';ctx.lineWidth=3;ctx.strokeRect(bx+6,by+6,28,28);ctx.fillStyle='#25313b';ctx.fillRect(bx+13,by+13,14,14);ctx.strokeRect(bx+13,by+13,14,14);}
                  else if(['force','force2','force3'].includes(blk.type)){const a=Number(blk.angle)||0,col=blk.type==='force3'?'#ff6688':blk.type==='force2'?'#ffad55':'#70f7ff';ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(a);ctx.shadowColor=col;ctx.shadowBlur=12;ctx.fillStyle=blk.type==='force3'?'rgba(255,55,95,.28)':blk.type==='force2'?'rgba(255,145,35,.25)':'rgba(0,234,255,.28)';ctx.fillRect(-16,-16,32,32);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(-16,-16,32,32);ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(-5,-9);ctx.lineTo(-5,9);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.restore();}
-                  else if(blk.type==='oneway'){ctx.fillStyle='#83ddff';ctx.fillRect(bx+4,by+5,32,6);ctx.fillStyle='#d9f6ff';ctx.beginPath();ctx.moveTo(bx+20,by+12);ctx.lineTo(bx+11,by+27);ctx.lineTo(bx+29,by+27);ctx.closePath();ctx.fill();ctx.strokeStyle='#247da8';ctx.stroke();}
+                  else if(blk.type==='oneway'){ctx.save();ctx.translate(bx+20,by+8);ctx.rotate(Number(blk.angle)||0);ctx.shadowColor='#54cfff';ctx.shadowBlur=9;ctx.fillStyle='#247da8';ctx.fillRect(-18,-4,36,8);ctx.fillStyle='#83ddff';ctx.fillRect(-16,-3,32,5);ctx.shadowBlur=0;ctx.fillStyle='#eafaff';ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(-6,-5);ctx.lineTo(6,-5);ctx.closePath();ctx.fill();ctx.strokeStyle='#247da8';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();}
                   else if(blk.type==='damage'){ctx.fillStyle='#ff6464';ctx.strokeStyle='#5b1118';ctx.lineWidth=2;for(let q=0;q<4;q++){const sx=bx+7+q*9;ctx.beginPath();ctx.moveTo(sx-4,by+31);ctx.lineTo(sx,by+8);ctx.lineTo(sx+4,by+31);ctx.closePath();ctx.fill();ctx.stroke();}ctx.strokeStyle='#ffd0d0';ctx.beginPath();ctx.moveTo(bx+6,by+32);ctx.lineTo(bx+34,by+32);ctx.stroke();}
                  else if(blk.type==='wood'){ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(Number(blk.angle)||0);ctx.fillStyle='#c18a55';ctx.fillRect(-15,-14,30,28);ctx.strokeStyle='#704522';ctx.lineWidth=2;ctx.strokeRect(-15,-14,30,28);ctx.beginPath();ctx.moveTo(-14,-4);ctx.lineTo(14,-4);ctx.moveTo(-14,6);ctx.lineTo(14,6);ctx.stroke();ctx.fillStyle='#f0c28e';for(const [nx,ny] of [[-10,-9],[10,1],[-8,11]]){ctx.beginPath();ctx.arc(nx,ny,1.4,0,Math.PI*2);ctx.fill();}ctx.restore();}
                  else{ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.roundRect(bx+7,by+6,26,5,3);ctx.fill();}
@@ -4700,6 +4731,7 @@
                 const directional=['force','force2','force3'].includes(selectedBuildBlock);
                 ctx.fillStyle=directional?'rgba(0,230,255,.20)':'rgba(255,202,40,.12)';ctx.strokeStyle=directional?'#8af8ff':'#ffd45c';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.fillRect(-18,-18,36,36);ctx.strokeRect(-18,-18,36,36);ctx.setLineDash([]);
                 if(directional){ctx.shadowColor='#00eaff';ctx.shadowBlur=14;ctx.fillStyle='#cfffff';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-7,-11);ctx.lineTo(-7,11);ctx.closePath();ctx.fill();ctx.shadowBlur=0;}
+                else if(selectedBuildBlock==='oneway'){ctx.shadowColor='#54cfff';ctx.shadowBlur=8;ctx.fillStyle='#83ddff';ctx.fillRect(-18,-4,36,8);ctx.shadowBlur=0;ctx.fillStyle='#eafaff';ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(-6,-6);ctx.lineTo(6,-6);ctx.closePath();ctx.fill();}
                 else {ctx.strokeStyle='#fff1b5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-10,0);ctx.lineTo(10,0);ctx.moveTo(6,-4);ctx.lineTo(10,0);ctx.lineTo(6,4);ctx.stroke();}
                 ctx.restore();
             }
@@ -4814,7 +4846,7 @@
 
                 const remoteSkinImg = getTeamSkinImage(rp.color || '#e53935');
                 if (remoteSkinImg && remoteSkinImg.complete && remoteSkinImg.naturalWidth > 0) {
-                    ctx.drawImage(remoteSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                    drawPlayerSkinTexture(ctx, remoteSkinImg, RADIUS_PLAYER);
                 } else {
                     ctx.fillStyle = rp.color || '#e53935';
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
@@ -4873,7 +4905,7 @@
 
                 const botSkinImg = assetRegistry['skin'];
                 if (botSkinImg && botSkinImg.complete && botSkinImg.naturalWidth > 0) {
-                    ctx.drawImage(botSkinImg, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                    drawPlayerSkinTexture(ctx, botSkinImg, RADIUS_PLAYER);
                 } else {
                     ctx.fillStyle = bot.color || '#ff9800';
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
@@ -4914,7 +4946,7 @@
                 if(window.localBurnUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=22;ctx.fillStyle='#ff6d00';for(let f=0;f<7;f++){const a=f*.9+Date.now()/150;ctx.beginPath();ctx.ellipse(Math.cos(a)*15,Math.sin(a)*14,6,12,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 const activePlayerSkin = getTeamSkinImage(playerColor);
                 if (activePlayerSkin && activePlayerSkin.complete && activePlayerSkin.naturalWidth > 0) {
-                    ctx.drawImage(activePlayerSkin, -RADIUS_PLAYER, -RADIUS_PLAYER, RADIUS_PLAYER * 2, RADIUS_PLAYER * 2);
+                    drawPlayerSkinTexture(ctx, activePlayerSkin, RADIUS_PLAYER);
                 } else {
                     ctx.fillStyle = playerColor;
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
