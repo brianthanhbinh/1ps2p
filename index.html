@@ -776,6 +776,7 @@
         const nextForceLaunchByBlock = {};
         let debugMenuOpen = false;
         let debugFrameCount = 0, debugFps = 0, debugLastFpsAt = performance.now();
+        let debugLastPosX = posX, debugLastPosY = posY;
         let selectedBuildBlock = 'wood';
         let nextBlockHealAt = 0;
         let nextDamageBlockAt = 0;
@@ -5237,7 +5238,13 @@
                 setDebug('debug-fps', debugFps);
                 setDebug('debug-vx', playerMomentumX.toFixed(2));
                 setDebug('debug-vy', playerMomentumY.toFixed(2));
-                setDebug('debug-speed', Math.hypot(playerMomentumX, playerMomentumY).toFixed(2));
+                // Measure actual player displacement, including keyboard movement and momentum.
+                // Normalize by simulation ticks so the value is independent of render FPS.
+                const ticksThisFrame = Math.max(1, dt / timeStep);
+                const currentSpeed = Math.hypot(posX - debugLastPosX, posY - debugLastPosY) / ticksThisFrame;
+                setDebug('debug-speed', currentSpeed.toFixed(2));
+                debugLastPosX = posX;
+                debugLastPosY = posY;
                 setDebug('debug-pos-x', Math.round(posX));
                 setDebug('debug-pos-y', Math.round(posY));
                 setDebug('debug-hitboxes', 'ON');
