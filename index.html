@@ -1394,7 +1394,7 @@
             inGameActive = true;
             showUIInGame(true);
 
-            if (isPractice) {
+            if (isPractice || (isHosting && activeMode === 'zombie')) {
                 spawnPracticeBots();
             }
             if (activeMode === 'bossfight' && isHosting && !bossEntity) {
@@ -2777,6 +2777,7 @@
                     if (data.ctfScores) ctfScores = data.ctfScores;
                     promptTeamSelection();
                 } else if (data.type === 'server_state') {
+                    if (Array.isArray(data.aiBots)) aiBots = data.aiBots;
                     if (data.boss !== undefined) bossEntity = data.boss;
                     if (data.bossVictoryId && data.bossVictoryId !== bossVictoryId) {
                         bossVictoryId = data.bossVictoryId;
@@ -2847,6 +2848,7 @@
                 vehicles: activeVehiclesList,
                 ctfFlags,
                 ctfScores,
+                aiBots: currentMode === 'zombie' ? aiBots : [],
                 boss: bossEntity,
                 bossVictoryId,
                 nextAirdropAt
@@ -4095,7 +4097,7 @@
                     continue;
                 }
 
-                if (isPractice) {
+                if (isPractice || (isHosting && currentMode === 'zombie')) {
                     aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(b.x - bot.x, b.y - bot.y) < (b.type === 'flame' ? RADIUS_PLAYER + 20 : RADIUS_PLAYER + 6)) {
                             if (b.team === 'FFA' || b.team !== bot.team) {
@@ -4208,7 +4210,7 @@
                 if(bot.burningUntil>nowBurn&&Math.hypot(bot.x-posX,bot.y-posY)<RADIUS_PLAYER*1.8){window.localBurnUntil=nowBurn+5000;window.localBurnTick=nowBurn+1000;}
                 if(bot.burningUntil>nowBurn)aiBots.forEach(other=>{if(other!==bot&&other&&other.hp>0&&Math.hypot(bot.x-other.x,bot.y-other.y)<RADIUS_PLAYER*1.8)ignite(other);});
             });
-            if (isPractice) {
+            if (isPractice || (isHosting && currentMode === 'zombie')) {
                 aiBots.forEach(bot => {
                     if (bot.isZombie && bot.hp <= 0) {
                         if (bot.respawnAt && Date.now() >= bot.respawnAt) {
