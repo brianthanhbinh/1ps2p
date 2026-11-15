@@ -831,6 +831,7 @@
         function chooseBlockFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}if(type!=='wood'&&(!blockInventory[type]||blockInventory[type]<=0)){showNotificationBox('You do not own that block. Buy it in the Block shop first.');return;}selectedBuildBlock=type;refreshHotbarUI();const p=document.getElementById('block-picker');if(p)p.classList.remove('open');selectHotbarSlot(2);}
         function toggleTrapPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('trap-picker');if(p)p.classList.toggle('open');}
         function chooseTrapFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}setSelectedTrapType(type);const p=document.getElementById('trap-picker');if(p)p.classList.remove('open');selectHotbarSlot(9);}
+        let localBlackholeUntil = 0, localBlackholeX = 0, localBlackholeY = 0;
         function triggerBlackholeTrap(trap, trapKey) {
             if ((!isHosting && !isPractice) || !trap || trap.type !== 'blackhole' || Date.now() < (trap.nextReadyAt || 0)) return false;
             const now=Date.now(), radius=185, ownerId=trap.ownerPeerId || null;
@@ -838,16 +839,41 @@
             const owner=ownerIsLocal ? {x:posX,y:posY} : remotePlayers[ownerId];
             const ownerX=owner && Number.isFinite(owner.x) ? owner.x : trap.x;
             const ownerY=owner && Number.isFinite(owner.y) ? owner.y : trap.y;
-            const enemies=[];
-            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) { enemies.push({x:posX,y:posY}); posX=trap.x;posY=trap.y;currentHp=0; }
-            for (const pid in remotePlayers) { const p=remotePlayers[pid]; if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) { enemies.push({x:p.x,y:p.y});p.x=trap.x;p.y=trap.y;p.hp=0; } }
-            if (!enemies.length) return false;
+            const victims=[];
+            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) {
+                victims.push({x:posX,y:posY});
+                localBlackholeUntil=now+2000; localBlackholeX=trap.x; localBlackholeY=trap.y;
+            }
+            for (const pid in remotePlayers) {
+                const p=remotePlayers[pid];
+                if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) {
+                    victims.push({x:p.x,y:p.y}); p.blackholeUntil=now+2000; p.blackholeX=trap.x; p.blackholeY=trap.y;
+                }
+            }
+            if (!victims.length) return false;
             let moved=0;
-            for (const lootId in droppedLoot) { const loot=droppedLoot[lootId]; if(!loot)continue; if(enemies.some(e=>Math.hypot((Number(loot.x)||0)-e.x,(Number(loot.y)||0)-e.y)<=230)) { loot.x=ownerX+(Math.random()-.5)*34; loot.y=ownerY+(Math.random()-.5)*34; moved++; } }
+            for (const lootId in droppedLoot) { const loot=droppedLoot[lootId]; if(!loot)continue; if(victims.some(e=>Math.hypot((Number(loot.x)||0)-e.x,(Number(loot.y)||0)-e.y)<=230)) { loot.x=ownerX+(Math.random()-.5)*34; loot.y=ownerY+(Math.random()-.5)*34; moved++; } }
             trap.nextReadyAt=now+15000;
             floatingParticles.push({x:trap.x,y:trap.y,radius:12,maxRadius:190,alpha:1,isShockwave:true});
-            showNotificationBox(`🕳️ Blackhole swallowed ${enemies.length} enemy${enemies.length===1?'':'ies'}! ${moved} loot item(s) warped to you. Back in 15s.`);
+            showNotificationBox(`🕳️ Blackhole captured ${victims.length} enemy${victims.length===1?'':'ies'}! They will be swallowed in 2 seconds. ${moved} loot item(s) warped to you.`);
             return true;
+        }
+        function updateBlackholeVictims() {
+            const now=Date.now();
+            if(localBlackholeUntil) {
+                const progress=Math.max(0,Math.min(1,1-(localBlackholeUntil-now)/2000));
+                posX += (localBlackholeX-posX)*Math.min(.22, .06+progress*.16);
+                posY += (localBlackholeY-posY)*Math.min(.22, .06+progress*.16);
+                if(now>=localBlackholeUntil) { currentHp=0; localBlackholeUntil=0; showNotificationBox('🕳️ The blackhole swallowed you!'); }
+            }
+            if(isHosting || isPractice) for(const pid in remotePlayers) {
+                const p=remotePlayers[pid];
+                if(!p || !p.blackholeUntil) continue;
+                const progress=Math.max(0,Math.min(1,1-(p.blackholeUntil-now)/2000));
+                p.x += (p.blackholeX-p.x)*Math.min(.22,.06+progress*.16);
+                p.y += (p.blackholeY-p.y)*Math.min(.22,.06+progress*.16);
+                if(now>=p.blackholeUntil) { p.hp=0; p.blackholeUntil=0; }
+            }
         }
         let playerSlowUntil = 0;
         let playerFrozenUntil = 0;
@@ -3373,6 +3399,9 @@
                                 hostRemoteSmokeClouds = Array.isArray(data.players[pid].smokeClouds) ? data.players[pid].smokeClouds : [];
                                 window.localBurnUntil = Number(data.players[pid].burningUntil) || 0;
                                 window.localBurnTick = Number(data.players[pid].nextBurnTick) || 0;
+                                localBlackholeUntil = Number(data.players[pid].blackholeUntil) || 0;
+                                localBlackholeX = Number(data.players[pid].blackholeX) || 0;
+                                localBlackholeY = Number(data.players[pid].blackholeY) || 0;
                             } else {
                                 remotePlayers[pid] = data.players[pid];
                             }
@@ -3415,7 +3444,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, blackholeUntil: localBlackholeUntil, blackholeX: localBlackholeX, blackholeY: localBlackholeY, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -5160,6 +5189,7 @@
 
         function updateGameLogic() {
             if (!inGameActive) return;
+            updateBlackholeVictims();
             updatePushableBalls();
             updateConveyorLoot();
             if (activeWarpPortals.length === 2 && Date.now() >= warpTeleportReadyAt) {
