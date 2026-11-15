@@ -4716,7 +4716,7 @@
                 setTimeout(() => { actionCdAttack = false; }, 300);
             }
 
-            else if (activeHotbar === 2 && !actionCdBuild) {
+            else if (activeHotbar === 2 && (!actionCdBuild || currentMode === 'creative' || hostGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative'))) {
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
@@ -4740,8 +4740,11 @@
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
                 showNotificationBox(`🧱 ${buildType.toUpperCase()} block placed! ${buildType === 'wood' ? 'Basic wood is unlimited.' : 'Remaining: ' + blockInventory[buildType]}`);
-                actionCdBuild = true;
-                setTimeout(() => { actionCdBuild = false; }, 300);
+                const creativeBuild = currentMode === 'creative' || hostGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative');
+                if (!creativeBuild) {
+                    actionCdBuild = true;
+                    setTimeout(() => { actionCdBuild = false; }, 300);
+                }
             }
             else if (activeHotbar === 9 && !actionCdBuild) {
                 if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
