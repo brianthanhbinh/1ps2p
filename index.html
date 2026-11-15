@@ -358,7 +358,7 @@
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ball', 75)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧲 Magnet Ball + (attracts opposite, repels same)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_plus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Ball − (attracts opposite, repels same)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_minus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block + (affects magnet balls)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_plus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block − (affects magnet balls)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_minus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🧭 Force III (power launcher)</span><div><b style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItem('block', 'force3', 380)">Buy</button></div></div>
                 <div class="shop-item-card"><span>↧ One-Way Block (pass from below)</span><div><b style="color:#ffca28;">85 🪙</b> <button onclick="buyStoreItem('block', 'oneway', 85)">Buy</button></div></div>
                 <div class="shop-item-card"><span>☠ Damage Block (hurts on touch)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'damage', 140)">Buy</button></div></div>
@@ -531,7 +531,7 @@
         <div id="hotbar-dock">
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button><button type="button" class="block-choice" data-block="force" onclick="chooseBlockFromPicker(event,'force')"><canvas id="block-icon-force" width="68" height="68"></canvas>Force<small id="block-count-force">0</small></button><button type="button" class="block-choice" data-block="ball" onclick="chooseBlockFromPicker(event,'ball')"><canvas id="block-icon-ball" width="68" height="68"></canvas>Ball<small id="block-count-ball">0</small></button><button type="button" class="block-choice" data-block="force2" onclick="chooseBlockFromPicker(event,'force2')"><canvas id="block-icon-force2" width="68" height="68"></canvas>Force II<small id="block-count-force2">0</small></button><button type="button" class="block-choice" data-block="force3" onclick="chooseBlockFromPicker(event,'force3')"><canvas id="block-icon-force3" width="68" height="68"></canvas>Force III<small id="block-count-force3">0</small></button><button type="button" class="block-choice" data-block="oneway" onclick="chooseBlockFromPicker(event,'oneway')"><canvas id="block-icon-oneway" width="68" height="68"></canvas>One-Way<small id="block-count-oneway">0</small></button><button type="button" class="block-choice" data-block="damage" onclick="chooseBlockFromPicker(event,'damage')"><canvas id="block-icon-damage" width="68" height="68"></canvas>Damage<small id="block-count-damage">0</small></button><button type="button" class="block-choice" data-block="stop" onclick="chooseBlockFromPicker(event,'stop')"><canvas id="block-icon-stop" width="68" height="68"></canvas>Stop<small id="block-count-stop">0</small></button><button type="button" class="block-choice" data-block="conveyor" onclick="chooseBlockFromPicker(event,'conveyor')"><canvas id="block-icon-conveyor" width="68" height="68"></canvas>Conveyor<small id="block-count-conveyor">0</small></button><button type="button" class="block-choice" data-block="mud" onclick="chooseBlockFromPicker(event,'mud')"><canvas id="block-icon-mud" width="68" height="68"></canvas>Mud<small id="block-count-mud">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button><button type="button" class="block-choice" data-block="force" onclick="chooseBlockFromPicker(event,'force')"><canvas id="block-icon-force" width="68" height="68"></canvas>Force<small id="block-count-force">0</small></button><button type="button" class="block-choice" data-block="ball" onclick="chooseBlockFromPicker(event,'ball')"><canvas id="block-icon-ball" width="68" height="68"></canvas>Ball<small id="block-count-ball">0</small></button><button type="button" class="block-choice" data-block="magnet_ball_plus" onclick="chooseBlockFromPicker(event,'magnet_ball_plus')"><canvas id="block-icon-magnet_ball_plus" width="68" height="68"></canvas>Magnet Ball +<small id="block-count-magnet_ball_plus">0</small></button><button type="button" class="block-choice" data-block="magnet_ball_minus" onclick="chooseBlockFromPicker(event,'magnet_ball_minus')"><canvas id="block-icon-magnet_ball_minus" width="68" height="68"></canvas>Magnet Ball −<small id="block-count-magnet_ball_minus">0</small></button><button type="button" class="block-choice" data-block="magnet_plus" onclick="chooseBlockFromPicker(event,'magnet_plus')"><canvas id="block-icon-magnet_plus" width="68" height="68"></canvas>Magnet Block +<small id="block-count-magnet_plus">0</small></button><button type="button" class="block-choice" data-block="magnet_minus" onclick="chooseBlockFromPicker(event,'magnet_minus')"><canvas id="block-icon-magnet_minus" width="68" height="68"></canvas>Magnet Block −<small id="block-count-magnet_minus">0</small></button><button type="button" class="block-choice" data-block="force2" onclick="chooseBlockFromPicker(event,'force2')"><canvas id="block-icon-force2" width="68" height="68"></canvas>Force II<small id="block-count-force2">0</small></button><button type="button" class="block-choice" data-block="force3" onclick="chooseBlockFromPicker(event,'force3')"><canvas id="block-icon-force3" width="68" height="68"></canvas>Force III<small id="block-count-force3">0</small></button><button type="button" class="block-choice" data-block="oneway" onclick="chooseBlockFromPicker(event,'oneway')"><canvas id="block-icon-oneway" width="68" height="68"></canvas>One-Way<small id="block-count-oneway">0</small></button><button type="button" class="block-choice" data-block="damage" onclick="chooseBlockFromPicker(event,'damage')"><canvas id="block-icon-damage" width="68" height="68"></canvas>Damage<small id="block-count-damage">0</small></button><button type="button" class="block-choice" data-block="stop" onclick="chooseBlockFromPicker(event,'stop')"><canvas id="block-icon-stop" width="68" height="68"></canvas>Stop<small id="block-count-stop">0</small></button><button type="button" class="block-choice" data-block="conveyor" onclick="chooseBlockFromPicker(event,'conveyor')"><canvas id="block-icon-conveyor" width="68" height="68"></canvas>Conveyor<small id="block-count-conveyor">0</small></button><button type="button" class="block-choice" data-block="mud" onclick="chooseBlockFromPicker(event,'mud')"><canvas id="block-icon-mud" width="68" height="68"></canvas>Mud<small id="block-count-mud">0</small></button></div></div>
             <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
@@ -781,7 +781,7 @@
             for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0 };
             grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
@@ -874,7 +874,7 @@
             }
         }
         let worldBlocks = {};
-        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0 };
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0 };
         let forceBlockRotation = 0;
         // Launch velocity from Force II / Force III blocks.
         let playerMomentumX = 0, playerMomentumY = 0;
@@ -2179,7 +2179,7 @@
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
-            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
+            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,magnet_ball_plus:110,magnet_ball_minus:110,magnet_plus:140,magnet_minus:140,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return false;}
             if (!creativeRules && playerCoins < expectedPrice) {
@@ -4469,7 +4469,7 @@
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
-                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, magnet_ball_plus: 100, magnet_ball_minus: 100, magnet_plus: 260, magnet_minus: 260, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
                 if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
                     selectedBuildBlock = 'wood';
                     showNotificationBox('That purchased block is out of stock. Using basic wood.');
@@ -4477,7 +4477,7 @@
                 }
                 if (worldBlocks[bKey]) { showNotificationBox('There is already a block there!'); return; }
                 const maxHp = buildStats[buildType] || 100;
-                const newBlock = { type: buildType, hp: (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, angle: forceBlockRotation, ...(buildType === 'ball' ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
+                const newBlock = { type: buildType, hp: (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, angle: forceBlockRotation, ...(['ball','magnet_ball_plus','magnet_ball_minus'].includes(buildType) ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
                 worldBlocks[bKey] = newBlock;
                 if (buildType !== 'wood') {
                     blockInventory[buildType]--;
@@ -4636,7 +4636,7 @@
                 const closestX = Math.max(bx, Math.min(x, bx + 40));
                 const closestY = Math.max(by, Math.min(y, by + 40));
 
-                if(worldBlocks[k] && ['force','force2','force3','ball'].includes(worldBlocks[k].type)) continue;
+                if(worldBlocks[k] && ['force','force2','force3','ball','magnet_ball_plus','magnet_ball_minus'].includes(worldBlocks[k].type)) continue;
                 if (worldBlocks[k]?.type === 'oneway') {
                     // A one-way platform is a 32px line segment. Its blocking normal
                     // rotates with the block, so players can land on any oriented face.
@@ -4664,7 +4664,7 @@
             const balls = [];
             for (const key in worldBlocks) {
                 const ball = worldBlocks[key];
-                if (!ball || ball.type !== 'ball') continue;
+                if (!ball || !['ball','magnet_ball_plus','magnet_ball_minus'].includes(ball.type)) continue;
                 if (!Number.isFinite(Number(ball.x)) || !Number.isFinite(Number(ball.y))) {
                     const parts = key.split(',');
                     ball.x = parseInt(parts[0]) * 40 + 20;
@@ -4672,6 +4672,29 @@
                 }
                 ball.vx = (Number(ball.vx) || 0) * 0.985;
                 ball.vy = (Number(ball.vy) || 0) * 0.985;
+                // Magnetic balls respond to other magnetic balls and polarity blocks.
+                const polarity = ball.type === 'magnet_ball_plus' ? 1 : ball.type === 'magnet_ball_minus' ? -1 : 0;
+                if (polarity) {
+                    for (const magnetKey in worldBlocks) {
+                        const magnet = worldBlocks[magnetKey];
+                        if (!magnet || magnet === ball) continue;
+                        const isMagnetBall = magnet.type === 'magnet_ball_plus' || magnet.type === 'magnet_ball_minus';
+                        const isMagnetBlock = magnet.type === 'magnet_plus' || magnet.type === 'magnet_minus';
+                        if (!isMagnetBall && !isMagnetBlock) continue;
+                        const magnetParts = magnetKey.split(',');
+                        const mx = isMagnetBall && Number.isFinite(Number(magnet.x)) ? Number(magnet.x) : Number(magnetParts[0]) * 40 + 20;
+                        const my = isMagnetBall && Number.isFinite(Number(magnet.y)) ? Number(magnet.y) : Number(magnetParts[1]) * 40 + 20;
+                        const dx = mx - ball.x, dy = my - ball.y, distance = Math.hypot(dx, dy);
+                        if (distance < 1 || distance > 280) continue;
+                        const otherPolarity = magnet.type.endsWith('plus') ? 1 : -1;
+                        const samePolarity = polarity === otherPolarity;
+                        const strength = (1 - distance / 280) * (isMagnetBlock ? 0.42 : 0.34) * (samePolarity ? -1 : 1);
+                        ball.vx += dx / distance * strength;
+                        ball.vy += dy / distance * strength;
+                    }
+                    const magneticSpeed = Math.hypot(ball.vx, ball.vy);
+                    if (magneticSpeed > 10) { ball.vx = ball.vx / magneticSpeed * 10; ball.vy = ball.vy / magneticSpeed * 10; }
+                }
                 // Force pads accelerate nearby balls in the direction of their arrow.
                 for (const forceKey in worldBlocks) {
                     const forceBlock = worldBlocks[forceKey];
@@ -4721,7 +4744,7 @@
                     for (let gy = minGY; gy <= maxGY; gy++) {
                         for (let gx = minGX; gx <= maxGX; gx++) {
                             const wall = worldBlocks[gx + ',' + gy];
-                            if (!wall || wall.type === 'ball' || wall.passThrough || wall.type === 'trap') continue;
+                            if (!wall || ['ball','magnet_ball_plus','magnet_ball_minus'].includes(wall.type) || wall.passThrough || wall.type === 'trap') continue;
                             const left = gx * 40, top = gy * 40;
                             const closestX = Math.max(left, Math.min(ball.x, left + 40));
                             const closestY = Math.max(top, Math.min(ball.y, top + 40));
@@ -5730,17 +5753,15 @@
             for (let k in worldBlocks) {
                 const blk=worldBlocks[k]; if(!blk||typeof blk!=='object')continue;
                 const parts=k.split(','),bx=parseInt(parts[0])*40,by=parseInt(parts[1])*40;
-                const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5'],obsidian:['#242034','#a68cff'],glass:['rgba(105,210,255,.32)','#b7efff'],bounce:['#542d83','#e0a5ff'],ice:['#367f9e','#a8f1ff'],crystal:['#573b8c','#e3b5ff'],bunker:['#46515b','#b5c2ce'],force:['rgba(20,220,255,.22)','#5df5ff'],force2:['rgba(255,145,35,.22)','#ffad55'],force3:['rgba(255,55,95,.25)','#ff6688'],oneway:['rgba(75,190,255,.22)','#83ddff'],damage:['rgba(235,45,55,.24)','#ff6464']};
-                if (blk.type === 'ball') {
+                const styles={wood:['#a8794f','#e0bd91'],reinforced:['#777f88','#d4dce2'],metal:['#435b70','#9ed4ef'],healing:['#276b4c','#72f0a5'],obsidian:['#242034','#a68cff'],glass:['rgba(105,210,255,.32)','#b7efff'],bounce:['#542d83','#e0a5ff'],ice:['#367f9e','#a8f1ff'],crystal:['#573b8c','#e3b5ff'],bunker:['#46515b','#b5c2ce'],force:['rgba(20,220,255,.22)','#5df5ff'],magnet_plus:['rgba(239,83,80,.22)','#ff7777'],magnet_minus:['rgba(66,165,245,.22)','#80c7ff'],force2:['rgba(255,145,35,.22)','#ffad55'],force3:['rgba(255,55,95,.25)','#ff6688'],oneway:['rgba(75,190,255,.22)','#83ddff'],damage:['rgba(235,45,55,.24)','#ff6464']};
+                if (['ball','magnet_ball_plus','magnet_ball_minus'].includes(blk.type)) {
                     const cx = Number.isFinite(Number(blk.x)) ? Number(blk.x) : bx + 20;
                     const cy = Number.isFinite(Number(blk.y)) ? Number(blk.y) : by + 20;
                     ctx.save();
-                    ctx.fillStyle = '#f5f5f5'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 2;
+                    ctx.fillStyle = blk.type === 'magnet_ball_plus' ? '#ef5350' : blk.type === 'magnet_ball_minus' ? '#42a5f5' : '#f5f5f5'; ctx.strokeStyle = '#263238'; ctx.lineWidth = 2;
                     ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                     ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI * 2); ctx.clip();
-                    ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.arc(cx - 7, cy - 4, 8, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(cx + 8, cy + 7, 7, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + 7, cy - 9, 5, 0, Math.PI * 2); ctx.fill();
+                    if (blk.type === 'ball') { ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.arc(cx - 7, cy - 4, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(cx + 8, cy + 7, 7, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + 7, cy - 9, 5, 0, Math.PI * 2); ctx.fill(); } else { ctx.fillStyle='#fff';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(blk.type==='magnet_ball_plus'?'+':'−',cx,cy); }
                     ctx.restore(); ctx.restore();
                     continue;
                 }
@@ -5758,7 +5779,8 @@
                 ctx.fill();ctx.stroke();
                 ctx.restore();
                 ctx.save();
-                if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
+                if(blk.type==='magnet_plus'||blk.type==='magnet_minus'){ctx.fillStyle=blk.type==='magnet_plus'?'#ff7777':'#80c7ff';ctx.font='bold 25px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(blk.type==='magnet_plus'?'+':'−',bx+20,by+21);}
+                else if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
                 else if(blk.type==='reinforced'){ctx.strokeStyle='#e1e6eb';ctx.lineWidth=3;ctx.strokeRect(bx+9,by+9,22,22);ctx.beginPath();ctx.moveTo(bx+8,by+20);ctx.lineTo(bx+32,by+20);ctx.stroke();}
                 else if(blk.type==='healing'){ctx.fillStyle='#d9ffe8';ctx.fillRect(bx+17,by+8,6,24);ctx.fillRect(bx+8,by+17,24,6);ctx.shadowColor='#46ff9a';ctx.shadowBlur=9;ctx.strokeStyle='#8affb9';ctx.strokeRect(bx+3,by+3,34,34);ctx.shadowBlur=0;}
                 else if(blk.type==='obsidian'){ctx.strokeStyle='#c4a5ff';ctx.lineWidth=2;for(let q=0;q<3;q++){ctx.beginPath();ctx.moveTo(bx+7+q*10,by+5);ctx.lineTo(bx+4+q*10,by+35);ctx.stroke();}}
@@ -6143,7 +6165,7 @@
                     const bx = Number(parts[0]) * 40 + 20, by = Number(parts[1]) * 40 + 20;
                     ctx.save(); ctx.translate(Number.isFinite(Number(block.x)) ? Number(block.x) : bx, Number.isFinite(Number(block.y)) ? Number(block.y) : by);
                     ctx.rotate(Number(block.angle) || 0);
-                    if (block.type === 'ball') { ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke(); }
+                    if (['ball','magnet_ball_plus','magnet_ball_minus'].includes(block.type)) { ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke(); }
                     else ctx.strokeRect(-20, -20, 40, 40);
                     ctx.restore();
                 }
