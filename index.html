@@ -253,8 +253,9 @@
         #friend-manager-overlay.active { display:flex !important; z-index:999999 !important; pointer-events:auto !important; }
         #friend-manager-window { position:relative; z-index:1000000; pointer-events:auto; }
         #friend-manager-header { position:sticky; top:-16px; z-index:5; background:#111925; padding-top:4px; }
-        #friend-manager-window .friend-manager-tabs { display:flex !important; position:relative; z-index:6; pointer-events:auto; }
-        #friend-manager-window .friend-manager-tab { display:block !important; pointer-events:auto !important; min-height:36px; }
+        #friend-manager-window .friend-manager-tabs { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; gap:8px; position:relative; z-index:6; pointer-events:auto; box-sizing:border-box; }
+        body.friend-manager-standalone #friend-manager-window .friend-manager-tabs { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        #friend-manager-window .friend-manager-tab { display:block !important; width:100%; min-width:0; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:auto !important; min-height:40px; padding:8px 4px; }
         #friend-manager-window .friend-manager-panel { display:none !important; }
         #friend-manager-window .friend-manager-panel.active { display:block !important; }
         #friend-manager-window #friend-manager-tab-settings,
@@ -269,7 +270,7 @@
         .friend-manager-panel { display:none; }
         .friend-manager-panel.active { display:block; }
         #friend-manager-list { max-height: min(48dvh, 330px); overflow-y:auto; }
-        #friend-manager-tab-chat { display:none; }
+        #friend-manager-tab-chat { display:none !important; }
         body.friend-manager-standalone #friend-manager-tab-chat { display:block !important; }
         #friend-manager-chat-friends { max-height:180px; overflow-y:auto; border-bottom:1px solid #39485a; padding-bottom:6px; }
         .friend-chat-conversation { display:block; margin-top:8px; }
@@ -3512,14 +3513,15 @@
                 windowEl.style.cssText += ';display:block!important;position:relative!important;z-index:2147483001!important;pointer-events:auto!important;width:min(440px,calc(100vw - 32px));max-height:80vh;overflow:auto;background:#111925;border:1px solid #8ecbff;border-radius:12px;padding:16px;color:white;';
             }
             const tabs = document.querySelector('.friend-manager-tabs');
-            if (tabs) tabs.style.cssText = 'display:flex!important;gap:8px;width:100%;margin:0 0 12px;position:relative;z-index:2147483002;pointer-events:auto;';
+            if (tabs) tabs.style.cssText = 'display:grid!important;grid-template-columns:repeat(' + (standaloneWindow ? '3' : '2') + ',minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box;margin:0 0 12px;position:relative;z-index:2147483002;pointer-events:auto;';
             const manageTab = document.getElementById('friend-manager-tab-settings');
             const listTab = document.getElementById('friend-manager-tab-list');
             const chatTab = document.getElementById('friend-manager-tab-chat');
             [manageTab, listTab, chatTab].forEach(btn => {
                 if (!btn) return;
-                btn.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;flex:1;min-height:40px;padding:9px;border:1px solid #8ecbff;border-radius:6px;background:#254866;color:white;cursor:pointer;pointer-events:auto!important;position:relative;z-index:2147483003;';
+                btn.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;width:100%;min-width:0;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:9px 4px;border:1px solid #8ecbff;border-radius:6px;background:#254866;color:white;cursor:pointer;pointer-events:auto!important;position:relative;z-index:2147483003;';
             });
+            if (chatTab) chatTab.style.setProperty('display', standaloneWindow ? 'block' : 'none', 'important');
             if (manageTab && !manageTab.dataset.bound) {
                 manageTab.addEventListener('click', () => switchFriendManagerTab('settings'));
                 manageTab.dataset.bound = '1';
