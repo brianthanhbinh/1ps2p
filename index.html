@@ -3895,47 +3895,60 @@
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
-                // Items sitting on a conveyor belong to the belt until they leave it;
-                // don't let the nearby-pickup check instantly pull them back.
+                // Items sitting on a conveyor belong to the belt until they leave it.
                 if (getConveyorAtLootPosition(item)) continue;
-                const dist = Math.hypot(posX - item.x, posY - item.y);
-                if (dist < 45) {
-                    if (item.type === 'coin') {
-                        playerCoins += item.value;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                    } else if (item.type === 'smoke_bomb') {
-                        smokeBombsCount += Number(item.value)||1; refreshHotbarUI();
-                    } else if (item.type === 'grenade') {
-                        grenadesCount += Number(item.value)||1; refreshHotbarUI();
-                    } else if (item.type === 'bandage') {
-                        bandagesCount += Number(item.value)||1; refreshHotbarUI();
-                    } else if (item.type === 'trap') {
-                        addTraps(item.subtype || 'spike', Number(item.value)||1);
-                    } else if (item.type === 'block') {
-                        if (Object.prototype.hasOwnProperty.call(blockInventory, item.subtype)) {
-                            blockInventory[item.subtype] = (blockInventory[item.subtype] || 0) + (Number(item.value) || 1);
-                            selectedBuildBlock = item.subtype;
-                            refreshHotbarUI();
-                            showNotificationBox(`Picked up ${item.subtype} block x${Number(item.value)||1}!`);
-                        }
-                    } else if (item.type === 'gun') {
-                        const emptyIdx = weaponBarSlots.findIndex(w => w === null);
-                        if (emptyIdx !== -1) {
-                            weaponBarSlots[emptyIdx] = item.subtype;
-                        } else {
-                            pushToBackpack(item);
-                        }
-                        refreshHotbarUI();
+                const dist = Math.hypot(posX - Number(item.x), posY - Number(item.y));
+                if (!Number.isFinite(dist) || dist >= 45) continue;
+
+                const amount = Math.max(1, Math.floor(Number(item.value) || 1));
+                let collected = false;
+
+                if (item.type === 'coin') {
+                    playerCoins += amount;
+                    const coinNum = document.getElementById('coin-num');
+                    if (coinNum) coinNum.innerText = playerCoins;
+                    collected = true;
+                } else if (item.type === 'smoke_bomb') {
+                    smokeBombsCount += amount;
+                    collected = true;
+                } else if (item.type === 'grenade') {
+                    grenadesCount += amount;
+                    collected = true;
+                } else if (item.type === 'bandage') {
+                    bandagesCount += amount;
+                    collected = true;
+                } else if (item.type === 'trap') {
+                    addTraps(item.subtype || 'spike', amount);
+                    collected = true;
+                } else if (item.type === 'block') {
+                    if (Object.prototype.hasOwnProperty.call(blockInventory, item.subtype)) {
+                        blockInventory[item.subtype] = (blockInventory[item.subtype] || 0) + amount;
+                        selectedBuildBlock = item.subtype;
+                        collected = true;
                     }
-                    delete droppedLoot[lid];
-                    if (isHosting) {
-                        broadcastStateToClients();
-                    } else if (hostConnection && hostConnection.open) {
-                        hostConnection.send({ type: 'remove_loot', id: lid });
+                } else if (item.type === 'gun') {
+                    const emptyIdx = weaponBarSlots.findIndex(w => w === null);
+                    if (emptyIdx !== -1) {
+                        weaponBarSlots[emptyIdx] = item.subtype;
+                        collected = true;
+                    } else if (pushToBackpack(item)) {
+                        collected = true;
+                    } else {
+                        showNotificationBox('Inventory full! Make room before picking up this gun.');
                     }
-                    showNotificationBox('Picked up item!');
-                    break;
                 }
+
+                // Never delete a pickup unless its contents were actually added.
+                if (!collected) continue;
+                delete droppedLoot[lid];
+                refreshHotbarUI();
+                if (isHosting) {
+                    broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'remove_loot', id: lid });
+                }
+                showNotificationBox('Picked up ' + String(item.subtype || item.type).replaceAll('_', ' ') + ' x' + amount + '!');
+                break;
             }
 
             const nearbyCrate = supplyCrates.find(crate => crate && Math.hypot(posX - crate.x, posY - crate.y) < 50);
