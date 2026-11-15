@@ -20,7 +20,9 @@
         #lobby-box button { touch-action: manipulation; }
         #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
         .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer !important; font-weight: bold; font-size: 11px; pointer-events: auto !important; position: relative; z-index: 1000004; transition: background .15s, border-color .15s, color .15s; }
+        .lobby-tab:hover { background: #3a3a4c !important; color: #fff !important; border-color: #888 !important; }
+        .lobby-tab:active { transform: translateY(1px); }
         .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
         .lobby-content { display: none; text-align: left; }
         .lobby-content.active { display: block; }
@@ -558,9 +560,9 @@
         <div id="lobby-box">
             <h1>2D P2P Arena</h1>
             <div class="lobby-tabs">
-                <button type="button" class="lobby-tab active" data-lobby-tab="main">Match Setup</button>
-                <button type="button" class="lobby-tab" data-lobby-tab="globals">Global Servers</button>
-                <button type="button" class="lobby-tab" data-lobby-tab="peers">Peer History</button>
+                <button type="button" class="lobby-tab active" data-lobby-tab="main" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Match Setup</button>
+                <button type="button" class="lobby-tab" data-lobby-tab="globals" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Global Servers</button>
+                <button type="button" class="lobby-tab" data-lobby-tab="peers" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Peer History</button>
             </div>
 
             <div id="lobby-tab-main" class="lobby-content active">
@@ -2126,10 +2128,7 @@
             document.querySelectorAll('#lobby-box .lobby-content').forEach(c => c.classList.toggle('active', c.id === 'lobby-tab-' + tabKey));
             if (tabKey === 'peers') renderPeerHistory();
         }
-        // Bind tabs directly instead of relying on inline HTML click handlers.
-        document.querySelectorAll('#lobby-box [data-lobby-tab]').forEach(button => {
-            button.addEventListener('click', () => switchLobbyTab(button.dataset.lobbyTab, button));
-        });
+        // Inline tab handlers now work independently of this main script's startup.
 
         const PEER_HISTORY_KEY = 'arena_peer_history_v1';
         function getPeerHistory() {
