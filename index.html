@@ -245,7 +245,16 @@
         #friend-settings { display:none; border-top:1px solid #555; margin-top:8px; padding-top:8px; }
         #friend-settings.active { display:block; }
         #friend-manager-overlay { display:none; position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.72); align-items:center; justify-content:center; padding:16px; }
-        #friend-manager-overlay.active { display:flex; }
+        #friend-manager-overlay.active { display:flex !important; z-index:999999 !important; pointer-events:auto !important; }
+        #friend-manager-window { position:relative; z-index:1000000; pointer-events:auto; }
+        #friend-manager-header { position:sticky; top:-16px; z-index:5; background:#111925; padding-top:4px; }
+        #friend-manager-window .friend-manager-tabs { display:flex !important; position:relative; z-index:6; pointer-events:auto; }
+        #friend-manager-window .friend-manager-tab { display:block !important; pointer-events:auto !important; min-height:36px; }
+        #friend-manager-window .friend-manager-panel { display:none !important; }
+        #friend-manager-window .friend-manager-panel.active { display:block !important; }
+        #friend-manager-window #friend-manager-tab-settings,
+        #friend-manager-window #friend-manager-tab-list,
+        #friend-manager-window #friend-manager-close { position:relative; z-index:7; pointer-events:auto !important; }
         #friend-manager-window { width:min(440px,100%); max-height:min(80dvh,560px); overflow-y:auto; background:#111925; border:1px solid #6b829b; border-radius:12px; padding:16px; color:#fff; box-shadow:0 16px 55px #000c; }
         #friend-manager-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid #39485a; }
         #friend-manager-window #friend-settings { display:block; border:0; margin:0; padding:0; }
@@ -482,7 +491,7 @@
             <div id="friend-manager-window" role="dialog" aria-modal="true" aria-labelledby="friend-manager-title">
                 <div id="friend-manager-header">
                     <b id="friend-manager-title">⚙ Manage Friends</b>
-                    <button type="button" class="friend-action" onclick="closeFriendManager()">✕ Close</button>
+                    <button type="button" id="friend-manager-close" class="friend-action" onclick="event.stopPropagation(); closeFriendManager();">✕ Close</button>
                 </div>
                 <div class="friend-manager-tabs">
                     <button type="button" class="friend-manager-tab active" id="friend-manager-tab-settings" onclick="switchFriendManagerTab('settings')">Manage</button>
@@ -3454,9 +3463,11 @@
         let localChatBubbleUntil = 0;
 
         function openFriendManager() {
+            const overlay = document.getElementById('friend-manager-overlay');
+            // Keep the modal at the document root so game/canvas stacking contexts cannot cover its controls.
+            if (overlay && overlay.parentElement !== document.body) document.body.appendChild(overlay);
             switchFriendManagerTab('settings');
             renderFriendsList();
-            const overlay = document.getElementById('friend-manager-overlay');
             if (overlay) overlay.classList.add('active');
             const idField = document.getElementById('my-device-id');
             if (idField) idField.value = myDeviceId || '';
@@ -3468,6 +3479,10 @@
             const overlay = document.getElementById('friend-manager-overlay');
             if (overlay) overlay.classList.remove('active');
         }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeFriendManager();
+        });
 
         function switchChatTab(channel) {
             activeChatTab = channel === 'team' ? 'team' : channel === 'friends' ? 'friends' : 'all';
