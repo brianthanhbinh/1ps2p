@@ -798,6 +798,7 @@
         let posY = MAP_SIZE / 2;
         let aimAngle = 0;
         let currentHp = 100;
+        let playerGameMode = 'survival';
         let currentStamina = 100;
         let playerCoins = 100;
         let activeRide = null;
@@ -1780,6 +1781,7 @@
                 ctfFlags = { Red: { x: 250, y: 250, homeX: 250, homeY: 250, carrier: null }, Blue: { x: MAP_SIZE - 250, y: MAP_SIZE - 250, homeX: MAP_SIZE - 250, homeY: MAP_SIZE - 250, carrier: null } };
                 ctfScores = { Red: 0, Blue: 0 };
             } else { ctfFlags = null; ctfScores = { Red: 0, Blue: 0 }; }
+            playerGameMode = mode === 'creative' ? 'creative' : 'survival';
             if (mode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
@@ -2542,7 +2544,7 @@
 
         function respawnPlayer() {
             document.getElementById('death-modal').style.display = 'none';
-            currentHp = (currentMode === 'creative' || hostGameMode === 'creative' || ((currentMode === 'flatworld' || hostGameMode === 'flatworld') && flatWorldRules === 'creative')) ? 300 : 100;
+            currentHp = playerGameMode === 'creative' ? 300 : ((currentMode === 'flatworld' || hostGameMode === 'flatworld') && flatWorldRules === 'creative' ? 300 : 100);
             currentStamina = 100;
             deathLootDropped = false;
             syncSelectedAmmo();
@@ -3169,7 +3171,7 @@
                         const spawn = currentMode === 'flatworld'
                             ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
                             : getTeamSpawnCoords(currentMode === 'bossfight' ? 'Raiders' : player.team);
-                        player.x = spawn.x; player.y = spawn.y; player.hp = (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100; player.maxHp = player.hp;
+                        player.x = spawn.x; player.y = spawn.y; player.hp = player.gameMode === 'survival' ? 100 : 300; player.maxHp = player.hp;
                         player.burningUntil = 0; player.nextBurnTick = 0;
                         conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: player.hp });
                         broadcastStateToClients();
@@ -3228,7 +3230,7 @@
                         return;
                     }
                     const targetIsHost = data.targetId === peerInstance.id;
-                    const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100 } : remotePlayers[data.targetId];
+                    const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp, maxHp: playerGameMode === 'creative' ? 300 : 100 } : remotePlayers[data.targetId];
                     const hitX = Number(data.hitX), hitY = Number(data.hitY);
                     const weapon = data.weapon;
                     const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
@@ -3260,7 +3262,7 @@
                     const spawnCoords = currentMode === 'flatworld'
                         ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
                         : getTeamSpawnCoords(data.team);
-                    const joinHp = (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
+                    const joinHp = currentMode === 'creative' ? 300 : ((currentMode === 'flatworld' && flatWorldRules === 'creative') ? 300 : 100);
                     remotePlayers[conn.peer] = {
                         username: data.username,
                         deviceId: String(data.deviceId || ''),
@@ -3270,7 +3272,8 @@
                         y: spawnCoords.y,
                         hp: joinHp,
                         maxHp: joinHp,
-                        coins: 100,
+                        coins: currentMode === 'creative' ? Number.MAX_SAFE_INTEGER : 100,
+                        gameMode: currentMode === 'creative' ? 'creative' : 'survival',
                         trophies: Math.max(0, Math.floor(Number(data.trophies) || 0))
                     };
                     broadcastStateToClients();
@@ -3350,7 +3353,14 @@
                 document.getElementById('net-status').innerText = 'Connected to Host!';
             });
             conn.on('data', (data) => {
-                if (data.type === 'chat_message') {
+                if (data.type === 'gamemode_update') {
+                    playerGameMode = data.mode === 'creative' ? 'creative' : 'survival';
+                    currentHp = Number(data.hp) || (playerGameMode === 'creative' ? 300 : 100);
+                    playerCoins = Number(data.coins) || 0;
+                    const coinDisplay = document.getElementById('coin-num');
+                    if (coinDisplay) coinDisplay.textContent = playerGameMode === 'creative' ? '∞' : String(playerCoins);
+                    showNotificationBox('The host changed your gamemode to ' + playerGameMode + '.');
+                } else if (data.type === 'chat_message') {
                     appendChatMessage(data.username || 'Player', data.message || '', data.channel === 'team' ? 'team' : 'all', data.teamColor, data.trophies);
                     if (data.senderId && remotePlayers[data.senderId]) {
                         remotePlayers[data.senderId].chatBubbleText = String(data.message || '').slice(0, 120);
@@ -3382,6 +3392,7 @@
                     // Clear the previous room before applying the new host snapshot.
                     flushPreviousMap();
                     hostGameMode = data.mode || '4team';
+                    playerGameMode = hostGameMode === 'creative' ? 'creative' : 'survival';
                     if (hostGameMode === 'flatworld') {
                         flatWorldMultiplayer = true;
                         flatWorldRules = data.flatWorldRules === 'creative' ? 'creative' : 'survival';
@@ -3415,6 +3426,8 @@
                         for (let pid in data.players) {
                             if (peerInstance && pid === peerInstance.id) {
                                 if (typeof data.players[pid].hp === 'number') currentHp = data.players[pid].hp;
+                                if (data.players[pid].gameMode) playerGameMode = data.players[pid].gameMode;
+                                if (typeof data.players[pid].coins === 'number') { playerCoins = data.players[pid].coins; const coinDisplay = document.getElementById('coin-num'); if (coinDisplay) coinDisplay.textContent = playerGameMode === 'creative' ? '∞' : String(playerCoins); }
                                 hostRemoteBullets = Array.isArray(data.players[pid].bullets) ? data.players[pid].bullets : [];
                                 hostRemoteSmokeClouds = Array.isArray(data.players[pid].smokeClouds) ? data.players[pid].smokeClouds : [];
                                 window.localBurnUntil = Number(data.players[pid].burningUntil) || 0;
@@ -3464,7 +3477,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, blackholeUntil: localBlackholeUntil, blackholeX: localBlackholeX, blackholeY: localBlackholeY, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), gameMode: playerGameMode, chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: playerGameMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, blackholeUntil: localBlackholeUntil, blackholeX: localBlackholeX, blackholeY: localBlackholeY, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -4221,6 +4234,66 @@
             return true;
         }
 
+        // Host-only personal gamemode command for Creative rooms.
+        // Usage: /gamemode <creative|survival> [player name]
+        function runGamemodeCommand(commandText) {
+            const parts = String(commandText || '').trim().split(/\\s+/);
+            if ((parts[0] || '').toLowerCase() !== '/gamemode') return false;
+            if (!isHosting) {
+                showNotificationBox('Only the room host can use /gamemode.');
+                return true;
+            }
+            if (currentMode !== 'creative' || hostGameMode !== 'creative') {
+                showNotificationBox('/gamemode only works in Creative rooms.');
+                return true;
+            }
+            const mode = String(parts[1] || '').toLowerCase();
+            if (!['creative', 'survival'].includes(mode) || parts.length > 3) {
+                showNotificationBox('Usage: /gamemode <creative|survival> [player name]');
+                return true;
+            }
+            const targetName = parts.slice(2).join(' ').trim();
+            let targetId = null;
+            let target = null;
+            if (!targetName) {
+                targetId = peerInstance && peerInstance.id;
+            } else if (String(myUsername || '').toLowerCase() === targetName.toLowerCase()) {
+                targetId = peerInstance && peerInstance.id;
+            } else {
+                const matches = Object.entries(remotePlayers).filter(([, p]) =>
+                    p && String(p.username || '').toLowerCase() === targetName.toLowerCase()
+                );
+                if (matches.length !== 1) {
+                    showNotificationBox(matches.length ? 'That name is ambiguous.' : 'Player not found: ' + targetName);
+                    return true;
+                }
+                targetId = matches[0][0];
+                target = matches[0][1];
+            }
+
+            const creative = mode === 'creative';
+            const hp = creative ? 300 : 100;
+            const coins = creative ? Number.MAX_SAFE_INTEGER : 100;
+            if (!targetId || targetId === (peerInstance && peerInstance.id)) {
+                playerGameMode = mode;
+                currentHp = hp;
+                playerCoins = coins;
+                const coinDisplay = document.getElementById('coin-num');
+                if (coinDisplay) coinDisplay.textContent = creative ? '∞' : String(playerCoins);
+                showNotificationBox('Your gamemode is now ' + mode + '.');
+            } else if (target) {
+                target.gameMode = mode;
+                target.hp = hp;
+                target.maxHp = hp;
+                target.coins = coins;
+                const conn = peerConnections[targetId];
+                if (conn && conn.open) conn.send({ type: 'gamemode_update', mode, hp, coins });
+                showNotificationBox((target.username || 'Player') + ' is now in ' + mode + ' mode.');
+            }
+            broadcastStateToClients();
+            return true;
+        }
+
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
@@ -4231,7 +4304,7 @@
                 return;
             }
             if (txt) {
-                if (runFlatWorldCommand(txt)) {
+                if (runGamemodeCommand(txt) || runFlatWorldCommand(txt)) {
                     input.value = '';
                     input.blur();
                     input.style.display = 'none';
@@ -4823,7 +4896,7 @@
                 setTimeout(() => { actionCdAttack = false; }, 300);
             }
 
-            else if (activeHotbar === 2 && (!actionCdBuild || currentMode === 'creative' || hostGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative'))) {
+            else if (activeHotbar === 2 && (!actionCdBuild || playerGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative'))) {
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
@@ -4848,7 +4921,7 @@
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
                 showNotificationBox(`🧱 ${buildType.toUpperCase()} block placed! ${buildType === 'wood' ? 'Basic wood is unlimited.' : 'Remaining: ' + blockInventory[buildType]}`);
-                const creativeBuild = currentMode === 'creative' || hostGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative');
+                const creativeBuild = playerGameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative') || (hostGameMode === 'flatworld' && flatWorldRules === 'creative');
                 if (!creativeBuild) {
                     actionCdBuild = true;
                     setTimeout(() => { actionCdBuild = false; }, 300);
