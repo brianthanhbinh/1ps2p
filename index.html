@@ -1704,9 +1704,9 @@
             currentMode = (localMode === 'flatworld' || localMode === 'flatworld_survival') ? 'flatworld' : (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
             hostGameMode = currentMode;
             // Local rooms must initialize the personal gamemode as well as room resources.
+            flatWorldRules = localMode === 'flatworld_survival' ? 'survival' : 'creative';
             playerGameMode = (localMode === 'creative' || localMode === 'creative_pvp' ||
                 (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 'creative' : 'survival';
-            flatWorldRules = localMode === 'flatworld_survival' ? 'survival' : 'creative';
             MAP_SIZE = currentMode === 'flatworld' ? FLAT_WORLD_SIZE : STANDARD_MAP_SIZE;
             if (currentMode === 'flatworld') {
                 worldBlocks = {};
@@ -5621,7 +5621,9 @@
             }
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
-                currentHp = Math.min(100, currentHp + 0.2);
+                const localMaxHp = playerGameMode === 'creative' &&
+                    (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
+                currentHp = Math.min(localMaxHp, currentHp + 0.2);
             }
 
             const screenCenterX = canvas.width / 2;
