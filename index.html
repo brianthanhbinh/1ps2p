@@ -553,7 +553,7 @@
             </div>
 
             <div id="lobby-tab-main" class="lobby-content active">
-                <input type="text" id="input-username" placeholder="Your Name" value="Player706">
+                <input type="text" id="input-username" placeholder="Your Name" value="">
                 <input type="text" id="input-room" placeholder="Room ID Code (e.g. alpha)" value="">
                 <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
                 <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
@@ -561,7 +561,7 @@
             </div>
 
             <div id="lobby-tab-globals" class="lobby-content">
-                <input type="text" id="input-username-global" placeholder="Your Name" value="Player419">
+                <input type="text" id="input-username-global" placeholder="Your Name" value="">
                 <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers:</p>
                 <div class="peer-list-box">
                     <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
@@ -2009,6 +2009,11 @@
         window.addEventListener('DOMContentLoaded', () => {
             setupSkinDrawing();
             setupSkinFileUpload();
+            const lobbyName = document.getElementById('input-username');
+            const globalName = document.getElementById('input-username-global');
+            const generatedName = 'Player' + (Math.floor(Math.random() * 1000) + 1);
+            if (lobbyName && !lobbyName.value) lobbyName.value = generatedName;
+            if (globalName && !globalName.value) globalName.value = generatedName;
             initializeFriendsSystem();
             if (new URLSearchParams(window.location.search).get('friendManagerWindow') === '1') {
                 document.title = '1PS2P - Friends';
