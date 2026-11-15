@@ -422,6 +422,8 @@
         <div id="hud-actions-right">
             <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
             <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
+            <button id="flat-save-btn" onclick="saveFlatWorldMap()" style="display:none;background:#2e7d32;color:#fff;border:1px solid #66bb6a;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">💾 Save Map</button>
+            <button id="flat-load-btn" onclick="loadFlatWorldMap()" style="display:none;background:#1565c0;color:#fff;border:1px solid #64b5f6;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">📂 Load Map</button>
             <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         </div>
 
@@ -605,7 +607,9 @@
         const mCanvas = document.getElementById('canvas-minimap');
         const mCtx = mCanvas ? mCanvas.getContext('2d') : null;
 
-        const MAP_SIZE = 2600;
+        let MAP_SIZE = 2600;
+        const STANDARD_MAP_SIZE = 2600;
+        const FLAT_WORLD_SIZE = 1000000000;
         let mobileMoveX = 0, mobileMoveY = 0, mobileSprint = false;
         // Remote players share this scratch canvas; the local player has its own
         // canvas so remote rendering cannot overwrite the locally equipped item.
@@ -1441,6 +1445,7 @@
                 <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectLocalMode('zombie')">🧟 Zombie Survival (Defend Wave Hordes)</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP)</button>
+                <button style="background:#607d8b; color:#fff;" onclick="selectLocalMode('flatworld')">🌍 Flat World (Huge, endless building map)</button>
                 <button style="background:#00bcd4; color:#fff;" onclick="selectLocalMode('creative_pvp')">⚔️🎨 Creative PvP (Bots + Inf Coins, 300 HP)</button>
                 <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
             `;
@@ -1483,16 +1488,25 @@
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = (localMode === 'pvp' || localMode === 'zombie' || localMode === 'creative_pvp');
-            currentMode = (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
+            currentMode = localMode === 'flatworld' ? 'flatworld' : (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
+            hostGameMode = currentMode;
+            MAP_SIZE = localMode === 'flatworld' ? FLAT_WORLD_SIZE : STANDARD_MAP_SIZE;
+            if (localMode === 'flatworld') {
+                worldBlocks = {};
+                activeTraps = {};
+                droppedLoot = {};
+                posX = MAP_SIZE / 2;
+                posY = MAP_SIZE / 2;
+            }
 
-            if (localMode === 'creative' || localMode === 'creative_pvp') {
+            if (localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = (localMode === 'creative' || localMode === 'creative_pvp') ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld') ? '∞' : playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -1583,7 +1597,7 @@
 
             if (activeMode === 'bossfight') {
                 opts.innerHTML = `<button class="btn-team-blue" onclick="assignTeamAndSpawn('Raiders', '#42a5f5')">⚔️ Join the Raiders</button>`;
-            } else if (activeMode === 'ffa' || activeMode === 'lgs' || activeMode === 'zombie') {
+            } else if (activeMode === 'ffa' || activeMode === 'lgs' || activeMode === 'zombie' || activeMode === 'flatworld') {
                 opts.innerHTML = `<button class="btn-team-ffa" onclick="assignTeamAndSpawn('FFA', '#8e24aa')">Enter Arena</button>`;
             } else if (activeMode === '2team' || activeMode === 'ctf') {
                 opts.innerHTML = `
@@ -1625,7 +1639,7 @@
 
             resetPlayerInventoryForNewMatch();
             const activeModeForSpawn = isHosting ? currentMode : hostGameMode;
-            const spawnCoords = getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
+            const spawnCoords = activeModeForSpawn === 'flatworld' ? { x: MAP_SIZE / 2, y: MAP_SIZE / 2 } : getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
 
@@ -1896,6 +1910,9 @@
             document.getElementById('share-link-btn').style.display = active ? 'block' : 'none';
             document.getElementById('share-team-link-btn').style.display = active ? 'block' : 'none';
             document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
+            const flatWorldActive = active && (currentMode === 'flatworld' || hostGameMode === 'flatworld');
+            document.getElementById('flat-save-btn').style.display = flatWorldActive ? 'block' : 'none';
+            document.getElementById('flat-load-btn').style.display = flatWorldActive ? 'block' : 'none';
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('room-notification').style.display = active ? 'none' : 'block';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
@@ -3849,6 +3866,39 @@
             }
         }
 
+        const FLAT_WORLD_SAVES_KEY = 'arena_flat_world_maps_v1';
+        function getFlatWorldSaves() {
+            try {
+                const saves = JSON.parse(localStorage.getItem(FLAT_WORLD_SAVES_KEY) || '{}');
+                return saves && typeof saves === 'object' && !Array.isArray(saves) ? saves : {};
+            } catch (_) { return {}; }
+        }
+        function saveFlatWorldMap() {
+            if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
+            const name = (prompt('Name this map:', 'My Flat World') || '').trim().slice(0, 40);
+            if (!name) return;
+            try {
+                const saves = getFlatWorldSaves();
+                saves[name] = { version: 1, blocks: worldBlocks, savedAt: Date.now() };
+                localStorage.setItem(FLAT_WORLD_SAVES_KEY, JSON.stringify(saves));
+                showNotificationBox('Saved map: ' + name);
+            } catch (e) { showNotificationBox('Could not save map. Browser storage may be full.'); }
+        }
+        function loadFlatWorldMap() {
+            if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
+            const saves = getFlatWorldSaves();
+            const names = Object.keys(saves);
+            if (!names.length) { showNotificationBox('No saved Flat World maps yet.'); return; }
+            const name = (prompt('Enter a saved map name:\n' + names.join('\n'), names[0]) || '').trim();
+            if (!name) return;
+            const save = saves[name];
+            if (!save || !save.blocks || typeof save.blocks !== 'object') { showNotificationBox('Map not found or save is invalid.'); return; }
+            try {
+                worldBlocks = JSON.parse(JSON.stringify(save.blocks));
+                showNotificationBox('Loaded map: ' + name);
+            } catch (_) { showNotificationBox('Could not load that map.'); }
+        }
+
         function reloadWeapon() {
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
             if(!w||isReloading)return;
@@ -4604,11 +4654,13 @@
             let nextX = posX + dx * moveSpeed * sprintMultiplier + playerMomentumX;
             let nextY = posY + dy * moveSpeed * sprintMultiplier + playerMomentumY;
 
-            nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
-            nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
-
             const movementMode = isHosting ? currentMode : hostGameMode;
-            if (movementMode !== 'ctf' && isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
+            if (movementMode !== 'flatworld') {
+                nextX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextX));
+                nextY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, nextY));
+            }
+
+            if (movementMode !== 'flatworld' && movementMode !== 'ctf' && isEnemyTryingToEnterBase(nextX, nextY, playerTeam)) {
                 showNotificationBox('⚠️ Access Denied! You cannot enter an enemy base!');
                 nextX = posX;
                 nextY = posY;
@@ -4899,6 +4951,7 @@
                         if (b.type === 'freeze') dmg = 22;
                         if (b.type === 'burst') dmg = 30;
                         if (b.type === 'flame') dmg = 18;
+                        if (!Number.isFinite(worldBlocks[k].hp)) worldBlocks[k].hp = Number(worldBlocks[k].maxHp) || 100;
                         worldBlocks[k].hp -= dmg;
                         if (worldBlocks[k].hp <= 0) { const broken = worldBlocks[k]; delete worldBlocks[k]; dropBrokenBlock(broken, bx + 20, by + 20); }
 
@@ -5310,11 +5363,15 @@
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 1;
             const gridSize = 80;
-            for (let gx = 0; gx <= MAP_SIZE; gx += gridSize) {
-                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, MAP_SIZE); ctx.stroke();
+            const gridLeft = Math.floor(camX / gridSize) * gridSize - gridSize;
+            const gridTop = Math.floor(camY / gridSize) * gridSize - gridSize;
+            const gridRight = camX + canvas.width / cameraZoom + gridSize;
+            const gridBottom = camY + canvas.height / cameraZoom + gridSize;
+            for (let gx = gridLeft; gx <= gridRight; gx += gridSize) {
+                ctx.beginPath(); ctx.moveTo(gx, gridTop); ctx.lineTo(gx, gridBottom); ctx.stroke();
             }
-            for (let gy = 0; gy <= MAP_SIZE; gy += gridSize) {
-                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(MAP_SIZE, gy); ctx.stroke();
+            for (let gy = gridTop; gy <= gridBottom; gy += gridSize) {
+                ctx.beginPath(); ctx.moveTo(gridLeft, gy); ctx.lineTo(gridRight, gy); ctx.stroke();
             }
 
             const bases = [
@@ -5323,7 +5380,7 @@
                 { name: 'Green Base', x1: 0, y1: MAP_SIZE - ZONE_SIZE, color: 'rgba(67, 160, 71, 0.25)' },
                 { name: 'Yellow Base', x1: MAP_SIZE - ZONE_SIZE, y1: 0, color: 'rgba(251, 192, 45, 0.25)' }
             ];
-            bases.forEach(b => {
+            if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') bases.forEach(b => {
                 ctx.fillStyle = b.color;
                 ctx.fillRect(b.x1, b.y1, ZONE_SIZE, ZONE_SIZE);
                 ctx.strokeStyle = '#fff';
