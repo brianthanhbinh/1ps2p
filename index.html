@@ -3251,20 +3251,21 @@
         function getConveyorAtLootPosition(item) {
             if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) return null;
             const x = Number(item.x), y = Number(item.y);
-            // Prefer the tile containing the pickup, but also tolerate a pickup
-            // resting near a conveyor tile edge (e.g. a grenade dropped beside it).
             const gx = Math.floor(x / 40), gy = Math.floor(y / 40);
-            const direct = worldBlocks[gx + ',' + gy];
-            if (direct && direct.type === 'conveyor') return direct;
-            let nearest = null, nearestDistance = 31;
+            let nearest = null, nearestDistance = Infinity;
+            // Check nearby conveyor tile rectangles, not just the tile containing
+            // the item's center. This works for every dropped-loot type and
+            // avoids gaps when a pickup straddles a tile boundary.
             for (let ox = -1; ox <= 1; ox++) {
                 for (let oy = -1; oy <= 1; oy++) {
                     const block = worldBlocks[(gx + ox) + ',' + (gy + oy)];
                     if (!block || block.type !== 'conveyor') continue;
                     const cx = (gx + ox) * 40 + 20;
                     const cy = (gy + oy) * 40 + 20;
-                    const distance = Math.hypot(x - cx, y - cy);
-                    if (distance < nearestDistance) {
+                    const dx = Math.max(0, Math.abs(x - cx) - 20);
+                    const dy = Math.max(0, Math.abs(y - cy) - 20);
+                    const distance = Math.hypot(dx, dy);
+                    if (distance <= 14 && distance < nearestDistance) {
                         nearest = block;
                         nearestDistance = distance;
                     }
@@ -3274,20 +3275,23 @@
         }
 
         function updateConveyorLoot() {
-            // The host owns shared loot physics; practice and offline play run locally.
+            // The host owns shared loot physics; offline/practice runs locally.
             if (!isHosting && !isPractice && hostConnection && hostConnection.open) return;
             let movedAny = false;
-            for (const lid in droppedLoot) {
+            for (const lid of Object.keys(droppedLoot)) {
                 const item = droppedLoot[lid];
+                if (!item) continue;
+                // Deliberately do not filter by item.type: guns, grenades,
+                // consumables, traps, blocks and other world pickups all ride belts.
                 const belt = getConveyorAtLootPosition(item);
                 if (!belt) continue;
                 const angle = Number(belt.angle) || 0;
-                // Apply a steady belt velocity to loose pickups every simulation tick.
-                item.x = Number(item.x) + Math.cos(angle) * 2.2;
-                item.y = Number(item.y) + Math.sin(angle) * 2.2;
+                const speed = 2.6;
+                item.x = Number(item.x) + Math.cos(angle) * speed;
+                item.y = Number(item.y) + Math.sin(angle) * speed;
                 movedAny = true;
             }
-            // Only the host broadcasts authoritative positions to other players.
+            // Only the authoritative host synchronizes moving loot to clients.
             if (movedAny && isHosting && Date.now() >= nextConveyorLootSyncAt) {
                 nextConveyorLootSyncAt = Date.now() + 120;
                 broadcastStateToClients();
