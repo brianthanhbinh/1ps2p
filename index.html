@@ -27,10 +27,17 @@
         #lobby-box button:hover { background: #45a049; }
         #net-status { font-size: 12px; color: #ffca28; margin-top: 10px; font-weight: bold; word-break: break-all; text-align: center; }
         #input-room::placeholder { color: #888; opacity: 0.65; }
-        .peer-list-box { max-height: 180px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
-        .peer-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: rgba(255,255,255,0.04); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
-        .peer-item button { width: auto; padding: 5px 12px; margin: 0; font-size: 12px; background: #2196f3; }
-        .peer-item button:hover { background: #1976d2; }
+        .peer-history-tools { display:flex; justify-content:space-between; align-items:center; gap:8px; color:#999; font-size:11px; margin:6px 0; }
+        .peer-history-tools button { width:auto; margin:0; padding:5px 9px; font-size:11px; }
+        .peer-list-box { max-height: 240px; overflow-y: auto; background: #181822; border: 1px solid #444; border-radius: 6px; padding: 6px; margin: 8px 0; }
+        .peer-item { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 9px; background:rgba(255,255,255,0.04); margin-bottom:5px; border-radius:6px; font-size:13px; }
+        .peer-room-info { min-width:0; display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+        .peer-room-code { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .peer-room-time { color:#888; font-size:10px; }
+        .peer-room-actions { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+        .peer-item button { width:auto; padding:5px 10px; margin:0; font-size:11px; background:#2196f3; }
+        .peer-item button.remove-room { background:#555; padding:5px 8px; }
+        .peer-item button:hover { filter:brightness(1.12); }
 
         /* Modal Overlay */
         #modal-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; pointer-events: auto; z-index: 120; }
@@ -573,12 +580,15 @@
             </div>
 
             <div id="lobby-tab-peers" class="lobby-content">
-                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Rooms you have visited on this device:</p>
-                <input type="text" id="peer-history-search" placeholder="Search room history..." oninput="renderPeerHistory()">
+                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Recently visited rooms on this device</p>
+                <input type="search" id="peer-history-search" placeholder="Search room codes..." oninput="renderPeerHistory()">
+                <div class="peer-history-tools">
+                    <span id="peer-history-count">0 rooms saved</span>
+                    <button type="button" onclick="clearPeerHistory()" style="background:#754747;">Clear History</button>
+                </div>
                 <div class="peer-list-box" id="peer-list-container">
                     <div style="text-align:center; color:#777; font-size:11px; padding:20px;">No room history yet.</div>
                 </div>
-                <button style="background:#2196f3;" onclick="renderPeerHistory()">🔄 Refresh History</button>
             </div>
 
             <div id="net-status">Ready to Connect</div>
@@ -2119,8 +2129,10 @@
 
         const PEER_HISTORY_KEY = 'arena_peer_history_v1';
         function getPeerHistory() {
-            try { const value = JSON.parse(localStorage.getItem(PEER_HISTORY_KEY) || '[]'); return Array.isArray(value) ? value : []; }
-            catch (_) { return []; }
+            try {
+                const value = JSON.parse(localStorage.getItem(PEER_HISTORY_KEY) || '[]');
+                return Array.isArray(value) ? value.filter(item => item && typeof item.code === 'string') : [];
+            } catch (_) { return []; }
         }
         function rememberPeerRoom(code) {
             const room = String(code || '').trim().toLowerCase();
@@ -2128,24 +2140,47 @@
             const list = getPeerHistory().filter(item => item.code !== room);
             list.unshift({ code: room, visitedAt: Date.now() });
             try { localStorage.setItem(PEER_HISTORY_KEY, JSON.stringify(list.slice(0, 100))); } catch (_) {}
+            renderPeerHistory();
+        }
+        function formatPeerHistoryDate(timestamp) {
+            const date = new Date(Number(timestamp) || 0);
+            if (!Number.isFinite(date.getTime()) || !Number(timestamp)) return 'Visit date unavailable';
+            return 'Last visited ' + date.toLocaleString();
+        }
+        function removePeerHistoryRoom(code) {
+            const room = String(code || '').trim().toLowerCase();
+            const remaining = getPeerHistory().filter(item => item.code !== room);
+            try { localStorage.setItem(PEER_HISTORY_KEY, JSON.stringify(remaining)); } catch (_) {}
+            renderPeerHistory();
+        }
+        function clearPeerHistory() {
+            if (!getPeerHistory().length) return;
+            if (!confirm('Clear all saved room history on this device?')) return;
+            try { localStorage.removeItem(PEER_HISTORY_KEY); } catch (_) {}
+            renderPeerHistory();
         }
         function renderPeerHistory() {
             const box = document.getElementById('peer-list-container');
             if (!box) return;
             const all = getPeerHistory();
+            const count = document.getElementById('peer-history-count');
+            if (count) count.textContent = all.length + (all.length === 1 ? ' room saved' : ' rooms saved');
             const query = (document.getElementById('peer-history-search')?.value || '').trim().toLowerCase();
-            const matches = all.filter(item => String(item.code || '').includes(query));
+            const matches = all.filter(item => item.code.toLowerCase().includes(query));
             if (!matches.length) {
-                box.innerHTML = '<div style="text-align:center;color:#777;font-size:11px;padding:20px;">' + (all.length ? 'No matching rooms.' : 'No room history yet. Join or host a room first.') + '</div>';
+                box.innerHTML = '<div style="text-align:center;color:#777;font-size:11px;padding:20px;">' + (all.length ? 'No rooms match your search.' : 'No room history yet. Join or host a room first.') + '</div>';
                 return;
             }
             box.innerHTML = matches.map(item => {
                 const code = String(item.code || '').replace(/[^a-z0-9_-]/gi, '');
-                return '<div class="peer-item"><span>🕘 <b>' + code + '</b></span><button onclick="joinPeerHistoryRoom(\'' + code + '\')">Join / Host</button></div>';
+                const safeCode = code.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return '<div class="peer-item"><div class="peer-room-info"><b class="peer-room-code">' + code + '</b><span class="peer-room-time">' + formatPeerHistoryDate(item.visitedAt) + '</span></div><div class="peer-room-actions"><button type="button" onclick="joinPeerHistoryRoom(\\'' + safeCode + '\\')">Join / Host</button><button type="button" class="remove-room" title="Remove room" aria-label="Remove ' + code + '" onclick="removePeerHistoryRoom(\\'' + safeCode + '\\')">×</button></div></div>';
             }).join('');
         }
         function joinPeerHistoryRoom(code) {
-            document.getElementById('input-room').value = code;
+            const room = String(code || '').trim().toLowerCase();
+            if (!room) return;
+            document.getElementById('input-room').value = room;
             switchLobbyTab('main', document.querySelector('.lobby-tab'));
             initJoinRoom(true);
         }
@@ -2168,7 +2203,7 @@
             peerInstance.on('connection', conn => setupServerConnection(conn));
             peerInstance.on('error', err => {
                 document.getElementById('net-status').innerText = 'Could not host room: ' + err.type;
-                showNotificationBox('Could not join or host this room. It may be temporarily unavailable.');
+                showNotificationBox(err.type === 'unavailable-id' ? 'Someone is already hosting this room.' : 'Could not host this room. Please try again.');
             });
         }
 
@@ -2661,41 +2696,34 @@
             isPractice = false;
 
             document.getElementById('net-status').innerText = 'Connecting to Host...';
-            if (peerInstance) peerInstance.destroy();
+            if (peerInstance) { try { peerInstance.destroy(); } catch (_) {} }
+
+            let connected = false;
+            let fallbackStarted = false;
+            const fallbackToHost = (err) => {
+                if (!autoHostIfEmpty || connected || fallbackStarted || (err && err.type !== 'peer-unavailable')) return;
+                fallbackStarted = true;
+                document.getElementById('net-status').innerText = 'Room not found. Starting a new room...';
+                hostHistoryRoom(roomCode);
+            };
 
             peerInstance = createPeer({ debug: 1 });
             peerInstance.on('open', (id) => {
                 myPeerId = id;
-                const targetHostId = formatPeerId(roomCode);
-                const conn = peerInstance.connect(targetHostId);
-                let connected = false;
-                let fallbackStarted = false;
-                const fallbackToHost = () => {
-                    if (!autoHostIfEmpty || connected || fallbackStarted) return;
-                    fallbackStarted = true;
-                    hostHistoryRoom(roomCode);
-                };
+                const conn = peerInstance.connect(formatPeerId(roomCode));
                 conn.on('open', () => {
+                    if (connected) return;
                     connected = true;
                     rememberPeerRoom(roomCode);
                     if (autoHostIfEmpty) setupClientConnection(conn);
                 });
-                conn.on('error', fallbackToHost);
-                if (autoHostIfEmpty) setTimeout(fallbackToHost, 2500);
-                else {
-                    conn.on('open', () => rememberPeerRoom(roomCode));
-                    setupClientConnection(conn);
-                }
+                if (autoHostIfEmpty) conn.on('error', fallbackToHost);
+                else setupClientConnection(conn);
             });
             peerInstance.on('error', (err) => {
-                document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
-                if (autoHostIfEmpty) {
-                    if (!window.peerHistoryFallbackStarted) {
-                        window.peerHistoryFallbackStarted = true;
-                        hostHistoryRoom(roomCode);
-                        setTimeout(() => { window.peerHistoryFallbackStarted = false; }, 4000);
-                    }
-                } else showNotificationBox('Could not connect to host room. Please check room code.');
+                document.getElementById('net-status').innerText = 'Connection Failed: ' + err.type;
+                if (autoHostIfEmpty) fallbackToHost(err);
+                else showNotificationBox('Could not connect to host room. Please check room code.');
             });
         }
 
