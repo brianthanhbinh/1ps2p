@@ -549,19 +549,19 @@
             <div class="lobby-tabs">
                 <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
                 <button class="lobby-tab" onclick="switchLobbyTab('globals', this)">Global Servers</button>
-                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Custom Peer</button>
+                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Peer History</button>
             </div>
 
             <div id="lobby-tab-main" class="lobby-content active">
-                <input type="text" id="input-username" placeholder="Your Name" value="Combatant">
-                <input type="text" id="input-room" placeholder="Room ID Code" value="alpha">
+                <input type="text" id="input-username" placeholder="Your Name" value="Player706">
+                <input type="text" id="input-room" placeholder="Room ID Code (e.g. alpha)" value="">
                 <button id="btn-host-room" onclick="initHostRoom()">Host Match</button>
                 <button id="btn-join-room" onclick="initJoinRoom()">Join Match</button>
                 <button id="btn-bot-mode" onclick="promptLocalPlayMode()" style="background:#ff9800;">🎮 Play Locally</button>
             </div>
 
             <div id="lobby-tab-globals" class="lobby-content">
-                <input type="text" id="input-username-global" placeholder="Your Name" value="Combatant">
+                <input type="text" id="input-username-global" placeholder="Your Name" value="Player419">
                 <p style="font-size:11px; color:#aaa; margin:6px 0;">Preconfigured Global Servers:</p>
                 <div class="peer-list-box">
                     <div class="peer-item"><span>🌐 <b>ffaglobal</b> (FFA)</span><button onclick="joinGlobalServer('ffaglobal', 'ffa')">Join</button></div>
@@ -572,11 +572,12 @@
             </div>
 
             <div id="lobby-tab-peers" class="lobby-content">
-                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Discovered active online rooms:</p>
+                <p style="font-size:11px; color:#aaa; margin-bottom:4px;">Rooms you have visited on this device:</p>
+                <input type="text" id="peer-history-search" placeholder="Search room history..." oninput="renderPeerHistory()">
                 <div class="peer-list-box" id="peer-list-container">
-                    <div style="text-align:center; color:#777; font-size:11px; padding:20px;">Scanning for rooms...</div>
+                    <div style="text-align:center; color:#777; font-size:11px; padding:20px;">No room history yet.</div>
                 </div>
-                <button style="background:#2196f3;" onclick="scanAvailablePeers()">🔄 Refresh Peers</button>
+                <button style="background:#2196f3;" onclick="renderPeerHistory()">🔄 Refresh History</button>
             </div>
 
             <div id="net-status">Ready to Connect</div>
@@ -775,7 +776,7 @@
         let presencePeer = null;
         const friendConnections = {};
         const friendPresence = {};
-        let myUsername = 'Combatant';
+        let myUsername = 'Player' + (Math.floor(Math.random() * 1000) + 1);
         let roomCode = 'alpha';
         let preselectedTeam = null; 
         let currentMode = 'ffa';
@@ -1979,7 +1980,7 @@
         }
 
         function initHostRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Host';
+            myUsername = document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = document.getElementById('input-room').value.trim() || 'alpha';
             isHosting = true;
             isPractice = false;
@@ -1991,6 +1992,7 @@
             peerInstance.on('open', (id) => {
                 myPeerId = id;
                 document.getElementById('net-status').innerText = `Room Hosted! Code: ${roomCode}`;
+                rememberPeerRoom(roomCode);
                 promptGameModeSelection();
             });
             peerInstance.on('error', (err) => {
@@ -2105,7 +2107,62 @@
             btnElement.classList.add('active');
             const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
             if (targetContent) targetContent.classList.add('active');
-            if (tabKey === 'peers') scanAvailablePeers();
+            if (tabKey === 'peers') renderPeerHistory();
+        }
+
+        const PEER_HISTORY_KEY = 'arena_peer_history_v1';
+        function getPeerHistory() {
+            try { const value = JSON.parse(localStorage.getItem(PEER_HISTORY_KEY) || '[]'); return Array.isArray(value) ? value : []; }
+            catch (_) { return []; }
+        }
+        function rememberPeerRoom(code) {
+            const room = String(code || '').trim().toLowerCase();
+            if (!room) return;
+            const list = getPeerHistory().filter(item => item.code !== room);
+            list.unshift({ code: room, visitedAt: Date.now() });
+            try { localStorage.setItem(PEER_HISTORY_KEY, JSON.stringify(list.slice(0, 100))); } catch (_) {}
+        }
+        function renderPeerHistory() {
+            const box = document.getElementById('peer-list-container');
+            if (!box) return;
+            const all = getPeerHistory();
+            const query = (document.getElementById('peer-history-search')?.value || '').trim().toLowerCase();
+            const matches = all.filter(item => String(item.code || '').includes(query));
+            if (!matches.length) {
+                box.innerHTML = '<div style="text-align:center;color:#777;font-size:11px;padding:20px;">' + (all.length ? 'No matching rooms.' : 'No room history yet. Join or host a room first.') + '</div>';
+                return;
+            }
+            box.innerHTML = matches.map(item => {
+                const code = String(item.code || '').replace(/[^a-z0-9_-]/gi, '');
+                return '<div class="peer-item"><span>🕘 <b>' + code + '</b></span><button onclick="joinPeerHistoryRoom(\'' + code + '\')">Join / Host</button></div>';
+            }).join('');
+        }
+        function joinPeerHistoryRoom(code) {
+            document.getElementById('input-room').value = code;
+            switchLobbyTab('main', document.querySelector('.lobby-tab'));
+            initJoinRoom(true);
+        }
+        function hostHistoryRoom(code) {
+            const room = String(code || '').trim().toLowerCase();
+            if (!room) return;
+            if (peerInstance) { try { peerInstance.destroy(); } catch (_) {} }
+            document.getElementById('input-room').value = room;
+            roomCode = room;
+            myUsername = document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
+            isHosting = true;
+            isPractice = false;
+            document.getElementById('net-status').innerText = 'Room is empty. Hosting ' + room + '...';
+            peerInstance = createPeer(formatPeerId(room), { debug: 1 });
+            peerInstance.on('open', () => {
+                rememberPeerRoom(room);
+                document.getElementById('net-status').innerText = 'Room Hosted! Code: ' + room;
+                promptGameModeSelection();
+            });
+            peerInstance.on('connection', conn => setupServerConnection(conn));
+            peerInstance.on('error', err => {
+                document.getElementById('net-status').innerText = 'Could not host room: ' + err.type;
+                showNotificationBox('Could not join or host this room. It may be temporarily unavailable.');
+            });
         }
 
         function joinGlobalServer(serverCode, gameMode) {
@@ -2589,9 +2646,10 @@
             return false;
         }
 
-        function initJoinRoom() {
-            myUsername = document.getElementById('input-username').value.trim() || 'Combatant';
-            roomCode = document.getElementById('input-room').value.trim() || 'alpha';
+        function initJoinRoom(autoHostIfEmpty = false) {
+            myUsername = document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
+            roomCode = document.getElementById('input-room').value.trim();
+            if (!roomCode) { showNotificationBox('Enter a room code first.'); return; }
             isHosting = false;
             isPractice = false;
 
@@ -2603,11 +2661,22 @@
                 myPeerId = id;
                 const targetHostId = formatPeerId(roomCode);
                 const conn = peerInstance.connect(targetHostId);
-                setupClientConnection(conn);
+                let connected = false;
+                conn.on('open', () => {
+                    connected = true;
+                    rememberPeerRoom(roomCode);
+                    setupClientConnection(conn);
+                });
+                conn.on('error', () => { if (autoHostIfEmpty && !connected) hostHistoryRoom(roomCode); });
+                if (autoHostIfEmpty) setTimeout(() => {
+                    if (!connected && peerInstance && !peerInstance.destroyed) hostHistoryRoom(roomCode);
+                }, 2500);
+                if (!autoHostIfEmpty) setupClientConnection(conn);
             });
             peerInstance.on('error', (err) => {
                 document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
-                showNotificationBox('Could not connect to host room. Please check room code.');
+                if (autoHostIfEmpty) hostHistoryRoom(roomCode);
+                else showNotificationBox('Could not connect to host room. Please check room code.');
             });
         }
 
