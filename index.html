@@ -1731,7 +1731,6 @@
             myPeerId = null;
             isHosting = false;
             flushPreviousMap();
-            localCreativeMode = localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld';
             flatWorldMultiplayer = false;
             pendingMultiplayerFlatWorldLoad = false;
             flatWorldLoadedPlayerData = null;
@@ -1743,8 +1742,11 @@
             hostGameMode = currentMode;
             // Local rooms must initialize the personal gamemode as well as room resources.
             flatWorldRules = localMode === 'flatworld_survival' ? 'survival' : 'creative';
-            playerGameMode = (localMode === 'creative' || localMode === 'creative_pvp' ||
-                (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 'creative' : 'survival';
+            // Flat World defaults to Creative, but the explicit Survival variant must
+            // remain Survival. Do not infer local Creative just from being Flat World.
+            localCreativeMode = localMode === 'creative' || localMode === 'creative_pvp' ||
+                (currentMode === 'flatworld' && flatWorldRules === 'creative');
+            playerGameMode = localCreativeMode ? 'creative' : 'survival';
             MAP_SIZE = currentMode === 'flatworld' ? FLAT_WORLD_SIZE : STANDARD_MAP_SIZE;
             if (currentMode === 'flatworld') {
                 worldBlocks = {};
@@ -4830,7 +4832,15 @@
             const activeMode = isHosting ? currentMode : hostGameMode;
             const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
             if (amountVal > 0 && (creativeRules || amountVal <= playerCoins)) {
-                if (isHosting || isPractice) {
+                if (!isHosting && !hostConnection && !peerInstance) {
+                    // Offline/local play: apply the transaction directly. Creative coins
+                    // are infinite, so dropping and collecting them never changes the HUD.
+                    if (!creativeRules) {
+                        playerCoins = Math.max(0, playerCoins - amountVal);
+                        document.getElementById('coin-num').innerText = String(playerCoins);
+                    }
+                    spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
+                } else if (isHosting || isPractice) {
                     if (!creativeRules) {
                         playerCoins = Math.max(0, playerCoins - amountVal);
                         document.getElementById('coin-num').innerText = playerCoins;
@@ -4886,9 +4896,14 @@
                 let collected = false;
 
                 if (item.type === 'coin') {
-                    playerCoins += amount;
-                    const coinNum = document.getElementById('coin-num');
-                    if (coinNum) coinNum.innerText = playerCoins;
+                    const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
+                    const infiniteCoins = playerGameMode === 'creative' || localCreativeMode ||
+                        activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
+                    if (!infiniteCoins) {
+                        playerCoins += amount;
+                        const coinNum = document.getElementById('coin-num');
+                        if (coinNum) coinNum.innerText = String(playerCoins);
+                    }
                     collected = true;
                 } else if (item.type === 'smoke_bomb') {
                     smokeBombsCount += amount;
