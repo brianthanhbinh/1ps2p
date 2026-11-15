@@ -3744,14 +3744,15 @@
             const parts = String(commandText || '').trim().split(/\s+/);
             if (parts[0]?.toLowerCase() !== '/fill') return false;
 
-            // Multiplayer clients may retain the normal currentMode value,
-            // so also recognize the shared Flat World flag and map size.
-            const inFlatWorld = currentMode === 'flatworld'
-                || hostGameMode === 'flatworld'
-                || flatWorldMultiplayer === true
-                || MAP_SIZE === FLAT_WORLD_SIZE;
-            if (!inFlatWorld) {
-                showNotificationBox('/fill only works in Flat World.');
+            // /fill is intentionally limited to the local creative Flat World.
+            // Consume the command everywhere else so it is never sent as chat
+            // (which previously produced the misleading "Not connected" error).
+            const creativeFlatWorld = currentMode === 'flatworld'
+                && hostGameMode === 'flatworld'
+                && flatWorldMultiplayer !== true
+                && isHosting !== true;
+            if (!creativeFlatWorld) {
+                showNotificationBox('/fill only works in Creative Flat World.');
                 return true;
             }
             if (parts.length < 5 || parts.length > 6) {
