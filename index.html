@@ -297,7 +297,7 @@
                 <button class="shop-tab" onclick="switchShopTab('blocks', this)">🧱 Block</button>
             </div>
 
-            <div id="shop-quantity-control" style="display:flex;align-items:center;gap:10px;margin:8px 0 12px;padding:8px 10px;background:#20202b;border:1px solid #444;border-radius:7px;"><label for="shop-buy-quantity" style="font-size:13px;color:#ddd;">Buy quantity</label><select id="shop-buy-quantity" style="background:#30303d;color:white;border:1px solid #666;border-radius:5px;padding:5px;"><option value="1">1x</option><option value="5" selected>5x</option><option value="10">10x</option></select><span style="font-size:11px;color:#999;">Applies to all shop items</span></div>
+            <div id="shop-quantity-control" style="display:flex;align-items:center;gap:10px;margin:8px 0 12px;padding:8px 10px;background:#20202b;border:1px solid #444;border-radius:7px;"><label for="shop-buy-quantity" style="font-size:13px;color:#ddd;">Buy quantity</label><input id="shop-buy-quantity" type="number" inputmode="numeric" min="1" max="10" step="1" value="1" aria-label="Buy quantity" style="width:64px;background:#30303d;color:white;border:1px solid #666;border-radius:5px;padding:5px;"><span style="font-size:11px;color:#999;">Applies to all shop items</span></div>
             <div id="shop-tab-gear" class="shop-content active">
                 <div class="shop-item-card"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
                 <div class="shop-item-card"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
