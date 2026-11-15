@@ -966,6 +966,32 @@
                 bot.nextTrapAt = now + 6500;
             }
         }
+        // A newly created room starts with a clean map. This prevents blocks,
+        // traps, loot and temporary entities from leaking in from the previous match.
+        function flushPreviousMap() {
+            worldBlocks = {};
+            activeTraps = {};
+            droppedLoot = {};
+            supplyCrates = [];
+            activeVehiclesList = [];
+            activeGrenades = [];
+            floatingParticles = [];
+            bulletsList = [];
+            hostRemoteBullets = [];
+            activeSmokeClouds = [];
+            hostRemoteSmokeClouds = [];
+            activeWarpPortals = [];
+            remotePlayers = {};
+            aiBots = [];
+            bossEntity = null;
+            bossVictoryId = null;
+            bossfightTimedOut = false;
+            ctfFlags = null;
+            ctfScores = { Red: 0, Blue: 0 };
+            warpTeleportReadyAt = 0;
+            warpShotReadyAt = 0;
+        }
+
         let worldBlocks = {};
         let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, iron_ball: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0 };
         let forceBlockRotation = 0;
@@ -1597,6 +1623,7 @@
         }
 
         function applyLocalMode(localMode) {
+            flushPreviousMap();
             flatWorldMultiplayer = false;
             pendingMultiplayerFlatWorldLoad = false;
             flatWorldLoadedPlayerData = null;
@@ -1695,6 +1722,7 @@
         }
 
         function selectGameModeAndTeam(mode) {
+            flushPreviousMap();
             pendingMultiplayerFlatWorldLoad = false;
             currentMode = mode;
             hostGameMode = mode;
@@ -3305,6 +3333,8 @@
                     document.getElementById('coin-num').innerText = playerCoins;
                     showNotificationBox(`Opened Airdrop Crate (+${data.reward} 🪙)!`);
                 } else if (data.type === 'room_config') {
+                    // Clear the previous room before applying the new host snapshot.
+                    flushPreviousMap();
                     hostGameMode = data.mode || '4team';
                     if (hostGameMode === 'flatworld') {
                         flatWorldMultiplayer = true;
@@ -4210,6 +4240,12 @@
         window.addEventListener('keydown', (e) => {
             if (!inGameActive) return;
             const chatInput = document.getElementById('chat-text-input');
+            const target = e.target;
+            const typingInField = target && (
+                target.isContentEditable ||
+                /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)
+            );
+            if (typingInField && target !== chatInput) return;
             const movementKeys = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'];
             if (chatInput === document.activeElement) {
                 if (e.code === 'Enter') { e.preventDefault(); sendChatMessage(); return; }
@@ -4250,7 +4286,7 @@
             if (e.code === 'KeyX' && activeHotbar === 2) { e.preventDefault(); forceBlockRotation = (forceBlockRotation + Math.PI/4) % (Math.PI*2); showNotificationBox(selectedBuildBlock.toUpperCase()+' rotation: '+Math.round(forceBlockRotation*180/Math.PI)+'°'); }
             else if (e.code === 'KeyF') { e.preventDefault(); pickupNearbyLoot(); }
             else if (e.code === 'KeyX') pickupNearbyLoot();
-            if (e.code === 'KeyR') { e.preventDefault(); executeSelfDestruct(); }
+            if (e.code === 'KeyR' && !e.repeat) { e.preventDefault(); executeSelfDestruct(); }
             if (e.code === 'KeyJ') tryHopOnVehicle();
             if (e.code === 'KeyH') dismountVehicle();
             if (e.code === 'Space') {
