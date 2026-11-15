@@ -2086,7 +2086,22 @@
 
         function dropActiveItem() {
             const dropPos = getItemDropPosition();
-            if (activeHotbar >= 3 && activeHotbar <= 5) {
+            if (activeHotbar === 2) {
+                const blockType = selectedBuildBlock;
+                if (blockType === 'wood') {
+                    showNotificationBox('Basic wood is unlimited and cannot be dropped.');
+                    return;
+                }
+                if (!Object.prototype.hasOwnProperty.call(blockInventory, blockType) || blockInventory[blockType] <= 0) {
+                    showNotificationBox('You do not have any ' + blockType + ' blocks to drop.');
+                    return;
+                }
+                blockInventory[blockType]--;
+                spawnWorldLoot('block', blockType, dropPos.x, dropPos.y, 1);
+                if (blockInventory[blockType] <= 0) selectedBuildBlock = 'wood';
+                refreshHotbarUI();
+                showNotificationBox('Dropped ' + blockType + ' block!');
+            } else if (activeHotbar >= 3 && activeHotbar <= 5) {
                 const gunIdx = activeHotbar - 3;
                 if (weaponBarSlots[gunIdx]) {
                     spawnWorldLoot('gun', weaponBarSlots[gunIdx], dropPos.x, dropPos.y, 0);
