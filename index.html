@@ -3248,21 +3248,27 @@
             if (block && block.type && block.type !== 'wood') spawnWorldLoot('block', block.type, x, y, 1);
         }
 
+        function getConveyorAtLootPosition(item) {
+            if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) return null;
+            const gx = Math.floor(Number(item.x) / 40);
+            const gy = Math.floor(Number(item.y) / 40);
+            const block = worldBlocks[gx + ',' + gy];
+            return block && block.type === 'conveyor' ? block : null;
+        }
+
         function updateConveyorLoot() {
             // The host owns shared loot physics; practice runs locally.
             if (!isHosting && !isPractice) return;
             let movedAny = false;
             for (const lid in droppedLoot) {
                 const item = droppedLoot[lid];
-                if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) continue;
-                const gx = Math.floor(Number(item.x) / 40);
-                const gy = Math.floor(Number(item.y) / 40);
-                const belt = worldBlocks[gx + ',' + gy];
-                if (!belt || belt.type !== 'conveyor') continue;
+                const belt = getConveyorAtLootPosition(item);
+                if (!belt) continue;
                 const angle = Number(belt.angle) || 0;
-                const speed = 1.35;
-                item.x += Math.cos(angle) * speed;
-                item.y += Math.sin(angle) * speed;
+                // Move loose pickups along the belt. Keep this independent of player movement.
+                const speed = 2.0;
+                item.x = Number(item.x) + Math.cos(angle) * speed;
+                item.y = Number(item.y) + Math.sin(angle) * speed;
                 movedAny = true;
             }
             // Send moving item positions in small batches instead of broadcasting
@@ -3889,6 +3895,9 @@
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
+                // Items sitting on a conveyor belong to the belt until they leave it;
+                // don't let the nearby-pickup check instantly pull them back.
+                if (getConveyorAtLootPosition(item)) continue;
                 const dist = Math.hypot(posX - item.x, posY - item.y);
                 if (dist < 45) {
                     if (item.type === 'coin') {
