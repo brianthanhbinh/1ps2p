@@ -1538,7 +1538,7 @@
                 <button style="background:#e53935; color:#fff;" onclick="selectGameModeAndTeam('lgs')">👑 Last Guy Standing</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectGameModeAndTeam('zombie')">🧟 Zombie Survival</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Mode</button>
-                <button style="background:#607d8b;color:#fff;" onclick="beginMultiplayerFlatWorldSetup()">🌍 Flat World (Load .arena)</button>
+                <button style="background:#607d8b;color:#fff;" onclick="beginMultiplayerFlatWorldSetup()">🌍 Load Flat World (.arena)</button>
                 <button style="background:#8e24aa; color:#fff;" onclick="promptBossDifficulty()">👑 Bossfight — Co-op Raid</button>
             `;
             modal.style.display = 'flex';
@@ -4085,7 +4085,8 @@
             currentHp = Math.max(1, Math.min(survivalOnly ? 100 : 300, Number(data.hp) || 100));
             currentStamina = Math.max(0, Math.min(100, Number(data.stamina) || 100));
             playerCoins = Math.max(0, Math.floor(Number(data.coins) || 0));
-            if (survivalOnly) playerCoins = Math.min(100, playerCoins);
+            // Keep the saved coin balance in Survival worlds; mode metadata now
+            // distinguishes genuine Survival saves from legacy Creative saves.
             if (Array.isArray(data.weaponBarSlots)) weaponBarSlots = data.weaponBarSlots.slice(0, 3).map(v => typeof v === 'string' ? v : null);
             if (Array.isArray(data.backpackInventory)) backpackInventory = data.backpackInventory.slice(0, 32);
             grenadesCount = Math.max(0, Math.floor(Number(data.grenadesCount) || 0));
@@ -4174,6 +4175,11 @@
                 flatWorldLoadedPlayerData = worldFile.player && typeof worldFile.player === 'object' ? worldFile.player : null;
 
                 if (pendingMultiplayerFlatWorldLoad) {
+                    // Older .arena files predate worldMode and are treated as
+                    // Survival in multiplayer. Keep their legacy resource cap.
+                    if (!worldFile.worldMode && flatWorldLoadedPlayerData) {
+                        flatWorldLoadedPlayerData.coins = Math.min(100, Math.max(0, Number(flatWorldLoadedPlayerData.coins) || 0));
+                    }
                     pendingMultiplayerFlatWorldLoad = false;
                     flatWorldMultiplayer = true;
                     flatWorldRules = worldFile.worldMode === 'creative' ? 'creative' : 'survival';
