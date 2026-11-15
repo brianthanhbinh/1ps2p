@@ -1141,12 +1141,29 @@
                 } else if(subType==='bounce'){
                     c.fillStyle='#a65cc5';c.beginPath();c.arc(0,0,11,0,Math.PI*2);c.fill();c.strokeStyle='#f0c8ff';c.lineWidth=2;c.stroke();
                     c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(-6,2);c.quadraticCurveTo(0,-9,6,2);c.stroke();
+                } else if(subType==='freeze'){
+                    // Frosted pressure plate with a bright ice crystal: distinct from the generic trap icon.
+                    path([[-12,-7],[-7,-12],[7,-12],[12,-7],[12,7],[7,12],[-7,12],[-12,7]],'#244d67','#a9efff',1.8);
+                    c.fillStyle='#7ce8ff';c.shadowColor='#54dfff';c.shadowBlur=7;
+                    c.beginPath();c.moveTo(0,-10);c.lineTo(5,-3);c.lineTo(3,7);c.lineTo(0,11);c.lineTo(-4,4);c.lineTo(-5,-4);c.closePath();c.fill();c.shadowBlur=0;
+                    c.strokeStyle='#effcff';c.lineWidth=1.7;c.beginPath();c.moveTo(0,-8);c.lineTo(0,9);c.moveTo(-7,-3);c.lineTo(7,4);c.moveTo(7,-3);c.lineTo(-7,4);c.stroke();
+                    c.fillStyle='#e8fbff';c.beginPath();c.arc(0,0,2,0,Math.PI*2);c.fill();
                 } else {
                     path([[-12,-5],[-8,-10],[8,-10],[12,-5],[8,8],[-8,8]],'#303d46');
                 }
             } else if(itemType==='grenade'){
-                path([[-6,-5],[-4,-11],[4,-11],[7,-5],[8,7],[4,12],[-4,12],[-8,7]],'#477d43');c.strokeStyle='#b7d69a';c.lineWidth=1.2;c.beginPath();c.moveTo(-4,-5);c.lineTo(-3,7);c.stroke();
-                path([[-3,-12],[-2,-16],[3,-16],[4,-11]],'#c4cdd1');c.strokeStyle='#d5b35d';c.lineWidth=2;c.beginPath();c.moveTo(3,-15);c.lineTo(8,-18);c.stroke();
+                // Classic ribbed fragmentation grenade silhouette, not a smooth bottle shape.
+                c.save();c.rotate(-.16);
+                c.fillStyle='#3d6b36';c.strokeStyle='#172b20';c.lineWidth=1.7;
+                c.beginPath();c.ellipse(0,2,9.5,12,0,0,Math.PI*2);c.fill();c.stroke();
+                c.fillStyle='#628b42';c.beginPath();c.ellipse(-2,-3,5.5,7,0,0,Math.PI*2);c.fill();
+                c.strokeStyle='#9fbd70';c.lineWidth=1.5;
+                for(let y=-7;y<=10;y+=4){c.beginPath();c.moveTo(-8,y);c.quadraticCurveTo(0,y+2,8,y);c.stroke();}
+                c.fillStyle='#8d9ba0';c.strokeStyle='#26343a';c.lineWidth=1.2;c.fillRect(-3.5,-13,7,4);c.strokeRect(-3.5,-13,7,4);
+                c.fillStyle='#b8c4c8';c.fillRect(-2.5,-16,5,4);c.strokeRect(-2.5,-16,5,4);
+                c.strokeStyle='#d7b65e';c.lineWidth=2;c.beginPath();c.moveTo(2,-14);c.lineTo(8,-17);c.lineTo(9,-11);c.stroke();
+                c.strokeStyle='#c9d2d5';c.lineWidth=1.8;c.beginPath();c.arc(10,-17,3,0,Math.PI*2);c.stroke();
+                c.restore();
             } else if(itemType==='bandage'){
                 c.save();c.rotate(-.35);c.fillStyle='#f1e8d7';c.strokeStyle='#a8a39b';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-7,24,14,3);c.fill();c.stroke();c.fillStyle='#d64c4c';c.fillRect(-2,-6,4,12);c.fillRect(-6,-2,12,4);
                 for(let x=-8;x<=8;x+=5){c.fillStyle='#d1c7b7';c.beginPath();c.arc(x,0,.8,0,Math.PI*2);c.fill();}c.restore();
@@ -3909,7 +3926,8 @@
         }
 
         function triggerWeaponAttack(clickX, clickY) {
-            if (checkInsideBase(posX, posY, playerTeam)) {
+            // Safe zones disable combat, but building and trap placement must remain available.
+            if (activeHotbar !== 2 && activeHotbar !== 9 && checkInsideBase(posX, posY, playerTeam)) {
                 showNotificationBox('Shooting/Attacking disabled inside Base Safe Zone!');
                 return;
             }
@@ -5528,14 +5546,19 @@
             }
 
             activeGrenades.forEach(g => {
-                const grenadePng = assetRegistry['grenade'];
-                if (grenadePng && grenadePng.complete && grenadePng.naturalWidth > 0) {
-                    ctx.drawImage(grenadePng, g.x - 8, g.y - 8, 16, 16);
-                } else {
-                    ctx.fillStyle = '#388e3c';
-                    ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
-                }
+                // Match the inventory's ribbed fragmentation-grenade art in the world.
+                const angle = Math.atan2(g.vy || 0, g.vx || 1);
+                ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(angle + Math.PI / 2); ctx.scale(.72, .72);
+                ctx.fillStyle = '#3d6b36'; ctx.strokeStyle = '#172b20'; ctx.lineWidth = 1.7;
+                ctx.beginPath(); ctx.ellipse(0, 2, 9.5, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#628b42'; ctx.beginPath(); ctx.ellipse(-2, -3, 5.5, 7, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#9fbd70'; ctx.lineWidth = 1.5;
+                for (let y = -7; y <= 10; y += 4) { ctx.beginPath(); ctx.moveTo(-8, y); ctx.quadraticCurveTo(0, y + 2, 8, y); ctx.stroke(); }
+                ctx.fillStyle = '#8d9ba0'; ctx.strokeStyle = '#26343a'; ctx.lineWidth = 1.2; ctx.fillRect(-3.5, -13, 7, 4); ctx.strokeRect(-3.5, -13, 7, 4);
+                ctx.fillStyle = '#b8c4c8'; ctx.fillRect(-2.5, -16, 5, 4); ctx.strokeRect(-2.5, -16, 5, 4);
+                ctx.strokeStyle = '#d7b65e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(2, -14); ctx.lineTo(8, -17); ctx.lineTo(9, -11); ctx.stroke();
+                ctx.strokeStyle = '#c9d2d5'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(10, -17, 3, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
             });
 
             floatingParticles.forEach(fp => {
