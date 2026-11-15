@@ -288,6 +288,7 @@
                 <div class="shop-item-card"><span>Ricochet Cannon</span><div><b style="color:#ffca28;">700 🪙</b> <button onclick="buyStoreItem('gun', 'ricochet', 700)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Gravity Projector</span><div><b style="color:#ffca28;">1250 🪙</b> <button onclick="buyStoreItem('gun', 'gravity', 1250)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Sonic Emitter</span><div><b style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItem('gun', 'sonic', 1050)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('gun', 'warp', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div>
@@ -687,8 +688,10 @@
         let backpackInventory = new Array(32).fill(null);
 
         let currentAmmo = 10, maxAmmo = 10, isReloading = false;
-        const ammoCapacity = {pistol:12,smg:30,ak:30,shotgun:8,sniper:5,rocket:4,minigun:100,laser:24,plasma:20,flame:60,burst:24,freeze:18,ricochet:18,gravity:12,sonic:20};
+        const ammoCapacity = {pistol:12,smg:30,ak:30,shotgun:8,sniper:5,rocket:4,minigun:100,laser:24,plasma:20,flame:60,burst:24,freeze:18,ricochet:18,gravity:12,sonic:20,warp:2};
         const ammoByWeapon = {};
+        let activeWarpPortals = [];
+        let warpTeleportReadyAt = 0;
         let deathLootDropped = false;
         function getAmmoCapacity(w){return ammoCapacity[w]||10;}
         function saveSelectedAmmo(){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;if(w)ammoByWeapon[w]=currentAmmo;}
@@ -1950,7 +1953,7 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
+            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -3599,6 +3602,7 @@
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
             if(!w||isReloading)return;
             isReloading=true;refreshAmmoHud();showNotificationBox('Reloading weapon...');
+            if(w==='warp'){activeWarpPortals=[];warpTeleportReadyAt=0;}
             setTimeout(()=>{ammoByWeapon[w]=getAmmoCapacity(w);if(w===weaponBarSlots[activeHotbar-3]){currentAmmo=ammoByWeapon[w];maxAmmo=getAmmoCapacity(w);}isReloading=false;refreshAmmoHud();showNotificationBox('Reload complete!');},w==='rocket'||w==='sniper'?1300:900);
         }
 
@@ -3942,6 +3946,15 @@
                     currentAmmo--;
                     saveSelectedAmmo();
                     refreshAmmoHud();
+                    if (gunEquipped === 'warp') {
+                        activeWarpPortals.push({x:targetWorldX,y:targetWorldY,createdAt:Date.now()});
+                        if (activeWarpPortals.length >= 2) {
+                            activeWarpPortals = activeWarpPortals.slice(-2);
+                            showNotificationBox('🌀 Portal pair activated! Walk into either portal to warp. Reload to close them.');
+                        } else {
+                            showNotificationBox('First portal placed. Fire your second shot to activate the pair!');
+                        }
+                    } else {
                     const bulletCount = gunEquipped === 'shotgun' ? 4 : gunEquipped === 'burst' ? 5 : gunEquipped === 'sonic' ? 1 : 1;
                     const projectileSpeed = gunEquipped === 'laser' ? 30 : gunEquipped === 'plasma' ? 12 : gunEquipped === 'flame' ? 9 : gunEquipped === 'freeze' ? 13 : gunEquipped === 'rocket' ? 13 : gunEquipped === 'sniper' ? 25 : gunEquipped === 'ak' ? 20 : gunEquipped === 'gravity' ? 11 : gunEquipped === 'sonic' ? 15 : 18;
                     for (let bIdx = 0; bIdx < bulletCount; bIdx++) {
@@ -3965,7 +3978,8 @@
                     if (gunEquipped === 'ricochet') cdTime = 260;
                     if (gunEquipped === 'gravity') cdTime = 650;
                     if (gunEquipped === 'sonic') cdTime = 420;
-
+                    if (gunEquipped === 'warp') cdTime = 350;
+                    }
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
                 }
             }
@@ -4190,6 +4204,19 @@
         function updateGameLogic() {
             if (!inGameActive) return;
             updatePushableBalls();
+            if (activeWarpPortals.length === 2 && Date.now() >= warpTeleportReadyAt) {
+                const [portalA, portalB] = activeWarpPortals;
+                let destination = null;
+                if (Math.hypot(posX - portalA.x, posY - portalA.y) < 24) destination = portalB;
+                else if (Math.hypot(posX - portalB.x, posY - portalB.y) < 24) destination = portalA;
+                if (destination) {
+                    posX = destination.x + (destination.x - (posX));
+                    posY = destination.y + (destination.y - (posY));
+                    playerMomentumX *= 0.65; playerMomentumY *= 0.65;
+                    warpTeleportReadyAt = Date.now() + 900;
+                    floatingParticles.push({x:posX,y:posY,radius:8,maxRadius:48,alpha:1,isShockwave:true});
+                }
+            }
             if ((isHosting || isPractice) && nextAirdropAt && Date.now() >= nextAirdropAt) triggerAirdropSpawn();
             refreshAmmoHud();
             updateAirdropHud();
