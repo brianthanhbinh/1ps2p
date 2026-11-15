@@ -1590,6 +1590,7 @@
             currentMode = mode;
             hostGameMode = mode;
             flatWorldMultiplayer = false;
+            flatWorldRules = 'creative';
             flatWorldLoadedPlayerData = null;
             MAP_SIZE = STANDARD_MAP_SIZE;
             if (mode === 'ctf') {
@@ -2362,7 +2363,7 @@
 
         function beginBaseLockout() {
             const activeMode = isHosting ? currentMode : hostGameMode;
-            if (activeMode === 'creative') return;
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) return;
             if (selfDestructCountdown > 0) return;
             selfDestructCountdown = 30;
             baseLockedOut = true;
@@ -2953,8 +2954,10 @@
                 } else if (data.type === 'respawn_request') {
                     const player = remotePlayers[conn.peer];
                     if (player) {
-                        const spawn = getTeamSpawnCoords(currentMode === 'bossfight' ? 'Raiders' : player.team);
-                        player.x = spawn.x; player.y = spawn.y; player.hp = currentMode === 'creative' ? 300 : 100; player.maxHp = player.hp;
+                        const spawn = currentMode === 'flatworld'
+                            ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
+                            : getTeamSpawnCoords(currentMode === 'bossfight' ? 'Raiders' : player.team);
+                        player.x = spawn.x; player.y = spawn.y; player.hp = (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100; player.maxHp = player.hp;
                         player.burningUntil = 0; player.nextBurnTick = 0;
                         conn.send({ type: 'respawn_confirm', x: spawn.x, y: spawn.y, hp: player.hp });
                         broadcastStateToClients();
@@ -3241,7 +3244,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -4282,8 +4285,9 @@
         function executeCoinDrop() {
             const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
             const activeMode = isHosting ? currentMode : hostGameMode;
-            if (amountVal > 0 && (activeMode === 'creative' || amountVal <= playerCoins)) {
-                if (activeMode !== 'creative') {
+            const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
+            if (amountVal > 0 && (creativeRules || amountVal <= playerCoins)) {
+                if (!creativeRules) {
                     playerCoins -= amountVal;
                     document.getElementById('coin-num').innerText = playerCoins;
                 }
@@ -4467,7 +4471,7 @@
                 }
                 if (worldBlocks[bKey]) { showNotificationBox('There is already a block there!'); return; }
                 const maxHp = buildStats[buildType] || 100;
-                const newBlock = { type: buildType, hp: activeMode === 'creative' && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, angle: forceBlockRotation, ...(buildType === 'ball' ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
+                const newBlock = { type: buildType, hp: (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, angle: forceBlockRotation, ...(buildType === 'ball' ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
                 worldBlocks[bKey] = newBlock;
                 if (buildType !== 'wood') {
                     blockInventory[buildType]--;
