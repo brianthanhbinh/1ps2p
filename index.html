@@ -5113,9 +5113,6 @@
                 if(directional){ctx.shadowColor='#00eaff';ctx.shadowBlur=14;ctx.fillStyle='#cfffff';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-7,-11);ctx.lineTo(-7,11);ctx.closePath();ctx.fill();ctx.shadowBlur=0;}
                 else if(selectedBuildBlock==='oneway'){ctx.shadowColor='#54cfff';ctx.shadowBlur=8;ctx.fillStyle='#83ddff';ctx.fillRect(-18,-4,36,8);ctx.shadowBlur=0;ctx.fillStyle='#eafaff';ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(-6,-6);ctx.lineTo(6,-6);ctx.closePath();ctx.fill();}
                 else {ctx.strokeStyle='#fff1b5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-10,0);ctx.lineTo(10,0);ctx.moveTo(6,-4);ctx.lineTo(10,0);ctx.lineTo(6,4);ctx.stroke();}
-                const trapHpRatio=Math.max(0,Math.min(1,(Number(tr.hp)||120)/(Number(tr.maxHp)||120)));
-                ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(tr.x-19,tr.y+22,38,5);
-                ctx.fillStyle=trapHpRatio>.5?'#4caf50':trapHpRatio>.25?'#ffca28':'#e53935';ctx.fillRect(tr.x-19,tr.y+22,38*trapHpRatio,5);
                 ctx.restore();
             }
 
