@@ -1647,14 +1647,14 @@
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
-            if (activeMode === 'creative') {
+            if (activeMode === 'creative' || activeMode === 'flatworld') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = activeMode === 'creative' ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (activeMode === 'creative' || activeMode === 'flatworld') ? '∞' : playerCoins;
 
             currentStamina = 100;
             baseLockedOut = false;
@@ -3879,7 +3879,7 @@
             if (!name) return;
             try {
                 const saves = getFlatWorldSaves();
-                saves[name] = { version: 1, blocks: worldBlocks, savedAt: Date.now() };
+                saves[name] = { version: 1, blocks: worldBlocks, traps: activeTraps, savedAt: Date.now() };
                 localStorage.setItem(FLAT_WORLD_SAVES_KEY, JSON.stringify(saves));
                 showNotificationBox('Saved map: ' + name);
             } catch (e) { showNotificationBox('Could not save map. Browser storage may be full.'); }
@@ -3895,6 +3895,7 @@
             if (!save || !save.blocks || typeof save.blocks !== 'object') { showNotificationBox('Map not found or save is invalid.'); return; }
             try {
                 worldBlocks = JSON.parse(JSON.stringify(save.blocks));
+                activeTraps = save.traps && typeof save.traps === 'object' ? JSON.parse(JSON.stringify(save.traps)) : {};
                 showNotificationBox('Loaded map: ' + name);
             } catch (_) { showNotificationBox('Could not load that map.'); }
         }
@@ -4558,7 +4559,7 @@
             updateAirdropHud();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            if (activeMode === 'creative') {
+            if (activeMode === 'creative' || activeMode === 'flatworld') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
                 currentStamina = 100;
