@@ -3741,9 +3741,19 @@
         // Flat World build command: /fill x1 y1 x2 y2 [block]
         // Coordinates are block-grid coordinates (each block is 40 world units).
         function runFlatWorldCommand(commandText) {
-            if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return false;
-            const parts = String(commandText || '').trim().split(/\\s+/);
+            const parts = String(commandText || '').trim().split(/\s+/);
             if (parts[0]?.toLowerCase() !== '/fill') return false;
+
+            // Multiplayer clients may retain the normal currentMode value,
+            // so also recognize the shared Flat World flag and map size.
+            const inFlatWorld = currentMode === 'flatworld'
+                || hostGameMode === 'flatworld'
+                || flatWorldMultiplayer === true
+                || MAP_SIZE === FLAT_WORLD_SIZE;
+            if (!inFlatWorld) {
+                showNotificationBox('/fill only works in Flat World.');
+                return true;
+            }
             if (parts.length < 5 || parts.length > 6) {
                 showNotificationBox('Usage: /fill x1 y1 x2 y2 [block]');
                 return true;
