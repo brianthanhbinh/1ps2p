@@ -160,6 +160,32 @@
          .block-choice.selected { border:2px solid #69d8ff; background:#203944; }
          .block-choice canvas { width:32px; height:32px; }
          .block-choice small { color:#8de5ff; font-size:10px; }
+        /* Wider block picker: show more choices per row so it covers less of the arena. */
+        #block-picker {
+            width: min(420px, calc(100vw - 16px));
+            max-height: min(54dvh, 390px);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+            padding: 9px;
+        }
+        .block-choice {
+            min-width: 0;
+            min-height: 72px;
+            font-size: 11px;
+            gap: 2px;
+        }
+        .block-choice canvas { width: 38px; height: 38px; }
+        @media (hover:none) and (pointer:coarse) {
+            #block-picker {
+                width: min(390px, calc(100vw - 16px));
+                max-height: min(48dvh, 340px);
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 5px;
+                padding: 7px;
+            }
+            .block-choice { min-height: 64px; font-size: 10px; }
+            .block-choice canvas { width: 34px; height: 34px; }
+        }
          .trap-choice { min-height:62px; background:#252b32; color:#fff; border:1px solid #59636d; border-radius:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:10px; cursor:pointer; touch-action:manipulation; padding:3px; }
         .trap-choice.selected { border:2px solid #ffca28; background:#3b3524; }
         .trap-choice canvas { width:32px; height:32px; }
