@@ -5243,7 +5243,15 @@
                     continue;
                 }
                 const style=styles[blk.type]||styles.wood;
-                ctx.save();ctx.fillStyle=style[0];ctx.strokeStyle=style[1];ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(bx+2,by+2,36,36,7);ctx.fill();ctx.stroke();
+                ctx.save();
+                // Rotate the block's outer silhouette around its center as well as
+                // its directional artwork, so the outline follows the placed block.
+                ctx.translate(bx+20, by+20);
+                ctx.rotate(Number(blk.angle) || 0);
+                ctx.fillStyle=style[0];ctx.strokeStyle=style[1];ctx.lineWidth=2;
+                ctx.beginPath();ctx.roundRect(-18,-18,36,36,7);ctx.fill();ctx.stroke();
+                ctx.restore();
+                ctx.save();
                 if(blk.type==='metal'){ctx.strokeStyle='#c4e8f7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+9,by+8);ctx.lineTo(bx+31,by+32);ctx.moveTo(bx+31,by+8);ctx.lineTo(bx+9,by+32);ctx.stroke();ctx.fillStyle='#d9f3ff';for(const [sx,sy] of [[8,8],[32,8],[8,32],[32,32]]){ctx.beginPath();ctx.arc(bx+sx,by+sy,2,0,Math.PI*2);ctx.fill();}}
                 else if(blk.type==='reinforced'){ctx.strokeStyle='#e1e6eb';ctx.lineWidth=3;ctx.strokeRect(bx+9,by+9,22,22);ctx.beginPath();ctx.moveTo(bx+8,by+20);ctx.lineTo(bx+32,by+20);ctx.stroke();}
                 else if(blk.type==='healing'){ctx.fillStyle='#d9ffe8';ctx.fillRect(bx+17,by+8,6,24);ctx.fillRect(bx+8,by+17,24,6);ctx.shadowColor='#46ff9a';ctx.shadowBlur=9;ctx.strokeStyle='#8affb9';ctx.strokeRect(bx+3,by+3,34,34);ctx.shadowBlur=0;}
