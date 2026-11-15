@@ -245,6 +245,11 @@
         #friend-settings { display:none; border-top:1px solid #555; margin-top:8px; padding-top:8px; }
         #friend-settings.active { display:block; }
         #friend-manager-overlay { display:none; position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.72); align-items:center; justify-content:center; padding:16px; }
+        body.friend-manager-standalone { margin:0; min-width:320px; min-height:100vh; overflow:hidden; background:#080d15; }
+        body.friend-manager-standalone > :not(#friend-manager-overlay) { display:none !important; }
+        body.friend-manager-standalone #friend-manager-overlay { display:flex !important; position:fixed !important; inset:0 !important; padding:12px !important; background:#080d15 !important; }
+        body.friend-manager-standalone #friend-manager-window { width:100% !important; max-width:560px !important; max-height:calc(100vh - 24px) !important; }
+
         #friend-manager-overlay.active { display:flex !important; z-index:999999 !important; pointer-events:auto !important; }
         #friend-manager-window { position:relative; z-index:1000000; pointer-events:auto; }
         #friend-manager-header { position:sticky; top:-16px; z-index:5; background:#111925; padding-top:4px; }
@@ -1803,6 +1808,12 @@
             setupSkinDrawing();
             setupSkinFileUpload();
             initializeFriendsSystem();
+            if (new URLSearchParams(window.location.search).get('friendManagerWindow') === '1') {
+                document.title = '1PS2P - Friends';
+                document.body.classList.add('friend-manager-standalone');
+                openFriendManager();
+                return;
+            }
             const hash = window.location.hash.substring(1);
             if (hash) {
                 const parts = hash.split('%');
@@ -3463,6 +3474,14 @@
         let localChatBubbleUntil = 0;
 
         function openFriendManager() {
+            const standaloneWindow = new URLSearchParams(window.location.search).get('friendManagerWindow') === '1';
+            if (!standaloneWindow) {
+                // Open a dedicated desktop window. If popups are blocked, keep the in-page manager as a fallback.
+                const popupUrl = new URL(window.location.href);
+                popupUrl.searchParams.set('friendManagerWindow', '1');
+                const popup = window.open(popupUrl.toString(), '1ps2p-friend-manager', 'popup=yes,width=480,height=680,resizable=yes,scrollbars=yes');
+                if (popup) { popup.focus(); return; }
+            }
             const overlay = document.getElementById('friend-manager-overlay');
             const windowEl = document.getElementById('friend-manager-window');
             // Move the popup out of game/canvas stacking contexts.
@@ -3511,6 +3530,10 @@
         }
 
         function closeFriendManager() {
+            if (new URLSearchParams(window.location.search).get('friendManagerWindow') === '1') {
+                window.close();
+                return;
+            }
             const overlay = document.getElementById('friend-manager-overlay');
             if (overlay) {
                 overlay.classList.remove('active');
@@ -3520,6 +3543,24 @@
 
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') closeFriendManager();
+        });
+
+        // Keep the two browser windows' saved friend data in sync.
+        window.addEventListener('storage', event => {
+            try {
+                if (event.key === FRIENDS_KEY) {
+                    friends = JSON.parse(event.newValue || '[]');
+                    if (!Array.isArray(friends)) friends = [];
+                    renderFriendsList();
+                } else if (event.key === 'arena_friend_messages_v1') {
+                    friendMessages = JSON.parse(event.newValue || '{}');
+                    if (!friendMessages || typeof friendMessages !== 'object') friendMessages = {};
+                    renderFriendsList();
+                } else if (event.key === DEVICE_PREFIX_KEY) {
+                    const prefixField = document.getElementById('device-id-prefix');
+                    if (prefixField) prefixField.value = event.newValue || '';
+                }
+            } catch (_) {}
         });
 
         function switchChatTab(channel) {
