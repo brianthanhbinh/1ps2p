@@ -5599,21 +5599,19 @@
                 ctx.beginPath(); ctx.moveTo(gridLeft, gy); ctx.lineTo(gridRight, gy); ctx.stroke();
             }
 
-            // Standard arenas have a clearly visible square edge. Flat World intentionally
-            // has no visible border because its playable area is enormous and centered at 0,0.
+            // Arras-style arena boundary: a solid, dark wall-like outline.
+            // Flat World intentionally remains borderless.
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') {
                 ctx.save();
-                ctx.shadowColor = '#ff5252';
-                ctx.shadowBlur = 22 / cameraZoom;
-                ctx.strokeStyle = '#ff5252';
-                ctx.lineWidth = 10 / cameraZoom;
+                ctx.shadowColor = 'rgba(0,0,0,0.65)';
+                ctx.shadowBlur = 12 / cameraZoom;
+                ctx.strokeStyle = '#171b20';
+                ctx.lineWidth = 14 / cameraZoom;
                 ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
                 ctx.shadowBlur = 0;
-                ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-                ctx.lineWidth = 2 / cameraZoom;
-                ctx.setLineDash([18 / cameraZoom, 10 / cameraZoom]);
+                ctx.strokeStyle = '#303840';
+                ctx.lineWidth = 3 / cameraZoom;
                 ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-                ctx.setLineDash([]);
                 ctx.restore();
             }
 
