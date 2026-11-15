@@ -345,62 +345,62 @@
                 <button class="shop-tab" onclick="switchShopTab('blocks', this)">🧱 Block</button>
             </div>
 
-            <div id="shop-quantity-control" style="display:flex;align-items:center;gap:10px;margin:8px 0 12px;padding:8px 10px;background:#20202b;border:1px solid #444;border-radius:7px;"><label for="shop-buy-quantity" style="font-size:13px;color:#ddd;">Buy quantity</label><input id="shop-buy-quantity" type="number" inputmode="numeric" min="1" max="10" step="1" value="1" aria-label="Buy quantity" style="width:64px;background:#30303d;color:white;border:1px solid #666;border-radius:5px;padding:5px;"><span style="font-size:11px;color:#999;">Applies to all shop items</span></div>
+            <div id="shop-quantity-control" style="display:flex;align-items:center;gap:10px;margin:8px 0 12px;padding:8px 10px;background:#20202b;border:1px solid #444;border-radius:7px;"><label for="shop-buy-quantity" style="font-size:13px;color:#ddd;">Buy quantity</label><input id="shop-buy-quantity" type="number" inputmode="numeric" min="1" step="1" value="1" aria-label="Buy quantity" style="width:64px;background:#30303d;color:white;border:1px solid #666;border-radius:5px;padding:5px;"><span style="font-size:11px;color:#999;">Applies to all shop items</span></div>
             <div id="shop-tab-gear" class="shop-content active">
-                <div class="shop-item-card"><span>Pistol</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
-                <div class="shop-item-card"><span>SMG</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
-                <div class="shop-item-card"><span>AK-47</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('gun', 'ak', 260)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Shotgun</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Sniper Rifle</span><div><b style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Rocket Launcher</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 900)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Minigun</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('gun', 'minigun', 600)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Laser Rifle</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Plasma Blaster</span><div><b style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Flamethrower</span><div><b style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Burst Carbine</span><div><b style="color:#ffca28;">850 🪙</b> <button onclick="buyStoreItem('gun', 'burst', 850)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Freeze Blaster</span><div><b style="color:#ffca28;">950 🪙</b> <button onclick="buyStoreItem('gun', 'freeze', 950)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Ricochet Cannon</span><div><b style="color:#ffca28;">700 🪙</b> <button onclick="buyStoreItem('gun', 'ricochet', 700)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Gravity Projector</span><div><b style="color:#ffca28;">1250 🪙</b> <button onclick="buyStoreItem('gun', 'gravity', 1250)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Sonic Emitter</span><div><b style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItem('gun', 'sonic', 1050)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('gun', 'warp', 1500)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
-                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('consumable', 'teleport_orb', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Pistol</span><div><b class="shop-price" data-base-price="50" style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('gun', 'pistol', 50)">Buy</button></div></div>
+                <div class="shop-item-card"><span>SMG</span><div><b class="shop-price" data-base-price="120" style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('gun', 'smg', 120)">Buy</button></div></div>
+                <div class="shop-item-card"><span>AK-47</span><div><b class="shop-price" data-base-price="260" style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('gun', 'ak', 260)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Shotgun</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('gun', 'shotgun', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Sniper Rifle</span><div><b class="shop-price" data-base-price="300" style="color:#ffca28;">300 🪙</b> <button onclick="buyStoreItem('gun', 'sniper', 300)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Rocket Launcher</span><div><b class="shop-price" data-base-price="900" style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'rocket', 900)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Minigun</span><div><b class="shop-price" data-base-price="600" style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('gun', 'minigun', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Laser Rifle</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('gun', 'laser', 750)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Plasma Blaster</span><div><b class="shop-price" data-base-price="900" style="color:#ffca28;">900 🪙</b> <button onclick="buyStoreItem('gun', 'plasma', 900)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Flamethrower</span><div><b class="shop-price" data-base-price="1100" style="color:#ffca28;">1100 🪙</b> <button onclick="buyStoreItem('gun', 'flame', 1100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Burst Carbine</span><div><b class="shop-price" data-base-price="850" style="color:#ffca28;">850 🪙</b> <button onclick="buyStoreItem('gun', 'burst', 850)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Freeze Blaster</span><div><b class="shop-price" data-base-price="950" style="color:#ffca28;">950 🪙</b> <button onclick="buyStoreItem('gun', 'freeze', 950)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Ricochet Cannon</span><div><b class="shop-price" data-base-price="700" style="color:#ffca28;">700 🪙</b> <button onclick="buyStoreItem('gun', 'ricochet', 700)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Gravity Projector</span><div><b class="shop-price" data-base-price="1250" style="color:#ffca28;">1250 🪙</b> <button onclick="buyStoreItem('gun', 'gravity', 1250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Sonic Emitter</span><div><b class="shop-price" data-base-price="1050" style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItem('gun', 'sonic', 1050)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b class="shop-price" data-base-price="1500" style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('gun', 'warp', 1500)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b class="shop-price" data-base-price="60" style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
+                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('consumable', 'teleport_orb', 90)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-traps" class="shop-content">
-                <div class="shop-item-card"><span>Spike Trap Pack (+2)</span><div><b style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Freeze Trap Pack (+2)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'freeze', 150)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div><div class="shop-item-card"><span>🕳️ Blackhole Trap (+1) — pulls in nearby enemies, takes their nearby loot, then reappears after 15s</span><div><b style="color:#ffca28;">2,500 🪙</b> <button onclick="buyStoreItem('trap', 'blackhole', 2500)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Warp Trap (+1) — teleports an enemy to a random nearby location</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'warp', 100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Spike Trap Pack (+2)</span><div><b class="shop-price" data-base-price="50" style="color:#ffca28;">50 🪙</b> <button onclick="buyStoreItem('trap', 'spike', 50)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b class="shop-price" data-base-price="80" style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b class="shop-price" data-base-price="120" style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b class="shop-price" data-base-price="160" style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b class="shop-price" data-base-price="135" style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Freeze Trap Pack (+2)</span><div><b class="shop-price" data-base-price="150" style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'freeze', 150)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b class="shop-price" data-base-price="115" style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div><div class="shop-item-card"><span>🕳️ Blackhole Trap (+1) — pulls in nearby enemies, takes their nearby loot, then reappears after 15s</span><div><b class="shop-price" data-base-price="2500" style="color:#ffca28;">2,500 🪙</b> <button onclick="buyStoreItem('trap', 'blackhole', 2500)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Warp Trap (+1) — teleports an enemy to a random nearby location</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'warp', 100)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
-                <div class="shop-item-card"><span>🚲 Fast Bike (Cap: 1 | +15% Spd)</span><div><b style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +50% Spd)</span><div><b style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚲 Fast Bike (Cap: 1 | +15% Spd)</span><div><b class="shop-price" data-base-price="250" style="color:#ffca28;">250 🪙</b> <button onclick="buyStoreItem('vehicle', 'bike', 250)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏎️ Combat Car (Cap: 2 | +50% Spd)</span><div><b class="shop-price" data-base-price="600" style="color:#ffca28;">600 🪙</b> <button onclick="buyStoreItem('vehicle', 'car', 600)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛡️ Heavy Tank (Cap: 3 | Armor)</span><div><b class="shop-price" data-base-price="1200" style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItem('vehicle', 'tank', 1200)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🚀 Hovercraft (Cap: 2 | Float)</span><div><b class="shop-price" data-base-price="1500" style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('vehicle', 'hovercraft', 1500)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🦾 Mech Walker (Cap: 1 | Heavy Turret)</span><div><b class="shop-price" data-base-price="2200" style="color:#ffca28;">2200 🪙</b> <button onclick="buyStoreItem('vehicle', 'mech', 2200)">Buy</button></div></div>
             </div>
             <div id="shop-tab-blocks" class="shop-content">
-                <div class="shop-item-card"><span>🪨 Reinforced Block (220 HP)</span><div><b style="color:#ffca28;">45 🪙</b> <button onclick="buyStoreItem('block', 'reinforced', 45)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🛑 Stop Block (300 HP · stops movement)</span><div><b style="color:#ffca28;">220 🪙</b> <button onclick="buyStoreItem('block', 'stop', 220)">Buy</button></div></div><div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItem('block', 'healing', 1000)">Buy</button></div></div>
-                <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'obsidian', 180)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItem('block', 'glass', 35)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('block', 'bounce', 100)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧊 Ice Block (260 HP)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ice', 75)">Buy</button></div></div>
-                <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItem('block', 'crystal', 125)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
-                <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ball', 75)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧲 Magnet Ball + (attracts opposite, repels same)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_plus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Ball − (attracts opposite, repels same)</span><div><b style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_minus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block + (affects magnet balls)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_plus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block − (affects magnet balls)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_minus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force III (power launcher)</span><div><b style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItem('block', 'force3', 380)">Buy</button></div></div>
-                <div class="shop-item-card"><span>↧ One-Way Block (pass from below)</span><div><b style="color:#ffca28;">85 🪙</b> <button onclick="buyStoreItem('block', 'oneway', 85)">Buy</button></div></div>
-                <div class="shop-item-card"><span>☠ Damage Block (hurts on touch)</span><div><b style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'damage', 140)">Buy</button></div></div>
-                <div class="shop-item-card"><span>➡ Conveyor Block (pushes in its arrow direction)</span><div><b style="color:#ffca28;">220 🪙</b> <button onclick="buyStoreItem('block', 'conveyor', 220)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🟤 Mud Block (slows players)</span><div><b style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'mud', 240)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🪨 Reinforced Block (220 HP)</span><div><b class="shop-price" data-base-price="45" style="color:#ffca28;">45 🪙</b> <button onclick="buyStoreItem('block', 'reinforced', 45)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛑 Stop Block (300 HP · stops movement)</span><div><b class="shop-price" data-base-price="220" style="color:#ffca28;">220 🪙</b> <button onclick="buyStoreItem('block', 'stop', 220)">Buy</button></div></div><div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b class="shop-price" data-base-price="1000" style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItem('block', 'healing', 1000)">Buy</button></div></div>
+                <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'obsidian', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b class="shop-price" data-base-price="35" style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItem('block', 'glass', 35)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('block', 'bounce', 100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧊 Ice Block (260 HP)</span><div><b class="shop-price" data-base-price="75" style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ice', 75)">Buy</button></div></div>
+                <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b class="shop-price" data-base-price="125" style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItem('block', 'crystal', 125)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b class="shop-price" data-base-price="240" style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'bunker', 240)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'force', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b class="shop-price" data-base-price="75" style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItem('block', 'ball', 75)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧲 Magnet Ball + (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_plus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Ball − (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItem('block', 'magnet_ball_minus', 110)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block + (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_plus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block − (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'magnet_minus', 140)">Buy</button></div></div><div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b class="shop-price" data-base-price="260" style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItem('block', 'force2', 260)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force III (power launcher)</span><div><b class="shop-price" data-base-price="380" style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItem('block', 'force3', 380)">Buy</button></div></div>
+                <div class="shop-item-card"><span>↧ One-Way Block (pass from below)</span><div><b class="shop-price" data-base-price="85" style="color:#ffca28;">85 🪙</b> <button onclick="buyStoreItem('block', 'oneway', 85)">Buy</button></div></div>
+                <div class="shop-item-card"><span>☠ Damage Block (hurts on touch)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItem('block', 'damage', 140)">Buy</button></div></div>
+                <div class="shop-item-card"><span>➡ Conveyor Block (pushes in its arrow direction)</span><div><b class="shop-price" data-base-price="220" style="color:#ffca28;">220 🪙</b> <button onclick="buyStoreItem('block', 'conveyor', 220)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🟤 Mud Block (slows players)</span><div><b class="shop-price" data-base-price="240" style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItem('block', 'mud', 240)">Buy</button></div></div>
             </div>
 
             <button style="width:100%; margin-top:14px; background:#e53935; color:#fff; border:none; padding:9px; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="toggleShopPanel()">Close</button>
@@ -2373,17 +2373,35 @@
         }
 
         const buyStoreItemSingle = buyStoreItem;
+        function getShopBuyQuantity() {
+            const raw = Number(document.getElementById('shop-buy-quantity')?.value);
+            return Number.isSafeInteger(raw) && raw > 0 ? Math.min(raw, 1000000) : 1;
+        }
+        function updateShopPrices() {
+            const quantity = getShopBuyQuantity();
+            document.querySelectorAll('.shop-price[data-base-price]').forEach(el => {
+                const base = Number(el.dataset.basePrice);
+                if (!Number.isFinite(base)) return;
+                el.innerText = quantity === 1
+                    ? `${base.toLocaleString()} 🪙`
+                    : `${base.toLocaleString()} × ${quantity.toLocaleString()} = ${(base * quantity).toLocaleString()} 🪙`;
+            });
+        }
+        const shopQuantityInput = document.getElementById('shop-buy-quantity');
+        if (shopQuantityInput) shopQuantityInput.addEventListener('input', updateShopPrices);
+        updateShopPrices();
         function buyStoreItemBatch(itemType, subtypeName, price) {
-            const quantity = Math.max(1, Math.min(10, Number(document.getElementById('shop-buy-quantity')?.value) || 1));
+            const quantity = getShopBuyQuantity();
             const mode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             const creativeRules = mode === 'creative' || (mode === 'flatworld' && flatWorldRules === 'creative');
             let bought = 0;
             for (let i = 0; i < quantity; i++) {
                 if (!creativeRules && playerCoins < Number(price)) break;
                 if (buyStoreItemSingle(itemType, subtypeName, price, true) === true) bought++;
+                else break;
             }
-            if (bought > 0) showNotificationBox(`Bought ${bought}x ${String(subtypeName).toUpperCase()} (${bought * Number(price)} coins).`);
-            else showNotificationBox('Not enough coins to buy this item.');
+            if (bought > 0) showNotificationBox(`Bought ${bought}x ${String(subtypeName).toUpperCase()} (${(bought * Number(price)).toLocaleString()} coins).`);
+            else showNotificationBox('Not enough coins or inventory space to buy this item.');
         }
         buyStoreItem = buyStoreItemBatch;
 
@@ -4731,11 +4749,12 @@
                 const newBlock = { type: buildType, hp: (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) && buildType === 'wood' ? 1 : maxHp, maxHp, team: playerTeam, angle: forceBlockRotation, ...(['ball','magnet_ball_plus','magnet_ball_minus'].includes(buildType) ? { x: Math.floor(targetWorldX / 40) * 40 + 20, y: Math.floor(targetWorldY / 40) * 40 + 20, vx: 0, vy: 0 } : {}) };
                 worldBlocks[bKey] = newBlock;
                 if (buildType !== 'wood') {
-                    blockInventory[buildType]--;
+                    blockInventory[buildType] = Math.max(0, (Number(blockInventory[buildType]) || 0) - 1);
                     if (blockInventory[buildType] <= 0) {
                         const nextType = Object.keys(blockInventory).find(type => blockInventory[type] > 0);
                         selectedBuildBlock = nextType || 'wood';
                     }
+                    refreshHotbarUI();
                 }
                 if (isHosting) broadcastStateToClients();
                 else if (hostConnection && hostConnection.open) hostConnection.send({ type: 'place_block', key: bKey, block: newBlock });
