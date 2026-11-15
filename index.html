@@ -2852,8 +2852,8 @@
                     if (validHit) {
                         if (weapon === 'gravity') { target.slowUntil = Date.now() + 2600; if (targetIsHost) window.localSlowUntil = Date.now() + 2600; }
                         if (weapon === 'sonic' && !targetIsHost) { const pushAngle = Math.atan2(target.y-shooter.y,target.x-shooter.x); target.x += Math.cos(pushAngle)*42; target.y += Math.sin(pushAngle)*42; }
-                        if (targetIsHost) { currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage)); if (weapon === 'gravity') window.localSlowUntil = Date.now() + 2600; if (weapon === 'sonic') { const pushAngle = Math.atan2(posY-shooter.y,posX-shooter.x); playerMomentumX += Math.cos(pushAngle)*8; playerMomentumY += Math.sin(pushAngle)*8; } if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
-                        else { target.hp = Math.max(0, target.hp - damage); if(weapon==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;} }
+                        if (targetIsHost) { currentHp = Math.max(0, currentHp - getVehicleAdjustedDamage(damage)); if (weapon === 'freeze') playerFrozenUntil = Date.now() + 3000; if (weapon === 'gravity') window.localSlowUntil = Date.now() + 2600; if (weapon === 'sonic') { const pushAngle = Math.atan2(posY-shooter.y,posX-shooter.x); playerMomentumX += Math.cos(pushAngle)*8; playerMomentumY += Math.sin(pushAngle)*8; } if(weapon==='flame'){window.localBurnUntil=Date.now()+5000;window.localBurnTick=Date.now()+1000;} }
+                        else { target.hp = Math.max(0, target.hp - damage); if(weapon==='freeze')target.frozenUntil=Date.now()+3000; if(weapon==='flame'){target.burningUntil=Date.now()+5000;target.nextBurnTick=Date.now()+1000;} }
                         let splashDamage = 0;
                         if (weapon === 'rocket') {
                             const splashRadius = 120;
@@ -5365,6 +5365,9 @@
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
                 }
+
+                // Show the same icy shell on frozen AI enemies as on player characters.
+                drawFrozenPlayerEffect(ctx, bot.frozenUntil || 0);
 
                 if (bot.heldWeapon) {
                     ctx.save(); ctx.rotate(bot.aimAngle || 0);
