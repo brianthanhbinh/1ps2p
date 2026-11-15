@@ -874,11 +874,15 @@
                     if(!trap || trap.type!=='blackhole') continue;
                     // FFA traps are hostile to everyone except the player who placed them.
                     if((isLocalPlayer && trap.ownerIsLocal) || (playerId && trap.ownerPeerId===playerId)) continue;
-                    if(trap.team!=='FFA' && trap.team===player.team) continue;
+                    // Only treat a player as an ally when both sides have a
+                    // real, matching team. Missing team data must not make the
+                    // blackhole harmless to every player.
+                    if(trap.team && trap.team!=='FFA' && player.team && trap.team===player.team) continue;
                     const dx=trap.x-player.x, dy=trap.y-player.y;
                     const distance=Math.hypot(dx,dy);
                     if(distance>0 && distance<=gravityRadius) {
-                        const strength=0.025 + 0.025*(1-distance/gravityRadius);
+                        // Make the pull clearly noticeable throughout the ring.
+                        const strength=0.055 + 0.045*(1-distance/gravityRadius);
                         player.x += dx*strength;
                         player.y += dy*strength;
                     }
