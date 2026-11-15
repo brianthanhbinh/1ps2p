@@ -611,6 +611,7 @@
         let MAP_SIZE = 2600;
         const STANDARD_MAP_SIZE = 2600;
         const FLAT_WORLD_SIZE = 1000000000;
+        const FLAT_WORLD_HALF_SIZE = FLAT_WORLD_SIZE / 2;
         let mobileMoveX = 0, mobileMoveY = 0, mobileSprint = false;
         // Remote players share this scratch canvas; the local player has its own
         // canvas so remote rendering cannot overwrite the locally equipped item.
@@ -1496,8 +1497,9 @@
                 worldBlocks = {};
                 activeTraps = {};
                 droppedLoot = {};
-                posX = MAP_SIZE / 2;
-                posY = MAP_SIZE / 2;
+                // Flat World uses a centered coordinate plane: -500M to +500M.
+                posX = 0;
+                posY = 0;
             }
 
             if (localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld') {
@@ -1640,7 +1642,7 @@
 
             resetPlayerInventoryForNewMatch();
             const activeModeForSpawn = isHosting ? currentMode : hostGameMode;
-            const spawnCoords = activeModeForSpawn === 'flatworld' ? { x: MAP_SIZE / 2, y: MAP_SIZE / 2 } : getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
+            const spawnCoords = activeModeForSpawn === 'flatworld' ? { x: 0, y: 0 } : getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
 
@@ -5081,7 +5083,8 @@
                     continue;
                 }
 
-                if (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE) {
+                const projectileMode = isHosting ? currentMode : hostGameMode;
+                if (projectileMode !== 'flatworld' && (b.x < 0 || b.x > MAP_SIZE || b.y < 0 || b.y > MAP_SIZE)) {
                     if (b.type === 'rocket') {
                         floatingParticles.push({ x: b.x, y: b.y, radius: 10, maxRadius: 80, alpha: 1.0, isShockwave: true });
                     }
