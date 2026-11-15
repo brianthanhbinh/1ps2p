@@ -3286,7 +3286,9 @@
                     const spawnCoords = currentMode === 'flatworld'
                         ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
                         : getTeamSpawnCoords(data.team);
-                    const joinHp = currentMode === 'creative' ? 300 : ((currentMode === 'flatworld' && flatWorldRules === 'creative') ? 300 : 100);
+                    const joinMode = currentMode === 'creative' ||
+                        (currentMode === 'flatworld' && flatWorldRules === 'creative') ? 'creative' : 'survival';
+                    const joinHp = joinMode === 'creative' ? 300 : 100;
                     remotePlayers[conn.peer] = {
                         username: data.username,
                         deviceId: String(data.deviceId || ''),
@@ -3296,8 +3298,8 @@
                         y: spawnCoords.y,
                         hp: joinHp,
                         maxHp: joinHp,
-                        coins: currentMode === 'creative' ? Number.MAX_SAFE_INTEGER : 100,
-                        gameMode: currentMode === 'creative' ? 'creative' : 'survival',
+                        coins: joinMode === 'creative' ? Number.MAX_SAFE_INTEGER : 100,
+                        gameMode: joinMode,
                         trophies: Math.max(0, Math.floor(Number(data.trophies) || 0))
                     };
                     broadcastStateToClients();
@@ -3416,7 +3418,14 @@
                     // Clear the previous room before applying the new host snapshot.
                     flushPreviousMap();
                     hostGameMode = data.mode || '4team';
-                    playerGameMode = hostGameMode === 'creative' ? 'creative' : 'survival';
+                    // The room configuration is authoritative for a newly joined player.
+                    // Set the personal mode and its starting resources before team selection.
+                    playerGameMode = hostGameMode === 'creative' ||
+                        (hostGameMode === 'flatworld' && data.flatWorldRules === 'creative') ? 'creative' : 'survival';
+                    currentHp = playerGameMode === 'creative' ? 300 : 100;
+                    playerCoins = playerGameMode === 'creative' ? Number.MAX_SAFE_INTEGER : 100;
+                    const joinCoinDisplay = document.getElementById('coin-num');
+                    if (joinCoinDisplay) joinCoinDisplay.textContent = playerGameMode === 'creative' ? '∞' : '100';
                     if (hostGameMode === 'flatworld') {
                         flatWorldMultiplayer = true;
                         flatWorldRules = data.flatWorldRules === 'creative' ? 'creative' : 'survival';
