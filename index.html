@@ -1694,6 +1694,22 @@
         }
 
         function applyLocalMode(localMode) {
+            // Local play must be fully offline. Disconnect any previous multiplayer
+            // session so late room snapshots cannot overwrite local HP or coins.
+            if (hostConnection) {
+                try { hostConnection.close(); } catch (e) {}
+                hostConnection = null;
+            }
+            for (const connection of Object.values(peerConnections)) {
+                try { if (connection && connection.close) connection.close(); } catch (e) {}
+            }
+            peerConnections = {};
+            if (peerInstance) {
+                try { peerInstance.destroy(); } catch (e) {}
+                peerInstance = null;
+            }
+            myPeerId = null;
+            isHosting = false;
             flushPreviousMap();
             localCreativeMode = localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld';
             flatWorldMultiplayer = false;
@@ -1892,7 +1908,7 @@
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
             const roomHasCreativeRules = localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
             // Local mode selection is tracked independently from multiplayer room state.
-            if (localCreativeMode) playerGameMode = 'creative';
+            if (localCreativeMode || (!isHosting && currentMode === 'creative')) playerGameMode = 'creative';
             if (roomHasCreativeRules && playerGameMode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
