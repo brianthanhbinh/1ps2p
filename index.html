@@ -876,6 +876,7 @@
         let nextDamageBlockAt = 0;
         const nextDamageBlockByPlayer = {};
         let droppedLoot = {};
+        let nextConveyorLootSyncAt = 0;
         let supplyCrates = [];
         let bulletsList = [];
         let hostRemoteBullets = [];
@@ -2067,28 +2068,45 @@
             return false;
         }
 
+        function getItemDropPosition() {
+            const zoom = getCameraZoom();
+            // Desktop drops at the actual cursor world position. Touch devices have
+            // no hover cursor, so use the current aim direction as their target.
+            if (typeof isTouchDevice === 'function' && isTouchDevice()) {
+                return {
+                    x: posX + Math.cos(aimAngle) * 80,
+                    y: posY + Math.sin(aimAngle) * 80
+                };
+            }
+            return {
+                x: posX + (mouseXCoord - canvas.width / 2) / zoom,
+                y: posY + (mouseYCoord - canvas.height / 2) / zoom
+            };
+        }
+
         function dropActiveItem() {
+            const dropPos = getItemDropPosition();
             if (activeHotbar >= 3 && activeHotbar <= 5) {
                 const gunIdx = activeHotbar - 3;
                 if (weaponBarSlots[gunIdx]) {
-                    spawnWorldLoot('gun', weaponBarSlots[gunIdx], posX + 30, posY + 30, 0);
+                    spawnWorldLoot('gun', weaponBarSlots[gunIdx], dropPos.x, dropPos.y, 0);
                     weaponBarSlots[gunIdx] = null;
                     refreshHotbarUI();
                 }
             } else if (activeHotbar === 6 && grenadesCount > 0) {
                 grenadesCount--;
-                spawnWorldLoot('grenade', null, posX + 30, posY + 30, 1);
+                spawnWorldLoot('grenade', null, dropPos.x, dropPos.y, 1);
                 refreshHotbarUI();
             } else if (activeHotbar === 7 && bandagesCount > 0) {
                 bandagesCount--;
-                spawnWorldLoot('bandage', null, posX + 30, posY + 30, 1);
+                spawnWorldLoot('bandage', null, dropPos.x, dropPos.y, 1);
                 refreshHotbarUI();
             } else if (activeHotbar === 8 && smokeBombsCount > 0) {
                 smokeBombsCount--;
-                spawnWorldLoot('smoke_bomb', null, posX + 30, posY + 30, 1);
+                spawnWorldLoot('smoke_bomb', null, dropPos.x, dropPos.y, 1);
                 refreshHotbarUI();
             } else if (activeHotbar === 9 && consumeTrap(selectedTrapType)) {
-                spawnWorldLoot('trap', selectedTrapType, posX + 30, posY + 30, 1);
+                spawnWorldLoot('trap', selectedTrapType, dropPos.x, dropPos.y, 1);
             }
         }
 
@@ -3230,6 +3248,31 @@
             if (block && block.type && block.type !== 'wood') spawnWorldLoot('block', block.type, x, y, 1);
         }
 
+        function updateConveyorLoot() {
+            // The host owns shared loot physics; practice runs locally.
+            if (!isHosting && !isPractice) return;
+            let movedAny = false;
+            for (const lid in droppedLoot) {
+                const item = droppedLoot[lid];
+                if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) continue;
+                const gx = Math.floor(Number(item.x) / 40);
+                const gy = Math.floor(Number(item.y) / 40);
+                const belt = worldBlocks[gx + ',' + gy];
+                if (!belt || belt.type !== 'conveyor') continue;
+                const angle = Number(belt.angle) || 0;
+                const speed = 1.35;
+                item.x += Math.cos(angle) * speed;
+                item.y += Math.sin(angle) * speed;
+                movedAny = true;
+            }
+            // Send moving item positions in small batches instead of broadcasting
+            // the entire world state on every 60 FPS simulation tick.
+            if (movedAny && isHosting && Date.now() >= nextConveyorLootSyncAt) {
+                nextConveyorLootSyncAt = Date.now() + 120;
+                broadcastStateToClients();
+            }
+        }
+
         let activeChatTab = 'all';
         let selectedFriendId = '';
         let friendMessages = {};
@@ -4366,6 +4409,7 @@
         function updateGameLogic() {
             if (!inGameActive) return;
             updatePushableBalls();
+            updateConveyorLoot();
             if (activeWarpPortals.length === 2 && Date.now() >= warpTeleportReadyAt) {
                 const [portalA, portalB] = activeWarpPortals;
                 let destination = null;
