@@ -3837,7 +3837,7 @@
             const x2 = readTileCoord(parts[3], playerTileX);
             const y2 = readTileCoord(parts[4], playerTileY);
             const blockType = String(parts[5] || selectedBuildBlock || 'wood').toLowerCase();
-            const blockStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
+            const blockStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, magnet_ball_plus: 100, magnet_ball_minus: 100, magnet_plus: 260, magnet_minus: 260, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
             if (![x1, y1, x2, y2].every(Number.isSafeInteger) || !Object.prototype.hasOwnProperty.call(blockStats, blockType)) {
                 showNotificationBox('Invalid coordinates or block. Try /fill -5 -5 5 5 wood');
                 return true;
@@ -3868,7 +3868,7 @@
                         maxHp: blockStats[blockType],
                         team: playerTeam,
                         angle: forceBlockRotation,
-                        ...(blockType === 'ball' ? { x: tx * 40 + 20, y: ty * 40 + 20, vx: 0, vy: 0 } : {})
+                        ...(['ball','magnet_ball_plus','magnet_ball_minus'].includes(blockType) ? { x: tx * 40 + 20, y: ty * 40 + 20, vx: 0, vy: 0 } : {})
                     };
                     placed++;
                 }
