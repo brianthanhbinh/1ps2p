@@ -269,6 +269,8 @@
         .friend-manager-panel { display:none; }
         .friend-manager-panel.active { display:block; }
         #friend-manager-list { max-height: min(48dvh, 330px); overflow-y:auto; }
+        #friend-manager-tab-chat { display:none; }
+        body.friend-manager-standalone #friend-manager-tab-chat { display:block !important; }
         #friend-manager-chat-friends { max-height:180px; overflow-y:auto; border-bottom:1px solid #39485a; padding-bottom:6px; }
         .friend-chat-conversation { display:block; margin-top:8px; }
         .friend-chat-feed { min-height:130px; max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding:8px; background:#090d16; border-radius:6px; }
@@ -3490,8 +3492,9 @@
 
         function openFriendManager() {
             const standaloneWindow = new URLSearchParams(window.location.search).get('friendManagerWindow') === '1';
-            if (!standaloneWindow) {
-                // Open a dedicated desktop window. If popups are blocked, keep the in-page manager as a fallback.
+            const isDesktopPointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            if (!standaloneWindow && isDesktopPointer) {
+                // Desktop gets a separate window; touch devices keep the original in-page manager.
                 const popupUrl = new URL(window.location.href);
                 popupUrl.searchParams.set('friendManagerWindow', '1');
                 const popup = window.open(popupUrl.toString(), '1ps2p-friend-manager', 'popup=yes,width=480,height=680,resizable=yes,scrollbars=yes');
