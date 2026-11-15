@@ -639,7 +639,7 @@
             const releaseAim=e=>{if(aimPointer!==e.pointerId)return;aimPointer=null;aimKnob.style.transform='';};
             aim.addEventListener('pointerup',releaseAim);aim.addEventListener('pointercancel',releaseAim);
             const fire=document.getElementById('mobile-fire');
-            fire.addEventListener('pointerdown',e=>{e.preventDefault();isMouseDown=true;fire.classList.add('active');});
+            fire.addEventListener('pointerdown',e=>{e.preventDefault();isMouseDown=true;fire.classList.add('active');const rect=canvas.getBoundingClientRect();const point={x:(mouseXCoord||canvas.width/2),y:(mouseYCoord||canvas.height/2)};if(inGameActive&&activeHotbar>=3&&activeHotbar<=5)triggerWeaponAttack(point.x,point.y);});
             const stopFire=()=>{isMouseDown=false;fire.classList.remove('active');};
             fire.addEventListener('pointerup',stopFire);fire.addEventListener('pointercancel',stopFire);fire.addEventListener('pointerleave',stopFire);
         }
@@ -4293,7 +4293,7 @@
 
             if (isMouseDown && activeHotbar >= 3 && activeHotbar <= 5) {
                 const eq = weaponBarSlots[activeHotbar - 3];
-                if (eq === 'smg' || eq === 'ak' || eq === 'minigun' || eq === 'flame' || eq === 'laser' || eq === 'burst' || eq === 'ricochet' || eq === 'gravity' || eq === 'sonic') {
+                if (eq) {
                     triggerWeaponAttack(mouseXCoord, mouseYCoord);
                 }
             }
