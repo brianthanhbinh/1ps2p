@@ -3202,7 +3202,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && triggerPlayer && (trap.team === 'FFA' || (trap.team !== triggerPlayer.team && (!trap.ownerPeerId || trap.ownerPeerId !== conn.peer))) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
+                    if (trap && triggerPlayer && (!trap.ownerPeerId || trap.ownerPeerId !== conn.peer) && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
                         if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
                         else trap.nextReadyAt = Date.now() + (trap.type === 'sawblade' ? 550 : trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
