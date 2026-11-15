@@ -862,16 +862,18 @@
             const now=Date.now();
             if(localBlackholeUntil) {
                 const progress=Math.max(0,Math.min(1,1-(localBlackholeUntil-now)/2000));
-                posX += (localBlackholeX-posX)*Math.min(.22, .06+progress*.16);
-                posY += (localBlackholeY-posY)*Math.min(.22, .06+progress*.16);
+                const pull=Math.min(1,.10+progress*.08);
+                posX += (localBlackholeX-posX)*pull;
+                posY += (localBlackholeY-posY)*pull;
                 if(now>=localBlackholeUntil) { currentHp=0; localBlackholeUntil=0; showNotificationBox('🕳️ The blackhole swallowed you!'); }
             }
             if(isHosting || isPractice) for(const pid in remotePlayers) {
                 const p=remotePlayers[pid];
                 if(!p || !p.blackholeUntil) continue;
                 const progress=Math.max(0,Math.min(1,1-(p.blackholeUntil-now)/2000));
-                p.x += (p.blackholeX-p.x)*Math.min(.22,.06+progress*.16);
-                p.y += (p.blackholeY-p.y)*Math.min(.22,.06+progress*.16);
+                const pull=Math.min(1,.10+progress*.08);
+                p.x += (p.blackholeX-p.x)*pull;
+                p.y += (p.blackholeY-p.y)*pull;
                 if(now>=p.blackholeUntil) { p.hp=0; p.blackholeUntil=0; }
             }
         }
@@ -3173,7 +3175,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
+                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<(trap.type==='blackhole'?185:42) && Date.now() >= (trap.nextReadyAt || 0)) {
                         if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
                         else trap.nextReadyAt = Date.now() + (trap.type === 'sawblade' ? 550 : trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
@@ -5449,7 +5451,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='sawblade'?29:25) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
+                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'warp') {
                     if (isHosting || isPractice) { tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);const a=Math.random()*Math.PI*2,d=500+Math.random()*700;posX=tr.x+Math.cos(a)*d;posY=tr.y+Math.sin(a)*d;showNotificationBox('🌀 Warp trap! Teleported to a random location!');if(isHosting)broadcastStateToClients(); }
                     else if(hostConnection&&hostConnection.open){tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});}
@@ -6531,6 +6533,12 @@
                 if (Array.isArray(aiBots)) for (const bot of aiBots) {
                     if (!bot || bot.hp <= 0) continue;
                     ctx.beginPath(); ctx.arc(bot.x, bot.y, Number(bot.radius) || RADIUS_PLAYER, 0, Math.PI * 2); ctx.stroke();
+                }
+                ctx.strokeStyle = '#b56cff';
+                for (const key in activeTraps) {
+                    const trap = activeTraps[key];
+                    if (!trap || trap.type !== 'blackhole') continue;
+                    ctx.beginPath(); ctx.arc(trap.x, trap.y, 185, 0, Math.PI * 2); ctx.stroke();
                 }
                 ctx.strokeStyle = '#ff66aa';
                 for (const key in worldBlocks) {
