@@ -4595,7 +4595,7 @@
             syncSelectedAmmo();
         }
 
-        function saveFlatWorldMap() {
+        async function saveFlatWorldMap() {
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
             if (!inGameActive) { showNotificationBox('Enter the world before saving.'); return; }
             const name = (prompt('Name this map:', 'My Flat World') || '').trim().slice(0, 40);
@@ -4615,8 +4615,17 @@
                     traps: activeTraps,
                     savedAt: new Date().toISOString()
                 };
-                const blob = new Blob([JSON.stringify(worldFile, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
+                // Compact JSON removes whitespace; gzip then compresses repeated block/trap
+                // properties and coordinates. Keep the .arena extension and legacy JSON support.
+                const json = JSON.stringify(worldFile);
+                let payload = new Blob([json], { type: 'application/json' });
+                let compressed = false;
+                if (typeof CompressionStream !== 'undefined') {
+                    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
+                    payload = await new Response(stream).blob();
+                    compressed = true;
+                }
+                const url = URL.createObjectURL(payload);
                 const link = document.createElement('a');
                 const safeName = name.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'world';
                 link.href = url;
@@ -4625,8 +4634,10 @@
                 link.click();
                 link.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showNotificationBox('Downloaded ' + safeName + '.arena');
-            } catch (e) { showNotificationBox('Could not download the world file.'); }
+                const savedBytes = payload.size;
+                const ratio = json.length ? Math.round((1 - savedBytes / new Blob([json]).size) * 100) : 0;
+                showNotificationBox('Saved ' + safeName + '.arena (' + (savedBytes / 1024).toFixed(1) + ' KB' + (compressed ? ', ' + ratio + '% smaller' : ', compact JSON') + ')');
+            } catch (e) { console.error('Arena save failed:', e); showNotificationBox('Could not download the world file.'); }
         }
         function loadFlatWorldMap() {
             if (flatWorldMultiplayer) { showNotificationBox('Loading is disabled in multiplayer Flat World.'); return; }
@@ -4640,7 +4651,18 @@
             if (!this.files || !this.files[0]) return;
             try {
                 const file = this.files[0];
-                const worldFile = JSON.parse(await file.text());
+                const bytes = await file.arrayBuffer();
+                const header = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
+                const isGzip = header.length === 2 && header[0] === 0x1f && header[1] === 0x8b;
+                let fileText;
+                if (isGzip) {
+                    if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open compressed .arena files');
+                    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+                    fileText = await new Response(stream).text();
+                } else {
+                    fileText = new TextDecoder().decode(bytes);
+                }
+                const worldFile = JSON.parse(fileText);
                 if (!worldFile || worldFile.format !== 'arena-world' || worldFile.version !== 1 ||
                     !worldFile.blocks || typeof worldFile.blocks !== 'object' || Array.isArray(worldFile.blocks)) {
                     throw new Error('Invalid .arena world file');
