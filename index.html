@@ -712,6 +712,7 @@
         let playerTeam = 'FFA';
         let playerColor = '#8e24aa';
         let flatWorldMultiplayer = false;
+        let flatWorldRules = 'creative'; // 'creative' or 'survival'
         let flatWorldSpawnPoint = { x: 0, y: 0 };
         let pendingMultiplayerFlatWorldLoad = false;
         let flatWorldLoadedPlayerData = null;
@@ -1451,7 +1452,8 @@
                 <button class="btn-team-ffa" onclick="selectLocalMode('pvp')">⚔️ PVP (Practice vs Bots)</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectLocalMode('zombie')">🧟 Zombie Survival (Defend Wave Hordes)</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectLocalMode('creative')">🎨 Creative (Inf Coins, 300 HP)</button>
-                <button style="background:#607d8b; color:#fff;" onclick="selectLocalMode('flatworld')">🌍 Flat World (Huge, endless building map)</button>
+                <button style="background:#607d8b; color:#fff;" onclick="selectLocalMode('flatworld')">🌍 Flat World Creative</button>
+                <button style="background:#795548; color:#fff;" onclick="selectLocalMode('flatworld_survival')">🌱 Flat World Survival</button>
                 <button style="background:#00bcd4; color:#fff;" onclick="selectLocalMode('creative_pvp')">⚔️🎨 Creative PvP (Bots + Inf Coins, 300 HP)</button>
                 <button style="background:#e53935; color:#fff; margin-top:10px;" onclick="document.getElementById('modal-screen').style.display='none'">Cancel</button>
             `;
@@ -1498,10 +1500,11 @@
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = (localMode === 'pvp' || localMode === 'zombie' || localMode === 'creative_pvp');
-            currentMode = localMode === 'flatworld' ? 'flatworld' : (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
+            currentMode = (localMode === 'flatworld' || localMode === 'flatworld_survival') ? 'flatworld' : (localMode === 'creative' || localMode === 'creative_pvp') ? 'creative' : localMode === 'zombie' ? 'zombie' : '4team';
             hostGameMode = currentMode;
-            MAP_SIZE = localMode === 'flatworld' ? FLAT_WORLD_SIZE : STANDARD_MAP_SIZE;
-            if (localMode === 'flatworld') {
+            flatWorldRules = localMode === 'flatworld_survival' ? 'survival' : 'creative';
+            MAP_SIZE = currentMode === 'flatworld' ? FLAT_WORLD_SIZE : STANDARD_MAP_SIZE;
+            if (currentMode === 'flatworld') {
                 worldBlocks = {};
                 activeTraps = {};
                 droppedLoot = {};
@@ -1510,14 +1513,14 @@
                 posY = 0;
             }
 
-            if (localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld') {
+            if (localMode === 'creative' || localMode === 'creative_pvp' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = (localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld') ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (localMode === 'creative' || localMode === 'creative_pvp' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? '∞' : playerCoins;
             document.getElementById('modal-screen').style.display = 'none';
             promptTeamSelection();
         }
@@ -1673,7 +1676,7 @@
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
-            if (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) {
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
@@ -2174,10 +2177,11 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
+            const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
             const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return false;}
-            if (activeMode !== 'creative' && playerCoins < expectedPrice) {
+            if (!creativeRules && playerCoins < expectedPrice) {
                 showNotificationBox('Insufficient coins!');
                 return false;
             }
@@ -2247,7 +2251,7 @@
                 }
                 if (!isBatchPurchase) showNotificationBox(`Purchased & deployed ${subtypeName.toUpperCase()}! Press J near it to board.`);
             }
-            if (activeMode !== 'creative') {
+            if (!creativeRules) {
                 playerCoins -= expectedPrice;
                 document.getElementById('coin-num').innerText = playerCoins;
             }
@@ -2258,9 +2262,10 @@
         function buyStoreItemBatch(itemType, subtypeName, price) {
             const quantity = Math.max(1, Math.min(10, Number(document.getElementById('shop-buy-quantity')?.value) || 1));
             const mode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
+            const creativeRules = mode === 'creative' || (mode === 'flatworld' && flatWorldRules === 'creative');
             let bought = 0;
             for (let i = 0; i < quantity; i++) {
-                if (mode !== 'creative' && playerCoins < Number(price)) break;
+                if (!creativeRules && playerCoins < Number(price)) break;
                 if (buyStoreItemSingle(itemType, subtypeName, price, true) === true) bought++;
             }
             if (bought > 0) showNotificationBox(`Bought ${bought}x ${String(subtypeName).toUpperCase()} (${bought * Number(price)} coins).`);
@@ -2327,12 +2332,14 @@
 
         function respawnPlayer() {
             document.getElementById('death-modal').style.display = 'none';
-            currentHp = (currentMode === 'creative' || hostGameMode === 'creative') ? 300 : 100;
+            currentHp = (currentMode === 'creative' || hostGameMode === 'creative' || ((currentMode === 'flatworld' || hostGameMode === 'flatworld') && flatWorldRules === 'creative')) ? 300 : 100;
             currentStamina = 100;
             deathLootDropped = false;
             syncSelectedAmmo();
             const respawnMode = isHosting ? currentMode : hostGameMode;
-            const spawnCoords = getTeamSpawnCoords(respawnMode === 'bossfight' ? 'Raiders' : playerTeam);
+            const spawnCoords = respawnMode === 'flatworld'
+                ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
+                : getTeamSpawnCoords(respawnMode === 'bossfight' ? 'Raiders' : playerTeam);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
             baseLockedOut = false;
@@ -2912,6 +2919,7 @@
                     type: 'room_config', 
                     mode: currentMode,
                     flatWorldMultiplayer,
+                    flatWorldRules,
                     flatWorldSpawnPoint,
                     botDifficulty,
                     boss: bossEntity,
@@ -3035,7 +3043,7 @@
                     const spawnCoords = currentMode === 'flatworld'
                         ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
                         : getTeamSpawnCoords(data.team);
-                    const joinHp = currentMode === 'creative' ? 300 : 100;
+                    const joinHp = (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
                     remotePlayers[conn.peer] = {
                         username: data.username,
                         deviceId: String(data.deviceId || ''),
@@ -3156,11 +3164,13 @@
                     hostGameMode = data.mode || '4team';
                     if (hostGameMode === 'flatworld') {
                         flatWorldMultiplayer = true;
+                        flatWorldRules = data.flatWorldRules === 'creative' ? 'creative' : 'survival';
                         MAP_SIZE = FLAT_WORLD_SIZE;
                         flatWorldSpawnPoint = data.flatWorldSpawnPoint && Number.isFinite(Number(data.flatWorldSpawnPoint.x)) && Number.isFinite(Number(data.flatWorldSpawnPoint.y))
                             ? { x: Number(data.flatWorldSpawnPoint.x), y: Number(data.flatWorldSpawnPoint.y) } : { x: 0, y: 0 };
                     } else {
                         flatWorldMultiplayer = false;
+                        flatWorldRules = 'creative';
                         MAP_SIZE = STANDARD_MAP_SIZE;
                     }
                     if (data.botDifficulty && BOT_DIFFICULTY_SETTINGS[data.botDifficulty]) botDifficulty = data.botDifficulty;
@@ -3749,6 +3759,7 @@
             // Consume them in other modes so they are not sent as ordinary chat.
             const creativeFlatWorld = currentMode === 'flatworld'
                 && hostGameMode === 'flatworld'
+                && flatWorldRules === 'creative'
                 && flatWorldMultiplayer !== true
                 && isHosting !== true;
             if (!creativeFlatWorld) {
@@ -4110,6 +4121,7 @@
                     format: 'arena-world',
                     version: 1,
                     name,
+                    worldMode: flatWorldRules,
                     mapSize: MAP_SIZE,
                     spawnPoint: { x: posX, y: posY },
                     player: getFlatWorldPlayerData(),
@@ -4161,17 +4173,19 @@
                 if (pendingMultiplayerFlatWorldLoad) {
                     pendingMultiplayerFlatWorldLoad = false;
                     flatWorldMultiplayer = true;
+                    flatWorldRules = worldFile.worldMode === 'creative' ? 'creative' : 'survival';
                     currentMode = 'flatworld';
                     hostGameMode = 'flatworld';
                     MAP_SIZE = FLAT_WORLD_SIZE;
-                    playerCoins = 100;
-                    currentHp = 100;
-                    document.getElementById('coin-num').innerText = playerCoins;
-                    showNotificationBox('Loaded ' + (worldFile.name || file.name) + '. Starting multiplayer survival Flat World.');
+                    playerCoins = flatWorldRules === 'creative' ? Number.MAX_SAFE_INTEGER : 100;
+                    currentHp = flatWorldRules === 'creative' ? 300 : 100;
+                    document.getElementById('coin-num').innerText = flatWorldRules === 'creative' ? '∞' : playerCoins;
+                    showNotificationBox('Loaded ' + (worldFile.name || file.name) + '. Starting multiplayer ' + flatWorldRules + ' Flat World.');
                     promptTeamSelection();
                 } else {
-                    if (flatWorldLoadedPlayerData) restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, false);
-                    showNotificationBox('Loaded world: ' + (worldFile.name || file.name));
+                    flatWorldRules = worldFile.worldMode === 'survival' ? 'survival' : 'creative';
+                    if (flatWorldLoadedPlayerData) restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, flatWorldRules === 'survival');
+                    showNotificationBox('Loaded ' + flatWorldRules + ' world: ' + (worldFile.name || file.name));
                 }
             } catch (e) {
                 pendingMultiplayerFlatWorldLoad = false;
@@ -4885,15 +4899,15 @@
             );
             const sprintKeyDown = !!(keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']);
             if (sprintKeyDown && hasMovementInput) {
-                if (activeMode === 'creative' || currentStamina > 2) {
+                if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative') || currentStamina > 2) {
                     sprintMultiplier = 1.15;
-                    if (activeMode !== 'creative') currentStamina = Math.max(0, currentStamina - 0.5);
+                    if (activeMode !== 'creative' && !(activeMode === 'flatworld' && flatWorldRules === 'creative')) currentStamina = Math.max(0, currentStamina - 0.5);
                 }
-            } else if (activeMode !== 'creative') {
+            } else if (activeMode !== 'creative' && !(activeMode === 'flatworld' && flatWorldRules === 'creative')) {
                 // Recover slowly whenever the player is not actively sprinting.
                 currentStamina = Math.min(100, currentStamina + 0.08);
             }
-            if (activeMode === 'creative') currentStamina = 100;
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) currentStamina = 100;
             if (Date.now() >= nextBlockHealAt) {
                 let touchingHealingBlock = false;
                 for (const key in worldBlocks) {
@@ -5549,7 +5563,7 @@
             }
 
             document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
-            document.getElementById('hp-bar-fill').style.width = Math.min(100, Math.max(0, currentHp) / (activeMode === 'creative' ? 300 : 100) * 100) + '%';
+            document.getElementById('hp-bar-fill').style.width = Math.min(100, Math.max(0, currentHp) / ((activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100) * 100) + '%';
             document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
             document.getElementById('stamina-bar-fill').style.width = currentStamina + '%';
         }
