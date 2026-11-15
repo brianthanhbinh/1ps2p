@@ -834,28 +834,29 @@
         let localBlackholeUntil = 0, localBlackholeX = 0, localBlackholeY = 0;
         function triggerBlackholeTrap(trap, trapKey) {
             if ((!isHosting && !isPractice) || !trap || trap.type !== 'blackhole' || Date.now() < (trap.nextReadyAt || 0)) return false;
-            const now=Date.now(), radius=185, ownerId=trap.ownerPeerId || null;
-            const ownerIsLocal=trap.ownerIsLocal === true || (!ownerId && trap.team === playerTeam);
-            const owner=ownerIsLocal ? {x:posX,y:posY} : remotePlayers[ownerId];
-            const ownerX=owner && Number.isFinite(owner.x) ? owner.x : trap.x;
-            const ownerY=owner && Number.isFinite(owner.y) ? owner.y : trap.y;
+            // The gravity field is only a visual/approach zone: the blackhole itself
+            // is lethal on contact. Keep the hit radius tight so nearby players
+            // are not killed merely for entering the surrounding area.
+            const now=Date.now(), radius=42;
             const victims=[];
             if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) {
-                victims.push({x:posX,y:posY});
-                localBlackholeUntil=now+2000; localBlackholeX=trap.x; localBlackholeY=trap.y;
+                victims.push('you');
+                currentHp=0;
+                localBlackholeUntil=0;
+                showNotificationBox('🕳️ The blackhole swallowed you instantly!');
             }
             for (const pid in remotePlayers) {
                 const p=remotePlayers[pid];
                 if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) {
-                    victims.push({x:p.x,y:p.y}); p.blackholeUntil=now+2000; p.blackholeX=trap.x; p.blackholeY=trap.y;
+                    victims.push(p.username || 'an enemy');
+                    p.hp=0;
+                    p.blackholeUntil=0;
                 }
             }
             if (!victims.length) return false;
-            let moved=0;
-            for (const lootId in droppedLoot) { const loot=droppedLoot[lootId]; if(!loot)continue; if(victims.some(e=>Math.hypot((Number(loot.x)||0)-e.x,(Number(loot.y)||0)-e.y)<=230)) { loot.x=ownerX+(Math.random()-.5)*34; loot.y=ownerY+(Math.random()-.5)*34; moved++; } }
             trap.nextReadyAt=now+15000;
-            floatingParticles.push({x:trap.x,y:trap.y,radius:12,maxRadius:190,alpha:1,isShockwave:true});
-            showNotificationBox(`🕳️ Blackhole captured ${victims.length} enemy${victims.length===1?'':'ies'}! They will be swallowed in 2 seconds. ${moved} loot item(s) warped to you.`);
+            floatingParticles.push({x:trap.x,y:trap.y,radius:12,maxRadius:70,alpha:1,isShockwave:true});
+            showNotificationBox(`🕳️ Blackhole instantly consumed ${victims.length} player${victims.length===1?'':'s'} on contact!`);
             return true;
         }
         function updateBlackholeVictims() {
@@ -3175,7 +3176,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<(trap.type==='blackhole'?185:42) && Date.now() >= (trap.nextReadyAt || 0)) {
+                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
                         if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
                         else trap.nextReadyAt = Date.now() + (trap.type === 'sawblade' ? 550 : trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
