@@ -881,16 +881,30 @@
                     const dx=trap.x-player.x, dy=trap.y-player.y;
                     const distance=Math.hypot(dx,dy);
                     if(distance>0 && distance<=gravityRadius) {
-                        // Make the pull clearly noticeable throughout the ring.
+                        // Mark remote victims so their own client accepts the host's
+                        // authoritative position instead of overwriting the suction.
+                        if(!isLocalPlayer && playerId) player.blackholePulled=true;
                         const strength=0.055 + 0.045*(1-distance/gravityRadius);
                         player.x += dx*strength;
                         player.y += dy*strength;
+                        // The host owns the collision decision: reaching the core kills
+                        // the remote player even if that client's local prediction disagrees.
+                        if(!isLocalPlayer && playerId && Math.hypot(trap.x-player.x,trap.y-player.y)<=42 && player.hp>0) {
+                            player.hp=0;
+                            player.blackholePulled=true;
+                            trap.nextReadyAt=now+15000;
+                            floatingParticles.push({x:trap.x,y:trap.y,radius:12,maxRadius:70,alpha:1,isShockwave:true});
+                        }
                     }
                 }
             };
             pullPlayerIntoRing({ get x(){return posX;}, set x(v){posX=v;}, get y(){return posY;}, set y(v){posY=v;}, hp:currentHp, team:playerTeam }, true);
             if(isHosting || isPractice) {
-                for(const pid in remotePlayers) pullPlayerIntoRing(remotePlayers[pid], false, pid);
+                for(const pid in remotePlayers) {
+                    const remote=remotePlayers[pid];
+                    if(remote) remote.blackholePulled=false;
+                    pullPlayerIntoRing(remote, false, pid);
+                }
             }
             if(localBlackholeUntil) {
                 const progress=Math.max(0,Math.min(1,1-(localBlackholeUntil-now)/2000));
@@ -3488,6 +3502,12 @@
                         for (let pid in data.players) {
                             if (peerInstance && pid === peerInstance.id) {
                                 if (typeof data.players[pid].hp === 'number') currentHp = data.players[pid].hp;
+                                // Only accept host position corrections while the host says
+                                // this player is being pulled by a blackhole.
+                                if(data.players[pid].blackholePulled && Number.isFinite(Number(data.players[pid].x)) && Number.isFinite(Number(data.players[pid].y))) {
+                                    posX=Number(data.players[pid].x);
+                                    posY=Number(data.players[pid].y);
+                                }
                                 if (data.players[pid].gameMode) playerGameMode = data.players[pid].gameMode;
                                 if (typeof data.players[pid].coins === 'number') { playerCoins = data.players[pid].coins; const coinDisplay = document.getElementById('coin-num'); if (coinDisplay) coinDisplay.textContent = playerGameMode === 'creative' ? '∞' : String(playerCoins); }
                                 hostRemoteBullets = Array.isArray(data.players[pid].bullets) ? data.players[pid].bullets : [];
