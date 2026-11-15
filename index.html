@@ -5094,6 +5094,14 @@
                     return true;
                 }
             }
+
+            // Sawblades are solid hazards: block player movement as well as dealing contact damage.
+            for (const trapKey in activeTraps) {
+                const trap = activeTraps[trapKey];
+                if (!trap || trap.type !== 'sawblade') continue;
+                const bladeRadius = 22;
+                if (Math.hypot(x - trap.x, y - trap.y) < radius + bladeRadius) return true;
+            }
             return false;
         }
 
