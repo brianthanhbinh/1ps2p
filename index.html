@@ -3464,11 +3464,46 @@
 
         function openFriendManager() {
             const overlay = document.getElementById('friend-manager-overlay');
-            // Keep the modal at the document root so game/canvas stacking contexts cannot cover its controls.
+            const windowEl = document.getElementById('friend-manager-window');
+            // Move the popup out of game/canvas stacking contexts.
             if (overlay && overlay.parentElement !== document.body) document.body.appendChild(overlay);
+            if (overlay) {
+                overlay.style.cssText += ';display:flex!important;position:fixed!important;inset:0!important;z-index:2147483000!important;align-items:center!important;justify-content:center!important;background:rgba(0,0,0,.78)!important;pointer-events:auto!important;';
+                overlay.classList.add('active');
+            }
+            if (windowEl) {
+                windowEl.style.cssText += ';display:block!important;position:relative!important;z-index:2147483001!important;pointer-events:auto!important;width:min(440px,calc(100vw - 32px));max-height:80vh;overflow:auto;background:#111925;border:1px solid #8ecbff;border-radius:12px;padding:16px;color:white;';
+            }
+            const tabs = document.querySelector('.friend-manager-tabs');
+            if (tabs) tabs.style.cssText = 'display:flex!important;gap:8px;width:100%;margin:0 0 12px;position:relative;z-index:2147483002;pointer-events:auto;';
+            const manageTab = document.getElementById('friend-manager-tab-settings');
+            const listTab = document.getElementById('friend-manager-tab-list');
+            [manageTab, listTab].forEach(btn => {
+                if (!btn) return;
+                btn.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;flex:1;min-height:40px;padding:9px;border:1px solid #8ecbff;border-radius:6px;background:#254866;color:white;cursor:pointer;pointer-events:auto!important;position:relative;z-index:2147483003;';
+            });
+            if (manageTab && !manageTab.dataset.bound) {
+                manageTab.addEventListener('click', () => switchFriendManagerTab('settings'));
+                manageTab.dataset.bound = '1';
+            }
+            if (listTab && !listTab.dataset.bound) {
+                listTab.addEventListener('click', () => switchFriendManagerTab('list'));
+                listTab.dataset.bound = '1';
+            }
+            const closeBtn = document.getElementById('friend-manager-close');
+            if (closeBtn) {
+                closeBtn.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;position:relative;z-index:2147483003;pointer-events:auto!important;cursor:pointer;background:#a83232;color:white;border:0;border-radius:6px;padding:9px 12px;';
+                if (!closeBtn.dataset.bound) {
+                    closeBtn.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); closeFriendManager(); });
+                    closeBtn.dataset.bound = '1';
+                }
+            }
+            if (overlay && !overlay.dataset.bound) {
+                overlay.addEventListener('click', event => { if (event.target === overlay) closeFriendManager(); });
+                overlay.dataset.bound = '1';
+            }
             switchFriendManagerTab('settings');
             renderFriendsList();
-            if (overlay) overlay.classList.add('active');
             const idField = document.getElementById('my-device-id');
             if (idField) idField.value = myDeviceId || '';
             const prefixField = document.getElementById('device-id-prefix');
@@ -3477,7 +3512,10 @@
 
         function closeFriendManager() {
             const overlay = document.getElementById('friend-manager-overlay');
-            if (overlay) overlay.classList.remove('active');
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.style.setProperty('display', 'none', 'important');
+            }
         }
 
         document.addEventListener('keydown', event => {
@@ -3740,10 +3778,14 @@
 
         function switchFriendManagerTab(tab) {
             const showList = tab === 'list';
-            document.getElementById('friend-manager-tab-settings').classList.toggle('active', !showList);
-            document.getElementById('friend-manager-tab-list').classList.toggle('active', showList);
-            document.getElementById('friend-manager-settings-panel').classList.toggle('active', !showList);
-            document.getElementById('friend-manager-list-panel').classList.toggle('active', showList);
+            const manageTab = document.getElementById('friend-manager-tab-settings');
+            const listTab = document.getElementById('friend-manager-tab-list');
+            const managePanel = document.getElementById('friend-manager-settings-panel');
+            const listPanel = document.getElementById('friend-manager-list-panel');
+            if (manageTab) { manageTab.classList.toggle('active', !showList); manageTab.setAttribute('aria-selected', String(!showList)); }
+            if (listTab) { listTab.classList.toggle('active', showList); listTab.setAttribute('aria-selected', String(showList)); }
+            if (managePanel) { managePanel.classList.toggle('active', !showList); managePanel.style.setProperty('display', showList ? 'none' : 'block', 'important'); }
+            if (listPanel) { listPanel.classList.toggle('active', showList); listPanel.style.setProperty('display', showList ? 'block' : 'none', 'important'); }
             if (showList) renderFriendsList();
         }
 
