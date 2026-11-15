@@ -249,6 +249,13 @@
         #friend-manager-window { width:min(440px,100%); max-height:min(80dvh,560px); overflow-y:auto; background:#111925; border:1px solid #6b829b; border-radius:12px; padding:16px; color:#fff; box-shadow:0 16px 55px #000c; }
         #friend-manager-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px solid #39485a; }
         #friend-manager-window #friend-settings { display:block; border:0; margin:0; padding:0; }
+        .friend-manager-tabs { display:flex; gap:6px; margin-bottom:12px; }
+        .friend-manager-tab { flex:1; padding:8px; border:1px solid #52677d; border-radius:6px; background:#1b2938; color:#b9c8d8; cursor:pointer; }
+        .friend-manager-tab.active { background:#315b7e; border-color:#8ecbff; color:#fff; }
+        .friend-manager-panel { display:none; }
+        .friend-manager-panel.active { display:block; }
+        #friend-manager-list { max-height: min(48dvh, 330px); overflow-y:auto; }
+        #friend-manager-list .friend-row { padding:9px 4px; }
         .friend-tools { display:flex; gap:5px; margin-bottom:7px; }
         .friend-tools input { min-width:0; flex:1; background:#171b27; border:1px solid #555; border-radius:5px; color:#fff; padding:6px; font-size:11px; }
         .friend-action { background:#286b9c; color:#fff; border:0; border-radius:5px; padding:6px 8px; font-size:11px; cursor:pointer; }
@@ -477,13 +484,25 @@
                     <b id="friend-manager-title">⚙ Manage Friends</b>
                     <button type="button" class="friend-action" onclick="closeFriendManager()">✕ Close</button>
                 </div>
-                <div id="friend-settings" class="active">
-                    <div style="margin-bottom:6px;color:#ddd;">Your device ID</div>
-                    <div class="friend-tools"><input id="my-device-id" readonly /><button class="friend-action" onclick="copyDeviceId()">Copy ID</button></div>
-                    <div style="margin:7px 0 5px;color:#ddd;">ID prefix (optional)</div>
-                    <div class="friend-tools"><input id="device-id-prefix" maxlength="12" placeholder="ARENA-" /><button class="friend-action" onclick="saveDeviceIdPrefix()">Set</button></div>
-                    <div style="margin:7px 0 5px;color:#ddd;">Add friend by device ID</div>
-                    <div class="friend-tools"><input id="add-friend-id" placeholder="Example: AXRDFGDWMYPC1234" maxlength="32" /><button class="friend-action" onclick="addFriendById()">Add</button></div>
+                <div class="friend-manager-tabs">
+                    <button type="button" class="friend-manager-tab active" id="friend-manager-tab-settings" onclick="switchFriendManagerTab('settings')">Manage</button>
+                    <button type="button" class="friend-manager-tab" id="friend-manager-tab-list" onclick="switchFriendManagerTab('list')">Friend list</button>
+                </div>
+                <div id="friend-manager-settings-panel" class="friend-manager-panel active">
+                    <div id="friend-settings" class="active">
+                        <div style="margin-bottom:6px;color:#ddd;">Your device ID</div>
+                        <div class="friend-tools"><input id="my-device-id" readonly /><button class="friend-action" onclick="copyDeviceId()">Copy ID</button></div>
+                        <div style="margin:7px 0 5px;color:#ddd;">ID prefix (optional)</div>
+                        <div class="friend-tools"><input id="device-id-prefix" maxlength="12" placeholder="ARENA-" /><button class="friend-action" onclick="saveDeviceIdPrefix()">Set</button></div>
+                        <div style="margin:7px 0 5px;color:#ddd;">Add friend by device ID</div>
+                        <div class="friend-tools"><input id="add-friend-id" placeholder="Example: AXRDFGDWMYPC1234" maxlength="32" /><button class="friend-action" onclick="addFriendById()">Add</button></div>
+                    </div>
+                </div>
+                <div id="friend-manager-list-panel" class="friend-manager-panel">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;color:#ddd;">
+                        <b>Your friends</b><span id="friend-manager-count" class="friend-offline"></span>
+                    </div>
+                    <div id="friend-manager-list"><div class="friend-offline">Loading friends…</div></div>
                 </div>
             </div>
         </div>
@@ -3435,6 +3454,8 @@
         let localChatBubbleUntil = 0;
 
         function openFriendManager() {
+            switchFriendManagerTab('settings');
+            renderFriendsList();
             const overlay = document.getElementById('friend-manager-overlay');
             if (overlay) overlay.classList.add('active');
             const idField = document.getElementById('my-device-id');
@@ -3637,8 +3658,7 @@
             renderFriendsList();
         }
 
-        function renderFriendsList() {
-            const container = document.getElementById('friends-list');
+        function renderFriendsListInto(container) {
             if (!container) return;
             container.replaceChildren();
             if (!friends.length) {
@@ -3667,7 +3687,7 @@
                     const join = document.createElement('button');
                     join.className = 'friend-action';
                     join.textContent = 'Join';
-                    join.addEventListener('click', () => joinFriendRoom(id));
+                    join.addEventListener('click', event => { event.stopPropagation(); joinFriendRoom(id); });
                     row.appendChild(join);
                 }
                 const messageCount = (friendMessages[id] || []).length;
@@ -3681,7 +3701,8 @@
                 remove.className = 'friend-action';
                 remove.textContent = '×';
                 remove.title = 'Remove friend';
-                remove.addEventListener('click', () => {
+                remove.addEventListener('click', event => {
+                    event.stopPropagation();
                     friends = friends.filter(friendId => friendId !== id);
                     saveFriends();
                     if (friendConnections[id]) { try { friendConnections[id].close(); } catch (_) {} delete friendConnections[id]; }
@@ -3692,7 +3713,23 @@
                 row.appendChild(remove);
                 container.appendChild(row);
             });
+        }
+
+        function renderFriendsList() {
+            renderFriendsListInto(document.getElementById('friends-list'));
+            renderFriendsListInto(document.getElementById('friend-manager-list'));
+            const count = document.getElementById('friend-manager-count');
+            if (count) count.textContent = friends.length + (friends.length === 1 ? ' friend' : ' friends');
             renderFriendConversation();
+        }
+
+        function switchFriendManagerTab(tab) {
+            const showList = tab === 'list';
+            document.getElementById('friend-manager-tab-settings').classList.toggle('active', !showList);
+            document.getElementById('friend-manager-tab-list').classList.toggle('active', showList);
+            document.getElementById('friend-manager-settings-panel').classList.toggle('active', !showList);
+            document.getElementById('friend-manager-list-panel').classList.toggle('active', showList);
+            if (showList) renderFriendsList();
         }
 
         function selectFriendConversation(id) {
