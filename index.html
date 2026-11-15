@@ -422,8 +422,9 @@
         <div id="hud-actions-right">
             <button id="share-team-link-btn" onclick="copyDirectTeamLink()" style="background: rgba(233,30,99,0.9); color: #ffeb3b; border: 1px solid #f48fb1; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">🚩 Copy Team Link</button>
             <button id="share-link-btn" onclick="copyDirectRoomLink()">🔗 Copy Room Link</button>
-            <button id="flat-save-btn" onclick="saveFlatWorldMap()" style="display:none;background:#2e7d32;color:#fff;border:1px solid #66bb6a;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">💾 Save Map</button>
-            <button id="flat-load-btn" onclick="loadFlatWorldMap()" style="display:none;background:#1565c0;color:#fff;border:1px solid #64b5f6;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">📂 Load Map</button>
+            <button id="flat-save-btn" onclick="saveFlatWorldMap()" style="display:none;background:#2e7d32;color:#fff;border:1px solid #66bb6a;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">⬇️ Download .arena</button>
+            <button id="flat-load-btn" onclick="loadFlatWorldMap()" style="display:none;background:#1565c0;color:#fff;border:1px solid #64b5f6;padding:8px 16px;border-radius:8px;font-weight:bold;cursor:pointer;">📂 Load .arena</button>
+            <input id="flat-world-file-input" type="file" accept=".arena,application/json" style="display:none;">
             <button id="leave-btn" onclick="exitToLobby()">⏸️ Leave Room (ESC)</button>
         </div>
 
@@ -3866,39 +3867,58 @@
             }
         }
 
-        const FLAT_WORLD_SAVES_KEY = 'arena_flat_world_maps_v1';
-        function getFlatWorldSaves() {
-            try {
-                const saves = JSON.parse(localStorage.getItem(FLAT_WORLD_SAVES_KEY) || '{}');
-                return saves && typeof saves === 'object' && !Array.isArray(saves) ? saves : {};
-            } catch (_) { return {}; }
-        }
         function saveFlatWorldMap() {
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
             const name = (prompt('Name this map:', 'My Flat World') || '').trim().slice(0, 40);
             if (!name) return;
             try {
-                const saves = getFlatWorldSaves();
-                saves[name] = { version: 1, blocks: worldBlocks, traps: activeTraps, savedAt: Date.now() };
-                localStorage.setItem(FLAT_WORLD_SAVES_KEY, JSON.stringify(saves));
-                showNotificationBox('Saved map: ' + name);
-            } catch (e) { showNotificationBox('Could not save map. Browser storage may be full.'); }
+                const worldFile = {
+                    format: 'arena-world',
+                    version: 1,
+                    name,
+                    mapSize: MAP_SIZE,
+                    blocks: worldBlocks,
+                    traps: activeTraps,
+                    savedAt: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(worldFile, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const safeName = name.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'world';
+                link.href = url;
+                link.download = safeName + '.arena';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showNotificationBox('Downloaded ' + safeName + '.arena');
+            } catch (e) { showNotificationBox('Could not download the world file.'); }
         }
         function loadFlatWorldMap() {
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
-            const saves = getFlatWorldSaves();
-            const names = Object.keys(saves);
-            if (!names.length) { showNotificationBox('No saved Flat World maps yet.'); return; }
-            const name = (prompt('Enter a saved map name:\n' + names.join('\n'), names[0]) || '').trim();
-            if (!name) return;
-            const save = saves[name];
-            if (!save || !save.blocks || typeof save.blocks !== 'object') { showNotificationBox('Map not found or save is invalid.'); return; }
-            try {
-                worldBlocks = JSON.parse(JSON.stringify(save.blocks));
-                activeTraps = save.traps && typeof save.traps === 'object' ? JSON.parse(JSON.stringify(save.traps)) : {};
-                showNotificationBox('Loaded map: ' + name);
-            } catch (_) { showNotificationBox('Could not load that map.'); }
+            const picker = document.getElementById('flat-world-file-input');
+            if (!picker) { showNotificationBox('World file picker is unavailable.'); return; }
+            picker.value = '';
+            picker.click();
         }
+        document.getElementById('flat-world-file-input')?.addEventListener('change', async function () {
+            if (!this.files || !this.files[0]) return;
+            try {
+                const file = this.files[0];
+                const worldFile = JSON.parse(await file.text());
+                if (!worldFile || worldFile.format !== 'arena-world' || worldFile.version !== 1 ||
+                    !worldFile.blocks || typeof worldFile.blocks !== 'object' || Array.isArray(worldFile.blocks)) {
+                    throw new Error('Invalid .arena world file');
+                }
+                worldBlocks = JSON.parse(JSON.stringify(worldFile.blocks));
+                activeTraps = worldFile.traps && typeof worldFile.traps === 'object' && !Array.isArray(worldFile.traps)
+                    ? JSON.parse(JSON.stringify(worldFile.traps)) : {};
+                showNotificationBox('Loaded world: ' + (worldFile.name || file.name));
+            } catch (e) {
+                showNotificationBox('Could not load this .arena file. It may be invalid or unsupported.');
+            }
+            this.value = '';
+        });
 
         function reloadWeapon() {
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
