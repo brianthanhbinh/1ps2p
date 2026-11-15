@@ -3742,27 +3742,74 @@
         // Coordinates are block-grid coordinates (each block is 40 world units).
         function runFlatWorldCommand(commandText) {
             const parts = String(commandText || '').trim().split(/\s+/);
-            if (parts[0]?.toLowerCase() !== '/fill') return false;
+            const command = (parts[0] || '').toLowerCase();
+            if (!['/fill', '/tp', '/setspawnp'].includes(command)) return false;
 
-            // /fill is intentionally limited to the local creative Flat World.
-            // Consume the command everywhere else so it is never sent as chat
-            // (which previously produced the misleading "Not connected" error).
+            // Build/teleport commands are only available in local Creative Flat World.
+            // Consume them in other modes so they are not sent as ordinary chat.
             const creativeFlatWorld = currentMode === 'flatworld'
                 && hostGameMode === 'flatworld'
                 && flatWorldMultiplayer !== true
                 && isHosting !== true;
             if (!creativeFlatWorld) {
-                showNotificationBox('/fill only works in Creative Flat World.');
+                showNotificationBox('Commands only work in local Creative Flat World.');
                 return true;
             }
+
+            const maxWorld = FLAT_WORLD_HALF_SIZE;
+            const readWorldCoord = (value, origin) => {
+                if (value === '~') return origin;
+                if (value.startsWith('~')) {
+                    const offset = value.length === 1 ? 0 : Number(value.slice(1));
+                    return Number.isFinite(offset) ? origin + offset : NaN;
+                }
+                return Number(value);
+            };
+            const validWorldPosition = (x, y) =>
+                Number.isFinite(x) && Number.isFinite(y)
+                && Math.abs(x) <= maxWorld && Math.abs(y) <= maxWorld;
+
+            if (command === '/tp') {
+                if (parts.length !== 3) {
+                    showNotificationBox('Usage: /tp x y (world coordinates; ~ is relative)');
+                    return true;
+                }
+                const x = readWorldCoord(parts[1], posX);
+                const y = readWorldCoord(parts[2], posY);
+                if (!validWorldPosition(x, y)) {
+                    showNotificationBox('Invalid teleport coordinates. Stay within the Flat World boundary.');
+                    return true;
+                }
+                posX = x;
+                posY = y;
+                showNotificationBox('Teleported to ' + Math.round(x) + ', ' + Math.round(y) + '.');
+                return true;
+            }
+
+            if (command === '/setspawnp') {
+                if (parts.length !== 1 && parts.length !== 3) {
+                    showNotificationBox('Usage: /setspawnp [x y] (defaults to your current position)');
+                    return true;
+                }
+                const x = parts.length === 3 ? readWorldCoord(parts[1], posX) : posX;
+                const y = parts.length === 3 ? readWorldCoord(parts[2], posY) : posY;
+                if (!validWorldPosition(x, y)) {
+                    showNotificationBox('Invalid spawn coordinates. Stay within the Flat World boundary.');
+                    return true;
+                }
+                flatWorldSpawnPoint = { x, y };
+                showNotificationBox('Spawn point set to ' + Math.round(x) + ', ' + Math.round(y) + '.');
+                return true;
+            }
+
+            // /fill coordinates are block-grid coordinates (40 world units per block).
             if (parts.length < 5 || parts.length > 6) {
                 showNotificationBox('Usage: /fill x1 y1 x2 y2 [block]');
                 return true;
             }
-
             const playerTileX = Math.floor(posX / 40);
             const playerTileY = Math.floor(posY / 40);
-            const readCoord = (value, origin) => {
+            const readTileCoord = (value, origin) => {
                 if (value === '~') return origin;
                 if (value.startsWith('~')) {
                     const offset = value.length === 1 ? 0 : Number(value.slice(1));
@@ -3771,11 +3818,10 @@
                 const number = Number(value);
                 return Number.isFinite(number) ? Math.trunc(number) : NaN;
             };
-
-            const x1 = readCoord(parts[1], playerTileX);
-            const y1 = readCoord(parts[2], playerTileY);
-            const x2 = readCoord(parts[3], playerTileX);
-            const y2 = readCoord(parts[4], playerTileY);
+            const x1 = readTileCoord(parts[1], playerTileX);
+            const y1 = readTileCoord(parts[2], playerTileY);
+            const x2 = readTileCoord(parts[3], playerTileX);
+            const y2 = readTileCoord(parts[4], playerTileY);
             const blockType = String(parts[5] || selectedBuildBlock || 'wood').toLowerCase();
             const blockStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
             if (![x1, y1, x2, y2].every(Number.isSafeInteger) || !Object.prototype.hasOwnProperty.call(blockStats, blockType)) {
