@@ -2173,8 +2173,7 @@
             }
             box.innerHTML = matches.map(item => {
                 const code = String(item.code || '').replace(/[^a-z0-9_-]/gi, '');
-                const safeCode = code.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                return '<div class="peer-item"><div class="peer-room-info"><b class="peer-room-code">' + code + '</b><span class="peer-room-time">' + formatPeerHistoryDate(item.visitedAt) + '</span></div><div class="peer-room-actions"><button type="button" onclick="joinPeerHistoryRoom(\\'' + safeCode + '\\')">Join / Host</button><button type="button" class="remove-room" title="Remove room" aria-label="Remove ' + code + '" onclick="removePeerHistoryRoom(\\'' + safeCode + '\\')">×</button></div></div>';
+                return '<div class="peer-item"><div class="peer-room-info"><b class="peer-room-code">' + code + '</b><span class="peer-room-time">' + formatPeerHistoryDate(item.visitedAt) + '</span></div><div class="peer-room-actions"><button type="button" data-room="' + code + '" onclick="joinPeerHistoryRoom(this.dataset.room)">Join / Host</button><button type="button" class="remove-room" data-room="' + code + '" title="Remove room" aria-label="Remove ' + code + '" onclick="removePeerHistoryRoom(this.dataset.room)">×</button></div></div>';
             }).join('');
         }
         function joinPeerHistoryRoom(code) {
