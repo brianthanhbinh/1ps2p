@@ -955,6 +955,39 @@
             return true;
         }
 
+        function drawFrozenPlayerEffect(context, frozenUntil) {
+            if (!context || !(Number(frozenUntil) > Date.now())) return;
+            const pulse = 0.5 + 0.12 * Math.sin(Date.now() / 90);
+            context.save();
+            context.globalAlpha = 0.78;
+            context.shadowColor = '#8be8ff';
+            context.shadowBlur = 16;
+            context.fillStyle = 'rgba(112, 218, 255, 0.28)';
+            context.strokeStyle = '#b9f3ff';
+            context.lineWidth = 2.5;
+            context.beginPath();
+            context.arc(0, 0, RADIUS_PLAYER + 4, 0, Math.PI * 2);
+            context.fill();
+            context.stroke();
+            context.shadowBlur = 0;
+            context.globalAlpha = pulse;
+            context.strokeStyle = '#e7fbff';
+            context.lineWidth = 2;
+            for (let arm = 0; arm < 6; arm++) {
+                const angle = arm * Math.PI / 3 + Date.now() / 1100;
+                const x1 = Math.cos(angle) * 8, y1 = Math.sin(angle) * 8;
+                const x2 = Math.cos(angle) * (RADIUS_PLAYER + 7), y2 = Math.sin(angle) * (RADIUS_PLAYER + 7);
+                context.beginPath();
+                context.moveTo(x1, y1);
+                context.lineTo(x2, y2);
+                context.moveTo(x2 - Math.cos(angle - 0.55) * 6, y2 - Math.sin(angle - 0.55) * 6);
+                context.lineTo(x2, y2);
+                context.lineTo(x2 - Math.cos(angle + 0.55) * 6, y2 - Math.sin(angle + 0.55) * 6);
+                context.stroke();
+            }
+            context.restore();
+        }
+
         function loadTrackedImage(url, fallbackText, registryKey) {
             const fallback = new Image();
             fallback.src = createCheckerboardAssetCanvas(fallbackText);
@@ -2757,7 +2790,7 @@
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
                     if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
-                        trap.nextReadyAt = Date.now() + (trap.cooldownMs || 1800);
+                        trap.nextReadyAt = Date.now() + (trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
                         if(trap.type === 'mine') {
                         const bx=trap.x,by=trap.y,radius=160,maxDamage=85;
@@ -2771,7 +2804,7 @@
                         }
                         floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
                         delete activeTraps[data.key];
-                        } else if(trap.type==='freeze') { triggerPlayer.frozenUntil=Date.now()+2200;triggerPlayer.vx=0;triggerPlayer.vy=0; } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
+                        } else if(trap.type==='freeze') { triggerPlayer.frozenUntil=Date.now()+1500;triggerPlayer.vx=0;triggerPlayer.vy=0; } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
                         else if(trap.type==='bounce'||trap.type==='spring') { const a=Math.atan2(triggerPlayer.y-trap.y,triggerPlayer.x-trap.x),boost=trap.type==='spring'?105:55;triggerPlayer.x+=Math.cos(a)*boost;triggerPlayer.y+=Math.sin(a)*boost; }
                         else triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
                         conn.send({type:'trap_damage',hp:triggerPlayer.hp,x:triggerPlayer.x,y:triggerPlayer.y,slowedUntil:slowUntil,frozenUntil:triggerPlayer.frozenUntil||0});
@@ -4509,8 +4542,8 @@
                 } else if(!isHosting && hostConnection && hostConnection.open) {
                     tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});
                 } else {
-                    tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);
-                    if(tr.type==='freeze'){playerFrozenUntil=Date.now()+2200;playerMomentumX=0;playerMomentumY=0;showNotificationBox('❄️ Freeze trap! Movement stopped!');}else if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
+                    tr.nextReadyAt=Date.now()+(tr.type==='freeze'?4500:(tr.cooldownMs||1800));
+                    if(tr.type==='freeze'){playerFrozenUntil=Date.now()+1500;playerMomentumX=0;playerMomentumY=0;showNotificationBox('❄️ Freeze trap! Movement stopped!');}else if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
                     else if(tr.type==='bounce'||tr.type==='spring'){const a=Math.atan2(posY-tr.y,posX-tr.x),boost=tr.type==='spring'?105:55;posX+=Math.cos(a)*boost;posY+=Math.sin(a)*boost;showNotificationBox(tr.type==='spring'?'Spring launcher!':'Bounce trap!');}
                     else{const dmg=tr.type==='laser'?36:tr.type==='bear'?28:20;currentHp=Math.max(0,currentHp-dmg);showNotificationBox(tr.type==='laser'?'🔴 Laser tripwire triggered!':`Triggered ${String(tr.type||'spike').toUpperCase()} trap!`);}
                     if(isHosting)broadcastStateToClients();
@@ -5273,6 +5306,7 @@
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
                 }
 
+                drawFrozenPlayerEffect(ctx, rp.frozenUntil || 0);
                 if(rp.burningUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=18;ctx.fillStyle='#ff6d00';for(let f=0;f<5;f++){const a=f*1.25+Date.now()/180;ctx.beginPath();ctx.ellipse(Math.cos(a)*13,Math.sin(a)*12,5,10,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
@@ -5372,6 +5406,8 @@
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
                     ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
                 }
+
+                drawFrozenPlayerEffect(ctx, playerFrozenUntil);
 
                 // Draw the equipped item relative to the player, not a second time in world space.
                 ctx.save();
