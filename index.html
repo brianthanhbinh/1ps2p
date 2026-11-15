@@ -711,6 +711,10 @@
         let hostGameMode = 'ffa';
         let playerTeam = 'FFA';
         let playerColor = '#8e24aa';
+        let flatWorldMultiplayer = false;
+        let flatWorldSpawnPoint = { x: 0, y: 0 };
+        let pendingMultiplayerFlatWorldLoad = false;
+        let flatWorldLoadedPlayerData = null;
 
         let customPlayerSkinImg = null;
         let customSkinSource = null;
@@ -1527,6 +1531,7 @@
                 <button style="background:#e53935; color:#fff;" onclick="selectGameModeAndTeam('lgs')">👑 Last Guy Standing</button>
                 <button style="background:#4caf50; color:#fff;" onclick="selectGameModeAndTeam('zombie')">🧟 Zombie Survival</button>
                 <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Mode</button>
+                <button style="background:#607d8b;color:#fff;" onclick="beginMultiplayerFlatWorldSetup()">🌍 Flat World (Load .arena)</button>
                 <button style="background:#8e24aa; color:#fff;" onclick="promptBossDifficulty()">👑 Bossfight — Co-op Raid</button>
             `;
             modal.style.display = 'flex';
@@ -1546,6 +1551,14 @@
             `;
             modal.style.display = 'flex';
         }
+        function beginMultiplayerFlatWorldSetup() {
+            const picker = document.getElementById('flat-world-file-input');
+            if (!picker) { showNotificationBox('World file picker is unavailable.'); return; }
+            pendingMultiplayerFlatWorldLoad = true;
+            picker.value = '';
+            picker.click();
+        }
+
         function startBossfight(level) {
             botDifficulty = BOT_DIFFICULTY_SETTINGS[level] ? level : 'normal';
             // A new match must never reuse a defeated or stale boss from a prior room.
@@ -1568,6 +1581,9 @@
         function selectGameModeAndTeam(mode) {
             currentMode = mode;
             hostGameMode = mode;
+            flatWorldMultiplayer = false;
+            flatWorldLoadedPlayerData = null;
+            MAP_SIZE = STANDARD_MAP_SIZE;
             if (mode === 'ctf') {
                 ctfFlags = { Red: { x: 250, y: 250, homeX: 250, homeY: 250, carrier: null }, Blue: { x: MAP_SIZE - 250, y: MAP_SIZE - 250, homeX: MAP_SIZE - 250, homeY: MAP_SIZE - 250, carrier: null } };
                 ctfScores = { Red: 0, Blue: 0 };
@@ -1642,7 +1658,9 @@
 
             resetPlayerInventoryForNewMatch();
             const activeModeForSpawn = isHosting ? currentMode : hostGameMode;
-            const spawnCoords = activeModeForSpawn === 'flatworld' ? { x: 0, y: 0 } : getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
+            const spawnCoords = activeModeForSpawn === 'flatworld'
+                ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
+                : getTeamSpawnCoords(activeModeForSpawn === 'bossfight' ? 'Blue' : teamName);
             posX = spawnCoords.x;
             posY = spawnCoords.y;
 
@@ -1650,16 +1668,20 @@
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
-            if (activeMode === 'creative' || activeMode === 'flatworld') {
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = (activeMode === 'creative' || activeMode === 'flatworld') ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) ? '∞' : playerCoins;
 
             currentStamina = 100;
+            if (activeMode === 'flatworld' && flatWorldMultiplayer && flatWorldLoadedPlayerData) {
+                restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, true);
+                flatWorldLoadedPlayerData = null;
+            }
             baseLockedOut = false;
             inGameActive = true;
             showUIInGame(true);
@@ -1915,7 +1937,7 @@
             document.getElementById('leave-btn').style.display = active ? 'block' : 'none';
             const flatWorldActive = active && (currentMode === 'flatworld' || hostGameMode === 'flatworld');
             document.getElementById('flat-save-btn').style.display = flatWorldActive ? 'block' : 'none';
-            document.getElementById('flat-load-btn').style.display = flatWorldActive ? 'block' : 'none';
+            document.getElementById('flat-load-btn').style.display = flatWorldActive && !flatWorldMultiplayer ? 'block' : 'none';
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('room-notification').style.display = active ? 'none' : 'block';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
@@ -2884,6 +2906,8 @@
                 conn.send({ 
                     type: 'room_config', 
                     mode: currentMode,
+                    flatWorldMultiplayer,
+                    flatWorldSpawnPoint,
                     botDifficulty,
                     boss: bossEntity,
                     bossVictoryId,
@@ -3003,7 +3027,9 @@
                         broadcastStateToClients();
                     }
                 } else if (data.type === 'client_join') {
-                    const spawnCoords = getTeamSpawnCoords(data.team);
+                    const spawnCoords = currentMode === 'flatworld'
+                        ? { x: Number(flatWorldSpawnPoint.x) || 0, y: Number(flatWorldSpawnPoint.y) || 0 }
+                        : getTeamSpawnCoords(data.team);
                     const joinHp = currentMode === 'creative' ? 300 : 100;
                     remotePlayers[conn.peer] = {
                         username: data.username,
@@ -3123,6 +3149,15 @@
                     showNotificationBox(`Opened Airdrop Crate (+${data.reward} 🪙)!`);
                 } else if (data.type === 'room_config') {
                     hostGameMode = data.mode || '4team';
+                    if (hostGameMode === 'flatworld') {
+                        flatWorldMultiplayer = true;
+                        MAP_SIZE = FLAT_WORLD_SIZE;
+                        flatWorldSpawnPoint = data.flatWorldSpawnPoint && Number.isFinite(Number(data.flatWorldSpawnPoint.x)) && Number.isFinite(Number(data.flatWorldSpawnPoint.y))
+                            ? { x: Number(data.flatWorldSpawnPoint.x), y: Number(data.flatWorldSpawnPoint.y) } : { x: 0, y: 0 };
+                    } else {
+                        flatWorldMultiplayer = false;
+                        MAP_SIZE = STANDARD_MAP_SIZE;
+                    }
                     if (data.botDifficulty && BOT_DIFFICULTY_SETTINGS[data.botDifficulty]) botDifficulty = data.botDifficulty;
                     bossEntity = data.boss || null;
                     bossVictoryId = data.bossVictoryId || null;
@@ -3944,8 +3979,65 @@
             }
         }
 
+        function getFlatWorldPlayerData() {
+            return {
+                hp: currentHp,
+                stamina: currentStamina,
+                coins: playerCoins,
+                pos: { x: posX, y: posY },
+                weaponBarSlots: weaponBarSlots.slice(),
+                backpackInventory: JSON.parse(JSON.stringify(backpackInventory)),
+                grenadesCount,
+                bandagesCount,
+                smokeBombsCount,
+                trapInventory: { ...trapInventory },
+                blockInventory: { ...blockInventory },
+                selectedBuildBlock,
+                selectedTrapType,
+                activeHotbar,
+                ammoByWeapon: { ...ammoByWeapon }
+            };
+        }
+
+        function restoreFlatWorldPlayerData(data, survivalOnly = false) {
+            if (!data || typeof data !== 'object') return;
+            if (data.pos && Number.isFinite(Number(data.pos.x)) && Number.isFinite(Number(data.pos.y))) {
+                posX = Math.max(-FLAT_WORLD_HALF_SIZE, Math.min(FLAT_WORLD_HALF_SIZE, Number(data.pos.x)));
+                posY = Math.max(-FLAT_WORLD_HALF_SIZE, Math.min(FLAT_WORLD_HALF_SIZE, Number(data.pos.y)));
+                flatWorldSpawnPoint = { x: posX, y: posY };
+            }
+            currentHp = Math.max(1, Math.min(survivalOnly ? 100 : 300, Number(data.hp) || 100));
+            currentStamina = Math.max(0, Math.min(100, Number(data.stamina) || 100));
+            playerCoins = Math.max(0, Math.floor(Number(data.coins) || 0));
+            if (Array.isArray(data.weaponBarSlots)) weaponBarSlots = data.weaponBarSlots.slice(0, 3).map(v => typeof v === 'string' ? v : null);
+            if (Array.isArray(data.backpackInventory)) backpackInventory = data.backpackInventory.slice(0, 32);
+            grenadesCount = Math.max(0, Math.floor(Number(data.grenadesCount) || 0));
+            bandagesCount = Math.max(0, Math.floor(Number(data.bandagesCount) || 0));
+            smokeBombsCount = Math.max(0, Math.floor(Number(data.smokeBombsCount) || 0));
+            if (data.trapInventory && typeof data.trapInventory === 'object') {
+                for (const type of Object.keys(trapInventory)) trapInventory[type] = Math.max(0, Math.floor(Number(data.trapInventory[type]) || 0));
+            }
+            if (data.blockInventory && typeof data.blockInventory === 'object') {
+                for (const type of Object.keys(blockInventory)) blockInventory[type] = Math.max(0, Math.floor(Number(data.blockInventory[type]) || 0));
+            }
+            if (typeof data.selectedBuildBlock === 'string') selectedBuildBlock = data.selectedBuildBlock;
+            if (typeof data.selectedTrapType === 'string' && Object.prototype.hasOwnProperty.call(trapInventory, data.selectedTrapType)) selectedTrapType = data.selectedTrapType;
+            if (Number.isInteger(data.activeHotbar)) activeHotbar = Math.max(0, Math.min(9, data.activeHotbar));
+            if (data.ammoByWeapon && typeof data.ammoByWeapon === 'object') {
+                for (const [weapon, ammo] of Object.entries(data.ammoByWeapon)) {
+                    if (Object.prototype.hasOwnProperty.call(ammoCapacity, weapon)) ammoByWeapon[weapon] = Math.max(0, Math.min(getAmmoCapacity(weapon), Number(ammo) || 0));
+                }
+            }
+            updateTrapTotal();
+            document.getElementById('coin-num').innerText = survivalOnly ? playerCoins : (playerCoins >= 999999 ? '∞' : playerCoins);
+            refreshHotbarUI();
+            renderBackpackGrid();
+            syncSelectedAmmo();
+        }
+
         function saveFlatWorldMap() {
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
+            if (!inGameActive) { showNotificationBox('Enter the world before saving.'); return; }
             const name = (prompt('Name this map:', 'My Flat World') || '').trim().slice(0, 40);
             if (!name) return;
             try {
@@ -3954,6 +4046,8 @@
                     version: 1,
                     name,
                     mapSize: MAP_SIZE,
+                    spawnPoint: { x: posX, y: posY },
+                    player: getFlatWorldPlayerData(),
                     blocks: worldBlocks,
                     traps: activeTraps,
                     savedAt: new Date().toISOString()
@@ -3972,6 +4066,7 @@
             } catch (e) { showNotificationBox('Could not download the world file.'); }
         }
         function loadFlatWorldMap() {
+            if (flatWorldMultiplayer) { showNotificationBox('Loading is disabled in multiplayer Flat World.'); return; }
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return;
             const picker = document.getElementById('flat-world-file-input');
             if (!picker) { showNotificationBox('World file picker is unavailable.'); return; }
@@ -3990,8 +4085,31 @@
                 worldBlocks = JSON.parse(JSON.stringify(worldFile.blocks));
                 activeTraps = worldFile.traps && typeof worldFile.traps === 'object' && !Array.isArray(worldFile.traps)
                     ? JSON.parse(JSON.stringify(worldFile.traps)) : {};
-                showNotificationBox('Loaded world: ' + (worldFile.name || file.name));
+                const savedSpawn = worldFile.spawnPoint || worldFile.player?.pos;
+                if (savedSpawn && Number.isFinite(Number(savedSpawn.x)) && Number.isFinite(Number(savedSpawn.y))) {
+                    flatWorldSpawnPoint = { x: Number(savedSpawn.x), y: Number(savedSpawn.y) };
+                    posX = flatWorldSpawnPoint.x;
+                    posY = flatWorldSpawnPoint.y;
+                }
+                flatWorldLoadedPlayerData = worldFile.player && typeof worldFile.player === 'object' ? worldFile.player : null;
+
+                if (pendingMultiplayerFlatWorldLoad) {
+                    pendingMultiplayerFlatWorldLoad = false;
+                    flatWorldMultiplayer = true;
+                    currentMode = 'flatworld';
+                    hostGameMode = 'flatworld';
+                    MAP_SIZE = FLAT_WORLD_SIZE;
+                    playerCoins = 100;
+                    currentHp = 100;
+                    document.getElementById('coin-num').innerText = playerCoins;
+                    showNotificationBox('Loaded ' + (worldFile.name || file.name) + '. Starting multiplayer survival Flat World.');
+                    promptTeamSelection();
+                } else {
+                    if (flatWorldLoadedPlayerData) restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, false);
+                    showNotificationBox('Loaded world: ' + (worldFile.name || file.name));
+                }
             } catch (e) {
+                pendingMultiplayerFlatWorldLoad = false;
                 showNotificationBox('Could not load this .arena file. It may be invalid or unsupported.');
             }
             this.value = '';
@@ -4656,7 +4774,7 @@
             updateAirdropHud();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            if (activeMode === 'creative' || activeMode === 'flatworld') {
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
                 currentStamina = 100;
