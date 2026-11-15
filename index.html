@@ -5001,7 +5001,7 @@
                     for (let gy = minGY; gy <= maxGY; gy++) {
                         for (let gx = minGX; gx <= maxGX; gx++) {
                             const wall = worldBlocks[gx + ',' + gy];
-                            if (!wall || ['ball','magnet_ball_plus','magnet_ball_minus'].includes(wall.type) || wall.passThrough || wall.type === 'trap') continue;
+                            if (!wall || ['ball','magnet_ball_plus','magnet_ball_minus','force','force2','force3','conveyor'].includes(wall.type) || wall.passThrough || wall.type === 'trap') continue;
                             const left = gx * 40, top = gy * 40;
                             const closestX = Math.max(left, Math.min(ball.x, left + 40));
                             const closestY = Math.max(top, Math.min(ball.y, top + 40));
