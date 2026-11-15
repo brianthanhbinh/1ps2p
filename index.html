@@ -2300,6 +2300,13 @@
         }
 
         function executeSelfDestruct() {
+            if (!inGameActive || currentHp <= 0) return;
+            currentHp = 0;
+            showNotificationBox('💥 Self-destruct activated!');
+            // The normal game update handles the death screen and loot drop.
+        }
+
+        function beginBaseLockout() {
             const activeMode = isHosting ? currentMode : hostGameMode;
             if (activeMode === 'creative') return;
             if (selfDestructCountdown > 0) return;
@@ -3771,7 +3778,7 @@
             if (e.code === 'KeyZ') openCoinModal();
             if (e.code === 'KeyX' && activeHotbar === 2) { e.preventDefault(); forceBlockRotation = (forceBlockRotation + Math.PI/4) % (Math.PI*2); showNotificationBox(selectedBuildBlock.toUpperCase()+' rotation: '+Math.round(forceBlockRotation*180/Math.PI)+'°'); }
             else if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
-            if (e.code === 'KeyR') executeSelfDestruct();
+            if (e.code === 'KeyR') { e.preventDefault(); executeSelfDestruct(); }
             if (e.code === 'KeyJ') tryHopOnVehicle();
             if (e.code === 'KeyH') dismountVehicle();
             if (e.code === 'Space') {
@@ -4757,7 +4764,7 @@
             const wasInBase = currentlyInBase;
 
             if (wasInBase && !currentlyInBase && !baseLockedOut) {
-                executeSelfDestruct();
+                beginBaseLockout();
             }
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
