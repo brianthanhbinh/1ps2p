@@ -159,6 +159,7 @@
         #throwable-picker { display:none;position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);width:230px;padding:8px;background:rgba(15,20,27,.98);border:2px solid #4dd8ef;border-radius:10px;z-index:30000;grid-template-columns:repeat(3,1fr);gap:6px;box-shadow:0 5px 20px #000b; }
         #throwable-picker.open { display:grid; }
         #hslot-6 { overflow:visible; }
+        #hslot-8 { display:none !important; }
         #trap-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; padding:8px; background:rgba(15,20,27,.98); border:2px solid #d5a72b; border-radius:10px; z-index:30000; grid-template-columns:repeat(3,1fr); gap:6px; box-shadow:0 5px 20px #000b; }
         #trap-picker.open,#block-picker.open { display:grid; }
         #block-picker { display:none; position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%); width:230px; max-height:min(58vh, 420px); padding:8px; background:rgba(15,20,27,.98); border:2px solid #69b7d1; border-radius:10px; z-index:30000; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:min-content; gap:6px; box-shadow:0 5px 20px #000b; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:#69b7d1 #18212a; }
@@ -1273,6 +1274,8 @@
             } else if(itemType==='bandage'){
                 c.save();c.rotate(-.35);c.fillStyle='#f1e8d7';c.strokeStyle='#a8a39b';c.lineWidth=1.5;c.beginPath();c.roundRect(-12,-7,24,14,3);c.fill();c.stroke();c.fillStyle='#d64c4c';c.fillRect(-2,-6,4,12);c.fillRect(-6,-2,12,4);
                 for(let x=-8;x<=8;x+=5){c.fillStyle='#d1c7b7';c.beginPath();c.arc(x,0,.8,0,Math.PI*2);c.fill();}c.restore();
+            } else if(itemType==='teleport_orb'){
+                c.shadowColor='#5deaff';c.shadowBlur=8;c.fillStyle='#20c9e8';c.strokeStyle='#d9fbff';c.lineWidth=2;c.beginPath();c.arc(0,0,11,0,Math.PI*2);c.fill();c.stroke();c.shadowBlur=0;c.strokeStyle='#fff';c.beginPath();c.arc(0,0,6,-1.2,2.2);c.stroke();
             } else if(itemType==='smoke_bomb'){
                 path([[-7,-8],[6,-8],[9,-4],[8,10],[-7,10],[-9,6],[-9,-4]],'#405965');c.fillStyle='#aab8bf';c.beginPath();c.roundRect(-3,-13,7,5,2);c.fill();c.strokeStyle='#17232b';c.stroke();
                 c.strokeStyle='#d4e0e5';c.lineWidth=1;c.beginPath();c.moveTo(-5,-3);c.lineTo(4,-3);c.stroke();
@@ -2266,10 +2269,8 @@
                     weaponBarSlots[gunIdx] = null;
                     refreshHotbarUI();
                 }
-            } else if (activeHotbar === 6 && grenadesCount > 0) {
-                grenadesCount--;
-                spawnWorldLoot('grenade', null, dropPos.x, dropPos.y, 1);
-                refreshHotbarUI();
+            } else if (activeHotbar === 6) {
+                if(selectedThrowable==='grenade'&&grenadesCount>0){grenadesCount--;spawnWorldLoot('grenade',null,dropPos.x,dropPos.y,1);}else if(selectedThrowable==='smoke_bomb'&&smokeBombsCount>0){smokeBombsCount--;spawnWorldLoot('smoke_bomb',null,dropPos.x,dropPos.y,1);}else if(selectedThrowable==='teleport_orb'&&teleportOrbsCount>0){teleportOrbsCount--;spawnWorldLoot('teleport_orb',null,dropPos.x,dropPos.y,1);}refreshHotbarUI();
             } else if (activeHotbar === 7 && bandagesCount > 0) {
                 bandagesCount--;
                 spawnWorldLoot('bandage', null, dropPos.x, dropPos.y, 1);
@@ -5387,7 +5388,7 @@
                     const bx = parseInt(parts[0]) * 40;
                     const by = parseInt(parts[1]) * 40;
                     if (g.x >= bx && g.x <= bx + 40 && g.y >= by && g.y <= by + 40) {
-                        worldBlocks[k].hp -= 70;
+                        if(g.kind!=='teleport_orb')worldBlocks[k].hp -= 70;
                         if (worldBlocks[k].hp <= 0) { const broken = worldBlocks[k]; delete worldBlocks[k]; dropBrokenBlock(broken, bx + 20, by + 20); }
                         hitWall = true;
                         break;
