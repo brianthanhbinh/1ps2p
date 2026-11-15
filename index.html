@@ -4210,8 +4210,8 @@
                 if (Math.hypot(posX - portalA.x, posY - portalA.y) < 24) destination = portalB;
                 else if (Math.hypot(posX - portalB.x, posY - portalB.y) < 24) destination = portalA;
                 if (destination) {
-                    posX = destination.x + (destination.x - (posX));
-                    posY = destination.y + (destination.y - (posY));
+                    posX = destination.x;
+                    posY = destination.y;
                     playerMomentumX *= 0.65; playerMomentumY *= 0.65;
                     warpTeleportReadyAt = Date.now() + 900;
                     floatingParticles.push({x:posX,y:posY,radius:8,maxRadius:48,alpha:1,isShockwave:true});
@@ -4991,6 +4991,20 @@
             ctx.scale(cameraZoom, cameraZoom);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
             ctx.translate(-camX, -camY);
+
+            // Warp portals are drawn in world coordinates, after the camera transform.
+            for (let pi = 0; pi < activeWarpPortals.length; pi++) {
+                const portal = activeWarpPortals[pi];
+                const pulse = 1 + Math.sin(Date.now() / 140) * 0.08;
+                ctx.save(); ctx.translate(portal.x, portal.y); ctx.scale(pulse, 1 / pulse);
+                ctx.shadowColor = pi === 0 ? '#35eaff' : '#d36bff'; ctx.shadowBlur = 22;
+                ctx.fillStyle = pi === 0 ? 'rgba(35,234,255,.22)' : 'rgba(211,107,255,.22)';
+                ctx.strokeStyle = pi === 0 ? '#65f4ff' : '#e4a0ff'; ctx.lineWidth = 5;
+                ctx.beginPath(); ctx.ellipse(0, 0, 17, 27, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.ellipse(0, 0, 9, 19, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.restore();
+            }
 
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 1;
