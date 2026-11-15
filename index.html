@@ -269,6 +269,10 @@
         .friend-manager-panel { display:none; }
         .friend-manager-panel.active { display:block; }
         #friend-manager-list { max-height: min(48dvh, 330px); overflow-y:auto; }
+        #friend-manager-chat-friends { max-height:180px; overflow-y:auto; border-bottom:1px solid #39485a; padding-bottom:6px; }
+        .friend-chat-conversation { display:block; margin-top:8px; }
+        .friend-chat-feed { min-height:130px; max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding:8px; background:#090d16; border-radius:6px; }
+        #friend-manager-chat-input { width:100%; margin-top:7px; padding:9px; background:#171b27; border:1px solid #555; border-radius:6px; color:white; }
         #friend-manager-list .friend-row { padding:9px 4px; }
         .friend-tools { display:flex; gap:5px; margin-bottom:7px; }
         .friend-tools input { min-width:0; flex:1; background:#171b27; border:1px solid #555; border-radius:5px; color:#fff; padding:6px; font-size:11px; }
@@ -501,6 +505,7 @@
                 <div class="friend-manager-tabs">
                     <button type="button" class="friend-manager-tab active" id="friend-manager-tab-settings" onclick="switchFriendManagerTab('settings')">Manage</button>
                     <button type="button" class="friend-manager-tab" id="friend-manager-tab-list" onclick="switchFriendManagerTab('list')">Friend list</button>
+                    <button type="button" class="friend-manager-tab" id="friend-manager-tab-chat" onclick="switchFriendManagerTab('chat')">Friend chat</button>
                 </div>
                 <div id="friend-manager-settings-panel" class="friend-manager-panel active">
                     <div id="friend-settings" class="active">
@@ -517,6 +522,16 @@
                         <b>Your friends</b><span id="friend-manager-count" class="friend-offline"></span>
                     </div>
                     <div id="friend-manager-list"><div class="friend-offline">Loading friends…</div></div>
+                </div>
+                <div id="friend-manager-chat-panel" class="friend-manager-panel">
+                    <div style="color:#ddd;font-weight:bold;margin-bottom:7px;">Choose a friend to open the conversation</div>
+                    <div id="friend-manager-chat-friends"><div class="friend-offline">Loading friends…</div></div>
+                    <div id="friend-manager-chat-conversation" class="friend-chat-conversation">
+                        <div id="friend-manager-chat-title" style="font-weight:bold;margin:8px 0 5px;">Select a friend</div>
+                        <div id="friend-manager-chat-feed" class="friend-chat-feed"></div>
+                        <input id="friend-manager-chat-input" maxlength="120" placeholder="Message this friend..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendFriendMessage();}" />
+                        <button class="friend-action" style="margin-top:6px;width:100%;" onclick="sendFriendMessage()">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3497,7 +3512,8 @@
             if (tabs) tabs.style.cssText = 'display:flex!important;gap:8px;width:100%;margin:0 0 12px;position:relative;z-index:2147483002;pointer-events:auto;';
             const manageTab = document.getElementById('friend-manager-tab-settings');
             const listTab = document.getElementById('friend-manager-tab-list');
-            [manageTab, listTab].forEach(btn => {
+            const chatTab = document.getElementById('friend-manager-tab-chat');
+            [manageTab, listTab, chatTab].forEach(btn => {
                 if (!btn) return;
                 btn.style.cssText = 'display:block!important;visibility:visible!important;opacity:1!important;flex:1;min-height:40px;padding:9px;border:1px solid #8ecbff;border-radius:6px;background:#254866;color:white;cursor:pointer;pointer-events:auto!important;position:relative;z-index:2147483003;';
             });
@@ -3508,6 +3524,10 @@
             if (listTab && !listTab.dataset.bound) {
                 listTab.addEventListener('click', () => switchFriendManagerTab('list'));
                 listTab.dataset.bound = '1';
+            }
+            if (chatTab && !chatTab.dataset.bound) {
+                chatTab.addEventListener('click', () => switchFriendManagerTab('chat'));
+                chatTab.dataset.bound = '1';
             }
             const closeBtn = document.getElementById('friend-manager-close');
             if (closeBtn) {
@@ -3812,22 +3832,28 @@
         function renderFriendsList() {
             renderFriendsListInto(document.getElementById('friends-list'));
             renderFriendsListInto(document.getElementById('friend-manager-list'));
+            renderFriendsListInto(document.getElementById('friend-manager-chat-friends'));
             const count = document.getElementById('friend-manager-count');
             if (count) count.textContent = friends.length + (friends.length === 1 ? ' friend' : ' friends');
             renderFriendConversation();
         }
 
         function switchFriendManagerTab(tab) {
-            const showList = tab === 'list';
-            const manageTab = document.getElementById('friend-manager-tab-settings');
-            const listTab = document.getElementById('friend-manager-tab-list');
-            const managePanel = document.getElementById('friend-manager-settings-panel');
-            const listPanel = document.getElementById('friend-manager-list-panel');
-            if (manageTab) { manageTab.classList.toggle('active', !showList); manageTab.setAttribute('aria-selected', String(!showList)); }
-            if (listTab) { listTab.classList.toggle('active', showList); listTab.setAttribute('aria-selected', String(showList)); }
-            if (managePanel) { managePanel.classList.toggle('active', !showList); managePanel.style.setProperty('display', showList ? 'none' : 'block', 'important'); }
-            if (listPanel) { listPanel.classList.toggle('active', showList); listPanel.style.setProperty('display', showList ? 'block' : 'none', 'important'); }
-            if (showList) renderFriendsList();
+            const selected = ['settings', 'list', 'chat'].includes(tab) ? tab : 'settings';
+            const tabs = {
+                settings: ['friend-manager-tab-settings', 'friend-manager-settings-panel'],
+                list: ['friend-manager-tab-list', 'friend-manager-list-panel'],
+                chat: ['friend-manager-tab-chat', 'friend-manager-chat-panel']
+            };
+            Object.entries(tabs).forEach(([key, ids]) => {
+                const active = key === selected;
+                const button = document.getElementById(ids[0]);
+                const panel = document.getElementById(ids[1]);
+                if (button) { button.classList.toggle('active', active); button.setAttribute('aria-selected', String(active)); }
+                if (panel) { panel.classList.toggle('active', active); panel.style.setProperty('display', active ? 'block' : 'none', 'important'); }
+            });
+            if (selected === 'list' || selected === 'chat') renderFriendsList();
+            if (selected === 'chat') renderFriendConversation();
         }
 
         function selectFriendConversation(id) {
@@ -3845,32 +3871,37 @@
         }
 
         function renderFriendConversation() {
-            const panel = document.getElementById('friend-conversation');
-            const feed = document.getElementById('friend-message-feed');
-            const title = document.getElementById('friend-conversation-title');
-            if (!panel || !feed || !title) return;
-            feed.replaceChildren();
-            if (!selectedFriendId || !friends.includes(selectedFriendId)) {
-                panel.classList.remove('active');
-                title.textContent = 'Select a friend to chat';
-                return;
-            }
-            panel.classList.add('active');
-            const info = friendPresence[selectedFriendId] || {};
-            title.textContent = (info.username || selectedFriendId) + (info.online ? ' · Online' : ' · Offline');
-            (friendMessages[selectedFriendId] || []).forEach(message => {
-                const line = document.createElement('div');
-                line.className = 'friend-message';
-                const name = document.createElement('b');
-                name.textContent = (message.from === myDeviceId ? 'You' : (message.username || info.username || 'Friend')) + ': ';
-                line.append(name, document.createTextNode(String(message.text || '')));
-                feed.appendChild(line);
+            const targets = [
+                { panel: document.getElementById('friend-conversation'), feed: document.getElementById('friend-message-feed'), title: document.getElementById('friend-conversation-title') },
+                { panel: document.getElementById('friend-manager-chat-conversation'), feed: document.getElementById('friend-manager-chat-feed'), title: document.getElementById('friend-manager-chat-title') }
+            ];
+            const valid = !!selectedFriendId && friends.includes(selectedFriendId);
+            const info = valid ? (friendPresence[selectedFriendId] || {}) : {};
+            targets.forEach(({panel, feed, title}) => {
+                if (!panel || !feed || !title) return;
+                feed.replaceChildren();
+                if (!valid) {
+                    panel.classList.remove('active');
+                    title.textContent = 'Select a friend to chat';
+                    return;
+                }
+                panel.classList.add('active');
+                title.textContent = (info.username || selectedFriendId) + (info.online ? ' · Online' : ' · Offline');
+                (friendMessages[selectedFriendId] || []).forEach(message => {
+                    const line = document.createElement('div');
+                    line.className = 'friend-message';
+                    const name = document.createElement('b');
+                    name.textContent = (message.from === myDeviceId ? 'You' : (message.username || info.username || 'Friend')) + ': ';
+                    line.append(name, document.createTextNode(String(message.text || '')));
+                    feed.appendChild(line);
+                });
+                feed.scrollTop = feed.scrollHeight;
             });
-            feed.scrollTop = feed.scrollHeight;
         }
 
         function sendFriendMessage() {
-            const input = document.getElementById('friend-message-input');
+            const standaloneWindow = new URLSearchParams(window.location.search).get('friendManagerWindow') === '1';
+            const input = standaloneWindow ? document.getElementById('friend-manager-chat-input') : document.getElementById('friend-message-input');
             const message = String(input && input.value || '').trim().slice(0,120);
             if (!message || !selectedFriendId) return;
             const conn = friendConnections[selectedFriendId];
