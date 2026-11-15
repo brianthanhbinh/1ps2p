@@ -3079,7 +3079,7 @@
                         delete activeTraps[data.key];
                         } else if(trap.type==='freeze') { triggerPlayer.frozenUntil=Date.now()+1500;triggerPlayer.vx=0;triggerPlayer.vy=0; } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
                         else if(trap.type==='bounce'||trap.type==='spring') { const a=Math.atan2(triggerPlayer.y-trap.y,triggerPlayer.x-trap.x),boost=trap.type==='spring'?105:55;triggerPlayer.x+=Math.cos(a)*boost;triggerPlayer.y+=Math.sin(a)*boost; }
-                        else triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
+                        else if(trap.type!=='blackhole') triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
                         conn.send({type:'trap_damage',hp:triggerPlayer.hp,x:triggerPlayer.x,y:triggerPlayer.y,slowedUntil:slowUntil,frozenUntil:triggerPlayer.frozenUntil||0});
                         broadcastStateToClients();
                     }
