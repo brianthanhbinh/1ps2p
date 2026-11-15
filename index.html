@@ -14,7 +14,10 @@
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Lobby Menu */
-        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 30; }
+        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto !important; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 1000002 !important; isolation: isolate; }
+        #lobby-box * { pointer-events: auto; }
+        #lobby-box .lobby-tabs, #lobby-box .lobby-tab { position: relative; z-index: 1000003; pointer-events: auto !important; }
+        #lobby-box button { touch-action: manipulation; }
         #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
         .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
         .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; }
@@ -555,9 +558,9 @@
         <div id="lobby-box">
             <h1>2D P2P Arena</h1>
             <div class="lobby-tabs">
-                <button class="lobby-tab active" onclick="switchLobbyTab('main', this)">Match Setup</button>
-                <button class="lobby-tab" onclick="switchLobbyTab('globals', this)">Global Servers</button>
-                <button class="lobby-tab" onclick="switchLobbyTab('peers', this)">Peer History</button>
+                <button type="button" class="lobby-tab active" data-lobby-tab="main">Match Setup</button>
+                <button type="button" class="lobby-tab" data-lobby-tab="globals">Global Servers</button>
+                <button type="button" class="lobby-tab" data-lobby-tab="peers">Peer History</button>
             </div>
 
             <div id="lobby-tab-main" class="lobby-content active">
@@ -2119,13 +2122,14 @@
         }
 
         function switchLobbyTab(tabKey, btnElement) {
-            document.querySelectorAll('.lobby-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.lobby-content').forEach(c => c.classList.remove('active'));
-            btnElement.classList.add('active');
-            const targetContent = document.getElementById(`lobby-tab-${tabKey}`);
-            if (targetContent) targetContent.classList.add('active');
+            document.querySelectorAll('#lobby-box .lobby-tab').forEach(b => b.classList.toggle('active', b === btnElement));
+            document.querySelectorAll('#lobby-box .lobby-content').forEach(c => c.classList.toggle('active', c.id === 'lobby-tab-' + tabKey));
             if (tabKey === 'peers') renderPeerHistory();
         }
+        // Bind tabs directly instead of relying on inline HTML click handlers.
+        document.querySelectorAll('#lobby-box [data-lobby-tab]').forEach(button => {
+            button.addEventListener('click', () => switchLobbyTab(button.dataset.lobbyTab, button));
+        });
 
         const PEER_HISTORY_KEY = 'arena_peer_history_v1';
         function getPeerHistory() {
