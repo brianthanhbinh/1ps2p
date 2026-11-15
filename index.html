@@ -299,7 +299,7 @@
                 <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Freeze Trap Pack (+2)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'freeze', 150)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -311,7 +311,7 @@
             </div>
             <div id="shop-tab-blocks" class="shop-content">
                 <div class="shop-item-card"><span>🪨 Reinforced Block (220 HP)</span><div><b style="color:#ffca28;">45 🪙</b> <button onclick="buyStoreItem('block', 'reinforced', 45)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🛑 Stop Block (300 HP · stops movement)</span><div><b style="color:#ffca28;">220 🪙</b> <button onclick="buyStoreItem('block', 'stop', 220)">Buy</button></div></div><div class="shop-item-card"><span>🔩 Metal Block (400 HP)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('block', 'metal', 90)">Buy</button></div></div>
                 <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItem('block', 'healing', 1000)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItem('block', 'obsidian', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItem('block', 'glass', 35)">Buy</button></div></div>
@@ -488,14 +488,14 @@
         <div id="hotbar-dock">
             <div class="hotbar-slot selected" id="hslot-0" onclick="selectHotbarSlot(0)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 0)"><span>1</span><canvas class="hotbar-canvas" id="hcanvas-0" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-1" onclick="selectHotbarSlot(1)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 1)"><span>2</span><canvas class="hotbar-canvas" id="hcanvas-1" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button><button type="button" class="block-choice" data-block="force" onclick="chooseBlockFromPicker(event,'force')"><canvas id="block-icon-force" width="68" height="68"></canvas>Force<small id="block-count-force">0</small></button><button type="button" class="block-choice" data-block="ball" onclick="chooseBlockFromPicker(event,'ball')"><canvas id="block-icon-ball" width="68" height="68"></canvas>Ball<small id="block-count-ball">0</small></button><button type="button" class="block-choice" data-block="force2" onclick="chooseBlockFromPicker(event,'force2')"><canvas id="block-icon-force2" width="68" height="68"></canvas>Force II<small id="block-count-force2">0</small></button><button type="button" class="block-choice" data-block="force3" onclick="chooseBlockFromPicker(event,'force3')"><canvas id="block-icon-force3" width="68" height="68"></canvas>Force III<small id="block-count-force3">0</small></button><button type="button" class="block-choice" data-block="oneway" onclick="chooseBlockFromPicker(event,'oneway')"><canvas id="block-icon-oneway" width="68" height="68"></canvas>One-Way<small id="block-count-oneway">0</small></button><button type="button" class="block-choice" data-block="damage" onclick="chooseBlockFromPicker(event,'damage')"><canvas id="block-icon-damage" width="68" height="68"></canvas>Damage<small id="block-count-damage">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-2" onclick="selectHotbarSlot(2);toggleBlockPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 2)"><span>3</span><small id="block-slot-count" class="hotbar-count">∞</small><canvas class="hotbar-canvas" id="hcanvas-2" width="68" height="68"></canvas><div id="block-picker"><button type="button" class="block-choice" data-block="wood" onclick="chooseBlockFromPicker(event,'wood')"><canvas id="block-icon-wood" width="68" height="68"></canvas>Wood<small>∞</small></button><button type="button" class="block-choice" data-block="reinforced" onclick="chooseBlockFromPicker(event,'reinforced')"><canvas id="block-icon-reinforced" width="68" height="68"></canvas>Reinforced<small id="block-count-reinforced">0</small></button><button type="button" class="block-choice" data-block="metal" onclick="chooseBlockFromPicker(event,'metal')"><canvas id="block-icon-metal" width="68" height="68"></canvas>Metal<small id="block-count-metal">0</small></button><button type="button" class="block-choice" data-block="healing" onclick="chooseBlockFromPicker(event,'healing')"><canvas id="block-icon-healing" width="68" height="68"></canvas>Healing<small id="block-count-healing">0</small></button><button type="button" class="block-choice" data-block="obsidian" onclick="chooseBlockFromPicker(event,'obsidian')"><canvas id="block-icon-obsidian" width="68" height="68"></canvas>Obsidian<small id="block-count-obsidian">0</small></button><button type="button" class="block-choice" data-block="glass" onclick="chooseBlockFromPicker(event,'glass')"><canvas id="block-icon-glass" width="68" height="68"></canvas>Glass<small id="block-count-glass">0</small></button><button type="button" class="block-choice" data-block="bounce" onclick="chooseBlockFromPicker(event,'bounce')"><canvas id="block-icon-bounce" width="68" height="68"></canvas>Bounce<small id="block-count-bounce">0</small></button><button type="button" class="block-choice" data-block="ice" onclick="chooseBlockFromPicker(event,'ice')"><canvas id="block-icon-ice" width="68" height="68"></canvas>Ice<small id="block-count-ice">0</small></button><button type="button" class="block-choice" data-block="crystal" onclick="chooseBlockFromPicker(event,'crystal')"><canvas id="block-icon-crystal" width="68" height="68"></canvas>Crystal<small id="block-count-crystal">0</small></button><button type="button" class="block-choice" data-block="bunker" onclick="chooseBlockFromPicker(event,'bunker')"><canvas id="block-icon-bunker" width="68" height="68"></canvas>Bunker<small id="block-count-bunker">0</small></button><button type="button" class="block-choice" data-block="force" onclick="chooseBlockFromPicker(event,'force')"><canvas id="block-icon-force" width="68" height="68"></canvas>Force<small id="block-count-force">0</small></button><button type="button" class="block-choice" data-block="ball" onclick="chooseBlockFromPicker(event,'ball')"><canvas id="block-icon-ball" width="68" height="68"></canvas>Ball<small id="block-count-ball">0</small></button><button type="button" class="block-choice" data-block="force2" onclick="chooseBlockFromPicker(event,'force2')"><canvas id="block-icon-force2" width="68" height="68"></canvas>Force II<small id="block-count-force2">0</small></button><button type="button" class="block-choice" data-block="force3" onclick="chooseBlockFromPicker(event,'force3')"><canvas id="block-icon-force3" width="68" height="68"></canvas>Force III<small id="block-count-force3">0</small></button><button type="button" class="block-choice" data-block="oneway" onclick="chooseBlockFromPicker(event,'oneway')"><canvas id="block-icon-oneway" width="68" height="68"></canvas>One-Way<small id="block-count-oneway">0</small></button><button type="button" class="block-choice" data-block="damage" onclick="chooseBlockFromPicker(event,'damage')"><canvas id="block-icon-damage" width="68" height="68"></canvas>Damage<small id="block-count-damage">0</small></button><button type="button" class="block-choice" data-block="stop" onclick="chooseBlockFromPicker(event,'stop')"><canvas id="block-icon-stop" width="68" height="68"></canvas>Stop<small id="block-count-stop">0</small></button></div></div>
             <div class="hotbar-slot" id="hslot-3" draggable="true" ondragstart="dragHotbar(event, 3)" ondragend="draggedData=null" onclick="selectHotbarSlot(3)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 3)"><span>4</span><canvas class="hotbar-canvas" id="hcanvas-3" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><small id="grenade-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><small id="smoke-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="freeze" onclick="chooseTrapFromPicker(event,'freeze')"><canvas id="trap-icon-freeze" width="68" height="68"></canvas>Freeze<small id="trap-count-freeze">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button></div></div>
         </div>
         <div id="mobile-controls" aria-label="Mobile game controls">
             <div id="move-stick"><div id="move-knob"></div></div>
@@ -670,7 +670,7 @@
         let activeSmokeClouds = [];
         let hostRemoteSmokeClouds = [];
         let activeTraps = {};
-        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0, laser: 0, shock: 0, spring: 0 };
+        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0, laser: 0, shock: 0, spring: 0, freeze: 0 };
         let trapsCount = 2;
         let selectedTrapType = 'spike';
         function updateTrapTotal(){trapsCount=Object.values(trapInventory).reduce((sum,n)=>sum+(Number(n)||0),0);return trapsCount;}
@@ -682,6 +682,8 @@
         function toggleTrapPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('trap-picker');if(p)p.classList.toggle('open');}
         function chooseTrapFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}setSelectedTrapType(type);const p=document.getElementById('trap-picker');if(p)p.classList.remove('open');selectHotbarSlot(9);}
         let playerSlowUntil = 0;
+        let playerFrozenUntil = 0;
+        let metalDetectorOwned = false;
         let ctfFlags = null;
         let ctfScores = { Red: 0, Blue: 0 };
         let ctfActionPending = false;
@@ -796,7 +798,7 @@
             }
         }
         let worldBlocks = {};
-        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0 };
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0 };
         let forceBlockRotation = 0;
         // Launch velocity from Force II / Force III blocks.
         let playerMomentumX = 0, playerMomentumY = 0;
@@ -952,7 +954,7 @@
             'skin', 'avatar', 'sword', 'pickaxe', 'block', 'grenade', 'bandage', 'trap',
             'pistol', 'smg', 'shotgun', 'sniper', 'rocket', 'minigun', 'laser', 'plasma', 'flame', 'bullet',
             'bike', 'car', 'tank', 'hovercraft', 'mech', 'coin', 'crate', 'smoke_bomb',
-            'trap_laser', 'trap_shock', 'trap_spring'
+            'trap_laser', 'trap_shock', 'trap_spring', 'trap_freeze'
         ];
 
         function initializeAssets() {
@@ -982,6 +984,8 @@
             if(itemType==='sword'){
                 path([[-3,7],[0,-13],[3,-16],[5,-12],[2,8]],metal);c.strokeStyle='#eaf5fa';c.lineWidth=1;c.beginPath();c.moveTo(1,-10);c.lineTo(2,3);c.stroke();
                 path([[-8,7],[8,7],[7,10],[-7,10]],'#d69b43');c.fillStyle=wood;c.beginPath();c.roundRect(-2,9,4,9,2);c.fill();c.strokeStyle='#17232b';c.stroke();c.beginPath();c.arc(0,18,2,0,Math.PI*2);c.fillStyle='#d8b078';c.fill();
+            } else if(itemType==='metal_detector'){
+                c.fillStyle='#455a64';c.fillRect(-3,-13,6,23);c.fillStyle='#90a4ae';c.fillRect(-9,-15,18,5);c.strokeStyle='#00e5ff';c.lineWidth=2;c.beginPath();c.arc(0,9,9,Math.PI,Math.PI*2);c.stroke();c.fillStyle='#ffca28';c.beginPath();c.arc(0,9,2,0,Math.PI*2);c.fill();
             } else if(itemType==='pickaxe'){
                 c.strokeStyle=wood;c.lineWidth=5;c.beginPath();c.moveTo(0,-4);c.lineTo(1,17);c.stroke();c.strokeStyle='#17232b';c.lineWidth=1;c.stroke();
                 path([[-13,-7],[-10,-12],[-4,-14],[3,-13],[11,-10],[14,-5],[10,-3],[5,-7],[0,-8],[-7,-5],[-11,-3]],metal);
@@ -1095,10 +1099,10 @@
             c.restore();
         }
 
-        function getCurrentHeldItem(){if(activeHotbar>=3&&activeHotbar<=5){const weapon=weaponBarSlots[activeHotbar-3];return weapon?{type:'gun',subtype:weapon}:null;}if(activeHotbar===0)return {type:'sword'};if(activeHotbar===1)return {type:'pickaxe'};if(activeHotbar===2)return {type:'block',subtype:selectedBuildBlock};if(activeHotbar===6)return grenadesCount>0?{type:'grenade'}:null;if(activeHotbar===7)return bandagesCount>0?{type:'bandage'}:null;if(activeHotbar===8)return smokeBombsCount>0?{type:'smoke_bomb'}:null;if(activeHotbar===9)return trapsCount>0?{type:'trap',subtype:selectedTrapType}:null;return null;}
+        function getCurrentHeldItem(){if(activeHotbar>=3&&activeHotbar<=5){const weapon=weaponBarSlots[activeHotbar-3];return weapon?{type:'gun',subtype:weapon}:null;}if(activeHotbar===0)return {type:'sword'};if(activeHotbar===1)return {type:metalDetectorOwned?'metal_detector':'pickaxe'};if(activeHotbar===2)return {type:'block',subtype:selectedBuildBlock};if(activeHotbar===6)return grenadesCount>0?{type:'grenade'}:null;if(activeHotbar===7)return bandagesCount>0?{type:'bandage'}:null;if(activeHotbar===8)return smokeBombsCount>0?{type:'smoke_bomb'}:null;if(activeHotbar===9)return trapsCount>0?{type:'trap',subtype:selectedTrapType}:null;return null;}
         function refreshHotbarUI() {
             drawItemArtOnCanvas(document.getElementById('hcanvas-0'), 'sword', null);
-            drawItemArtOnCanvas(document.getElementById('hcanvas-1'), 'pickaxe', null);
+            drawItemArtOnCanvas(document.getElementById('hcanvas-1'), metalDetectorOwned?'metal_detector':'pickaxe', null);
             drawItemArtOnCanvas(document.getElementById('hcanvas-2'), 'block', selectedBuildBlock);
             for(const type of ['wood',...Object.keys(blockInventory)]){const icon=document.getElementById('block-icon-'+type);if(icon)drawItemArtOnCanvas(icon,'block',type);const count=document.getElementById('block-count-'+type);if(count)count.textContent=blockInventory[type]||0;}
             document.querySelectorAll('.block-choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.block===selectedBuildBlock));
@@ -1953,7 +1957,7 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
+            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
@@ -1973,6 +1977,10 @@
                 if(ammoByWeapon[subtypeName]===undefined)ammoByWeapon[subtypeName]=getAmmoCapacity(subtypeName);
                 syncSelectedAmmo();
                 refreshHotbarUI();
+            } else if (itemType === 'tool') {
+                if (subtypeName !== 'metal_detector') return;
+                metalDetectorOwned = true;selectHotbarSlot(1);refreshHotbarUI();
+                if (!isBatchPurchase) showNotificationBox('Metal Detector purchased! Use slot 2 to mine traps. Pickaxe cannot damage traps.');
             } else if (itemType === 'consumable') {
                 if (subtypeName === 'grenade') grenadesCount += 3;
                 if (subtypeName === 'bandage') bandagesCount += 2;
@@ -2723,7 +2731,7 @@
                         trap.nextReadyAt = Date.now() + (trap.cooldownMs || 1800);
                         let slowUntil = 0;
                         if(trap.type === 'mine') {
-                        const bx=trap.x,by=trap.y,radius=125,maxDamage=72;
+                        const bx=trap.x,by=trap.y,radius=160,maxDamage=85;
                         const applyBlast=p=>{if(!p||p.hp<=0||(trap.team!=='FFA'&&p.team===trap.team))return 0;const d=Math.hypot(p.x-bx,p.y-by);if(d>=radius)return 0;const amount=Math.max(1,Math.round(maxDamage*(1-d/radius)));p.hp=Math.max(0,p.hp-amount);return amount;};
                         const localDamage=applyBlast({x:posX,y:posY,hp:currentHp,team:playerTeam});
                         if(localDamage)currentHp=Math.max(0,currentHp-localDamage);
@@ -2733,10 +2741,10 @@
                             if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
                         }
                         floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
-                        } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
+                        } else if(trap.type==='freeze') { triggerPlayer.frozenUntil=Date.now()+2200;triggerPlayer.vx=0;triggerPlayer.vy=0; } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
                         else if(trap.type==='bounce'||trap.type==='spring') { const a=Math.atan2(triggerPlayer.y-trap.y,triggerPlayer.x-trap.x),boost=trap.type==='spring'?105:55;triggerPlayer.x+=Math.cos(a)*boost;triggerPlayer.y+=Math.sin(a)*boost; }
                         else triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
-                        conn.send({type:'trap_damage',hp:triggerPlayer.hp,x:triggerPlayer.x,y:triggerPlayer.y,slowedUntil:slowUntil});
+                        conn.send({type:'trap_damage',hp:triggerPlayer.hp,x:triggerPlayer.x,y:triggerPlayer.y,slowedUntil:slowUntil,frozenUntil:triggerPlayer.frozenUntil||0});
                         broadcastStateToClients();
                     }
                 } else if (data.type === 'explosion_request') {
@@ -2904,7 +2912,7 @@
                     document.getElementById('net-status').innerText = 'Bossfight expired. Returned to lobby.';
                 } else if (data.type === 'trap_damage') {
                     if (typeof data.hp === 'number') currentHp = data.hp;
-                    if(Number.isFinite(data.x))posX=data.x;if(Number.isFinite(data.y))posY=data.y;if(data.slowedUntil)playerSlowUntil=Math.max(playerSlowUntil||0,data.slowedUntil);
+                    if(Number.isFinite(data.x))posX=data.x;if(Number.isFinite(data.y))posY=data.y;if(data.slowedUntil)playerSlowUntil=Math.max(playerSlowUntil||0,data.slowedUntil);if(data.frozenUntil)playerFrozenUntil=Math.max(playerFrozenUntil||0,data.frozenUntil);
                 } else if (data.type === 'block_damage') {
                     if (typeof data.hp === 'number') currentHp = data.hp;
                     showNotificationBox(`☠ Damage block! -${Number(data.damage) || 12} HP`);
@@ -3804,7 +3812,7 @@
 
             else if (activeHotbar === 1 && !actionCdAttack) {
                 let minedTrap=false;
-                for(let tk in activeTraps){const tr=activeTraps[tk];if(!tr||Math.hypot(posX-tr.x,posY-tr.y)>90||Math.hypot(targetWorldX-tr.x,targetWorldY-tr.y)>24)continue;
+                for(let tk in activeTraps){const tr=activeTraps[tk];if(!tr||!metalDetectorOwned||Math.hypot(posX-tr.x,posY-tr.y)>90||Math.hypot(targetWorldX-tr.x,targetWorldY-tr.y)>24)continue;
                     if(!isHosting){if(hostConnection&&hostConnection.open){hostConnection.send({type:'mine_trap',key:tk,damage:35});showNotificationBox('Mining trap...');}else showNotificationBox('Only the host can update traps right now.');}
                     else{tr.hp=(Number(tr.hp)||120)-35;if(tr.hp<=0){delete activeTraps[tk];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);showNotificationBox('Trap destroyed! It dropped as loot.');}else showNotificationBox('Mining trap... HP: '+tr.hp);broadcastStateToClients();}
                     minedTrap=true;break;}
@@ -3846,7 +3854,7 @@
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
-                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, conveyor: 220, mud: 240 };
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
                 if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
                     selectedBuildBlock = 'wood';
                     showNotificationBox('That purchased block is out of stock. Using basic wood.');
@@ -4258,7 +4266,9 @@
                 }
             }
 
-            let moveSpeed = Date.now() < Math.max(playerSlowUntil, window.localSlowUntil || 0) ? 1.8 : 3.8;
+            let stoppedByBlock=false;for(const key in worldBlocks){const b=worldBlocks[key];if(b&&b.type==='stop'&&Math.hypot(posX-(Number(key.split(',')[0])*40+20),posY-(Number(key.split(',')[1])*40+20))<38){stoppedByBlock=true;break;}}
+            if(stoppedByBlock){playerMomentumX=0;playerMomentumY=0;}
+            let moveSpeed = (Date.now() < playerFrozenUntil || stoppedByBlock) ? 0 : (Date.now() < Math.max(playerSlowUntil, window.localSlowUntil || 0) ? 1.8 : 3.8);
             let sprintMultiplier = 1.0;
             const hasMovementInput = !!(
                 keyboardInput['KeyW'] || keyboardInput['ArrowUp'] ||
@@ -4443,7 +4453,7 @@
                 if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'mine') {
                     if (isHosting) {
-                        const radius=125,maxDamage=72;
+                        const radius=160,maxDamage=85;
                         const applyBlast=p=>{if(!p||p.hp<=0||(tr.team!=='FFA'&&p.team===tr.team))return;const d=Math.hypot(p.x-tr.x,p.y-tr.y);if(d<radius)p.hp=Math.max(0,p.hp-Math.max(1,Math.round(maxDamage*(1-d/radius))));};
                         const selfD=Math.hypot(posX-tr.x,posY-tr.y);
                         if(selfD<radius&&(tr.team==='FFA'||tr.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(maxDamage*(1-selfD/radius))));
@@ -4455,7 +4465,8 @@
                         }
                         tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);
                         floatingParticles.push({x:tr.x,y:tr.y,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
-                        showNotificationBox('💥 Mine detonated! Ring blast!');
+                        delete activeTraps[tk];
+                        showNotificationBox('💥 Mine detonated! Spread damage!');
                         broadcastStateToClients();
                     } else if(hostConnection&&hostConnection.open) {
                         tr.triggerPending=true;
@@ -4467,7 +4478,7 @@
                     tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});
                 } else {
                     tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);
-                    if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
+                    if(tr.type==='freeze'){playerFrozenUntil=Date.now()+2200;playerMomentumX=0;playerMomentumY=0;showNotificationBox('❄️ Freeze trap! Movement stopped!');}else if(tr.type==='glue'||tr.type==='shock'){playerSlowUntil=Date.now()+(tr.type==='shock'?3200:2500);if(tr.type==='shock')currentHp=Math.max(0,currentHp-12);showNotificationBox(tr.type==='shock'?'⚡ Shock trap! Slowed!':'Glue trap! Movement slowed.');}
                     else if(tr.type==='bounce'||tr.type==='spring'){const a=Math.atan2(posY-tr.y,posX-tr.x),boost=tr.type==='spring'?105:55;posX+=Math.cos(a)*boost;posY+=Math.sin(a)*boost;showNotificationBox(tr.type==='spring'?'Spring launcher!':'Bounce trap!');}
                     else{const dmg=tr.type==='laser'?36:tr.type==='bear'?28:20;currentHp=Math.max(0,currentHp-dmg);showNotificationBox(tr.type==='laser'?'🔴 Laser tripwire triggered!':`Triggered ${String(tr.type||'spike').toUpperCase()} trap!`);}
                     if(isHosting)broadcastStateToClients();
@@ -5137,7 +5148,7 @@
                     ctx.fillStyle='#e65100';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffcc80';ctx.lineWidth=2;ctx.stroke();
                     ctx.strokeStyle='#263238';ctx.lineWidth=2;for(let p=0;p<8;p++){const a=p*Math.PI/4;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*12,tr.y+Math.sin(a)*12);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}
                     ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(tr.x,tr.y,3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffab91';ctx.lineWidth=1;ctx.beginPath();ctx.arc(tr.x,tr.y,19,0,Math.PI*2);ctx.stroke();
-                }else if(tr.type==='glue'){
+                }else if(tr.type==='freeze'){ctx.fillStyle='#174f78';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b9edff';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='#e1f8ff';ctx.lineWidth=3;for(let z=0;z<6;z++){const a=z*Math.PI/3;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*4,tr.y+Math.sin(a)*4);ctx.lineTo(tr.x+Math.cos(a)*15,tr.y+Math.sin(a)*15);ctx.stroke();}}else if(tr.type==='glue'){
                     ctx.fillStyle='#6d4c41';ctx.beginPath();ctx.roundRect(tr.x-15,tr.y-10,30,20,7);ctx.fill();ctx.stroke();ctx.fillStyle='#80cbc4';for(let p=-1;p<=1;p++){ctx.beginPath();ctx.arc(tr.x+p*8,tr.y,4,0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#b2dfdb';ctx.beginPath();ctx.moveTo(tr.x-10,tr.y+13);ctx.lineTo(tr.x+10,tr.y+13);ctx.stroke();
                 }else if(tr.type==='laser'){const pulse=.65+.35*Math.sin(Date.now()/110);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff1744';ctx.lineWidth=3;ctx.shadowColor='#ff1744';ctx.shadowBlur=16;ctx.beginPath();ctx.moveTo(tr.x-38,tr.y);ctx.lineTo(tr.x+38,tr.y);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=pulse;ctx.fillStyle='#ff8a80';ctx.fillRect(tr.x-5,tr.y-5,10,10);}else if(tr.type==='shock'){ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#40c4ff';ctx.lineWidth=3;ctx.shadowColor='#40c4ff';ctx.shadowBlur=12;for(let z=0;z<4;z++){const a=Date.now()/250+z*Math.PI/2;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*5,tr.y+Math.sin(a)*5);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}ctx.shadowBlur=0;}else if(tr.type==='spring'){ctx.fillStyle='#37474f';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a5d6a7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tr.x,tr.y,10,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-9,tr.y+7);ctx.lineTo(tr.x-4,tr.y-1);ctx.lineTo(tr.x+1,tr.y+7);ctx.lineTo(tr.x+6,tr.y-1);ctx.lineTo(tr.x+10,tr.y+7);ctx.stroke();}else if(tr.type==='bounce'){
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
