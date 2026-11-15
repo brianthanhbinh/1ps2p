@@ -1,78 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>1ps2p Arena</title>
-<style>
-  body { margin: 0; background: #111; color: #fff; overflow: hidden; font-family: sans-serif; }
-  canvas { display: block; background: #222; margin: 0 auto; }
-  #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; }
-  button { padding: 5px 10px; cursor: pointer; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1ps2p - Multiplayer Arena</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            user-select: none;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            z-index: 10;
+        }
+        .interactive { pointer-events: auto; }
+        header, footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        h1 { font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stats-group { display: flex; gap: 16px; font-size: 0.9rem; font-weight: 600; }
+        .stat-item { background: rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); }
+        button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        button:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        button:active { transform: translateY(1px); }
+        #canvas-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        #minimap-container {
+            position: absolute;
+            bottom: 24px; right: 24px;
+            width: 180px; height: 180px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: auto;
+            z-index: 5;
+        }
+        #minimap-canvas { width: 100%; height: 100%; }
+        #debug-hud {
+            position: absolute;
+            top: 80px; left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #38bdf8;
+            pointer-events: none;
+            display: none;
+            z-index: 20;
+        }
+    </style>
 </head>
 <body>
-<div id="ui">
-  Mode: <span id="modeDisplay">Portal</span>
-  <button onclick="currentMode = 'portal'">Portal</button>
-  <button onclick="currentMode = 'block'">Block</button>
-</div>
-<canvas id="gameCanvas" width="800" height="600"></canvas>
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
 
-let lastActionTime = 0;
-const ACTION_COOLDOWN = 250; // ms debounce to prevent double-firing per single click
-let currentMode = 'portal'; // 'portal' or 'block'
+    <div id="debug-hud">
+        FPS: <span id="debug-fps">60</span><br>
+        VX: <span id="debug-vx">0.00</span> | VY: <span id="debug-vy">0.00</span><br>
+        Speed: <span id="debug-speed">0.00</span><br>
+        Pos: (<span id="debug-pos-x">0</span>, <span id="debug-pos-y">0</span>)
+    </div>
 
-const portals = [];
-const blocks = [];
+    <div id="minimap-container">
+        <canvas id="minimap-canvas" width="180" height="180"></canvas>
+    </div>
 
-window.addEventListener('mousedown', (e) => {
-    // Ignore clicks on UI elements
-    if (e.target.tagName === 'BUTTON' || e.target.id === 'ui') return;
+    <div id="ui-layer">
+        <header class="interactive">
+            <h1>1ps2p Arena</h1>
+            <div class="stats-group">
+                <div class="stat-item">HP: <span id="stat-hp">100</span>/<span id="stat-maxhp">100</span></div>
+                <div class="stat-item">Shield: <span id="stat-shield">0</span></div>
+                <div class="stat-item">Score: <span id="stat-score">0</span></div>
+            </div>
+            <button onclick="toggleDebug()">Debug HUD</button>
+        </header>
 
-    const now = performance.now();
-    if (now - lastActionTime < ACTION_COOLDOWN) return;
-    lastActionTime = now;
+        <footer class="interactive">
+            <p>Use <b>W, A, S, D</b> to move, <b>Mouse</b> to aim & shoot.</p>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="spawnTestBot()">Spawn Bot</button>
+            </div>
+        </footer>
+    </div>
 
-    if (currentMode === 'portal') {
-        portals.push({ x: e.clientX, y: e.clientY });
-        console.log("Portal placed at:", e.clientX, e.clientY);
-    } else if (currentMode === 'block') {
-        blocks.push({ x: e.clientX - 20, y: e.clientY - 20, width: 40, height: 40 });
-        console.log("Block placed at:", e.clientX, e.clientY);
-    }
-});
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const mCanvas = document.getElementById('minimap-canvas');
+        const mCtx = mCanvas.getContext('2d');
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw blocks
-    ctx.fillStyle = '#888';
-    blocks.forEach(b => {
-        ctx.fillRect(b.x, b.y, b.width, b.height);
-        ctx.strokeStyle = '#fff';
-        ctx.strokeRect(b.x, b.y, b.width, b.height);
-    });
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-    // Draw portals
-    portals.forEach((p, index) => {
-        ctx.fillStyle = index % 2 === 0 ? '#00f' : '#f80';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-    });
+        let debugMenuOpen = false;
+        function toggleDebug() {
+            debugMenuOpen = !debugMenuOpen;
+            document.getElementById('debug-hud').style.display = debugMenuOpen ? 'block' : 'none';
+        }
 
-    document.getElementById('modeDisplay').innerText = currentMode.toUpperCase();
+        const MAP_SIZE = 3000;
+        const RADIUS_PLAYER = 18;
 
-    requestAnimationFrame(gameLoop);
-}
+        let posX = MAP_SIZE / 2;
+        let posY = MAP_SIZE / 2;
+        let playerHp = 100;
+        let playerMaxHp = 100;
+        let playerShield = 0;
+        let playerScore = 0;
+        let playerColor = '#3b82f6';
+        let aimAngle = 0;
+        let myUsername = 'Player';
 
-gameLoop();
-</script>
+        let mouseXCoord = 0;
+        let mouseYCoord = 0;
+        let keysPressed = {};
+
+        window.addEventListener('keydown', e => { keysPressed[e.code] = true; });
+        window.addEventListener('keyup', e => { keysPressed[e.code] = false; });
+        window.addEventListener('mousemove', e => {
+            mouseXCoord = e.clientX;
+            mouseYCoord = e.clientY;
+        });
+
+        let aiBots = [];
+
+        function spawnTestBot() {
+            aiBots.push({
+                x: posX + (Math.random() - 0.5) * 400,
+                y: posY + (Math.random() - 0.5) * 400,
+                hp: 100,
+                maxHp: 100,
+                radius: RADIUS_PLAYER,
+                username: 'Bot_' + Math.floor(Math.random() * 1000),
+                color: '#ef4444',
+                aimAngle: 0
+            });
+        }
+
+        let debugLastFpsAt = performance.now();
+        let debugFrameCount = 0;
+        let debugFps = 60;
+        let debugLastPosX = posX;
+        let debugLastPosY = posY;
+
+        function updateGameLogic() {
+            let speed = 4;
+            let dx = 0, dy = 0;
+            if (keysPressed['KeyW'] || keysPressed['ArrowUp']) dy -= 1;
+            if (keysPressed['KeyS'] || keysPressed['ArrowDown']) dy += 1;
+            if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) dx -= 1;
+            if (keysPressed['KeyD'] || keysPressed['ArrowRight']) dx += 1;
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            posX += dx * speed;
+            posY += dy * speed;
+
+            posX = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posX));
+            posY = Math.max(RADIUS_PLAYER, Math.min(MAP_SIZE - RADIUS_PLAYER, posY));
+
+            aimAngle = Math.atan2(mouseYCoord - canvas.height / 2, mouseXCoord - canvas.width / 2);
+
+            aiBots.forEach(bot => {
+                bot.aimAngle += 0.02;
+            });
+
+            document.getElementById('stat-hp').textContent = Math.round(playerHp);
+            document.getElementById('stat-maxhp').textContent = playerMaxHp;
+            document.getElementById('stat-shield').textContent = playerShield;
+            document.getElementById('stat-score').textContent = playerScore;
+        }
+
+        function renderGameScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            const camX = canvas.width / 2 - posX;
+            const camY = canvas.height / 2 - posY;
+            ctx.translate(camX, camY);
+
+            // Draw grid background
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            const gridSize = 100;
+            for (let x = 0; x < MAP_SIZE; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_SIZE); ctx.stroke();
+            }
+            for (let y = 0; y < MAP_SIZE; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, y); ctx.stroke();
+            }
+
+            // Draw AI Bots
+            aiBots.forEach(bot => {
+                if (bot.hp <= 0) return;
+                ctx.save(); ctx.translate(bot.x, bot.y);
+                ctx.rotate(bot.aimAngle);
+                ctx.fillStyle = bot.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, bot.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(bot.username, 0, -24);
+                ctx.fillStyle = '#222'; ctx.fillRect(-20, -20, 40, 5);
+                ctx.fillStyle = '#22c55e'; ctx.fillRect(-20, -20, 40 * (bot.hp / bot.maxHp), 5);
+                ctx.restore();
+            });
+
+            // Draw Player
+            ctx.save(); ctx.translate(posX, posY);
+            ctx.rotate(aimAngle);
+            ctx.fillStyle = playerColor; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.restore();
+
+            ctx.save(); ctx.translate(posX, posY);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(myUsername + ' (You)', 0, -28);
+            ctx.restore();
+
+            ctx.restore();
+            renderMinimap();
+        }
+
+        function renderMinimap() {
+            if (!mCtx || !mCanvas) return;
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            const scale = mCanvas.width / MAP_SIZE;
+
+            mCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+            mCtx.fillStyle = '#3b82f6';
+            mCtx.beginPath();
+            mCtx.arc(posX * scale, posY * scale, 4, 0, Math.PI * 2);
+            mCtx.fill();
+
+            aiBots.forEach(bot => {
+                mCtx.fillStyle = bot.color;
+                mCtx.beginPath();
+                mCtx.arc(bot.x * scale, bot.y * scale, 3, 0, Math.PI * 2);
+                mCtx.fill();
+            });
+        }
+
+        function updateDebugHud() {
+            if (!debugMenuOpen) return;
+            debugFrameCount++;
+            const now = performance.now();
+            if (now - debugLastFpsAt >= 1000) {
+                debugFps = Math.round(debugFrameCount * 1000 / (now - debugLastFpsAt));
+                debugFrameCount = 0;
+                debugLastFpsAt = now;
+            }
+            const velocityX = posX - debugLastPosX;
+            const velocityY = posY - debugLastPosY;
+            const speed = Math.hypot(velocityX, velocityY) * 60;
+            debugLastPosX = posX;
+            debugLastPosY = posY;
+
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setVal('debug-fps', debugFps);
+            setVal('debug-vx', velocityX.toFixed(2));
+            setVal('debug-vy', velocityY.toFixed(2));
+            setVal('debug-speed', speed.toFixed(2));
+            setVal('debug-pos-x', Math.round(posX));
+            setVal('debug-pos-y', Math.round(posY));
+        }
+
+        function gameLoop() {
+            updateGameLogic();
+            renderGameScene();
+            updateDebugHud();
+            requestAnimationFrame(gameLoop);
+        }
+        requestAnimationFrame(gameLoop);
+    </script>
 </body>
 </html>
