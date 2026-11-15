@@ -3202,7 +3202,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
+                    if (trap && triggerPlayer && (trap.type === 'sawblade' || trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
                         if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
                         else trap.nextReadyAt = Date.now() + (trap.type === 'sawblade' ? 550 : trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
@@ -5552,7 +5552,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
+                if (!tr || (tr.type !== 'sawblade' && tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'warp') {
                     if (isHosting || isPractice) { tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);const a=Math.random()*Math.PI*2,d=500+Math.random()*700;posX=tr.x+Math.cos(a)*d;posY=tr.y+Math.sin(a)*d;showNotificationBox('🌀 Warp trap! Teleported to a random location!');if(isHosting)broadcastStateToClients(); }
                     else if(hostConnection&&hostConnection.open){tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});}
