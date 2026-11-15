@@ -3386,6 +3386,15 @@
                     // Legacy clients cannot instantly remove a full-health trap.
                     const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
                     if(tr&&p&&Math.hypot(p.x-tr.x,p.y-tr.y)<105&&tr.hp<=0){delete activeTraps[data.key];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);broadcastStateToClients();}
+                } else if (data.type === 'coin_drop') {
+                    const player = remotePlayers[conn.peer];
+                    const amount = Math.floor(Number(data.amount) || 0);
+                    const creative = player && (player.gameMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative'));
+                    if (player && amount > 0 && amount <= 1000000000 && (creative || amount <= (Number(player.coins) || 0))) {
+                        if (!creative) player.coins = Math.max(0, (Number(player.coins) || 0) - amount);
+                        spawnWorldLoot('coin', null, player.x + 25, player.y + 25, amount);
+                        broadcastStateToClients();
+                    }
                 } else if (data.type === 'spawn_loot') {
                     droppedLoot[data.id] = data.item;
                     broadcastStateToClients();
@@ -4817,15 +4826,24 @@
         }
 
         function executeCoinDrop() {
-            const amountVal = parseInt(document.getElementById('coin-drop-amt').value) || 0;
+            const amountVal = Math.floor(Number(document.getElementById('coin-drop-amt').value) || 0);
             const activeMode = isHosting ? currentMode : hostGameMode;
             const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
             if (amountVal > 0 && (creativeRules || amountVal <= playerCoins)) {
-                if (!creativeRules) {
-                    playerCoins -= amountVal;
-                    document.getElementById('coin-num').innerText = playerCoins;
+                if (isHosting || isPractice) {
+                    if (!creativeRules) {
+                        playerCoins = Math.max(0, playerCoins - amountVal);
+                        document.getElementById('coin-num').innerText = playerCoins;
+                    }
+                    spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
+                    if (isHosting) broadcastStateToClients();
+                } else if (hostConnection && hostConnection.open) {
+                    // Let the host validate and deduct the balance before creating the pickup.
+                    // Do not create a client-only coin or locally deduct: server_state is authoritative.
+                    hostConnection.send({ type: 'coin_drop', amount: amountVal });
+                } else {
+                    showNotificationBox('Cannot drop coins while disconnected from the host.');
                 }
-                spawnWorldLoot('coin', null, posX + 25, posY + 25, amountVal);
             }
             closeCoinModal();
         }
