@@ -1187,6 +1187,27 @@
                 } else if (subType === 'freeze') {
                     path([[-13,-5],[7,-5],[11,-2],[7,2],[-13,2]],'#4a83a8');c.fillStyle='#b9edff';c.fillRect(-3,-9,5,4);
                     c.strokeStyle='#d8f8ff';c.lineWidth=1.5;c.beginPath();c.moveTo(12,-7);c.lineTo(12,4);c.moveTo(7,-2);c.lineTo(17,-2);c.stroke();
+                    c.fillStyle='#e9fbff';c.beginPath();c.arc(-7,-2,2,0,Math.PI*2);c.fill();
+                } else if (subType === 'ricochet') {
+                    path([[-14,-6],[8,-8],[14,-4],[14,3],[7,6],[-14,3]],'#b76b35');
+                    path([[-5,3],[3,3],[4,11],[-3,11]],'#65442d');
+                    c.fillStyle='#f7c46b';c.fillRect(3,-9,9,3);c.strokeStyle='#ffe7b0';c.lineWidth=1.5;c.beginPath();c.arc(11,-2,4,-.8,1.2);c.stroke();
+                    c.fillStyle='#27343c';c.fillRect(-12,-2,5,4);
+                } else if (subType === 'gravity') {
+                    path([[-14,-6],[8,-7],[13,-3],[13,4],[7,6],[-14,3]],'#7252a8');
+                    c.fillStyle='#302044';c.beginPath();c.arc(5,-1,7,0,Math.PI*2);c.fill();c.strokeStyle='#d8b5ff';c.lineWidth=2;c.stroke();
+                    c.fillStyle='#fff';c.beginPath();c.arc(5,-1,2,0,Math.PI*2);c.fill();
+                    c.strokeStyle='#c8a2ff';c.lineWidth=1.5;c.beginPath();c.arc(5,-1,11,-1.1,1.1);c.stroke();
+                } else if (subType === 'sonic') {
+                    path([[-14,-6],[7,-7],[13,-3],[13,4],[7,6],[-14,3]],'#2b9db3');
+                    c.fillStyle='#17434b';c.fillRect(-3,-10,8,4);
+                    c.strokeStyle='#b6ffff';c.lineWidth=2;c.beginPath();c.arc(3,-1,7,-.9,.9);c.stroke();c.beginPath();c.arc(3,-1,12,-.9,.9);c.stroke();
+                    c.fillStyle='#eaffff';c.beginPath();c.arc(10,-1,2,0,Math.PI*2);c.fill();
+                } else if (subType === 'warp') {
+                    path([[-14,-6],[8,-7],[13,-3],[13,4],[7,6],[-14,3]],'#6946a8');
+                    c.fillStyle='#251b42';c.beginPath();c.arc(4,-1,8,0,Math.PI*2);c.fill();c.strokeStyle='#e4c5ff';c.lineWidth=2;c.stroke();
+                    c.strokeStyle='#fff';c.lineWidth=1.5;c.beginPath();c.arc(4,-1,4,-1.2,1.5);c.stroke();
+                    c.fillStyle='#c9a4ff';c.beginPath();c.arc(4,-1,2,0,Math.PI*2);c.fill();
                 }
             }
             c.restore();
