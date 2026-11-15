@@ -369,7 +369,7 @@
                 <div class="shop-item-card"><span>Bear Trap Pack (+2)</span><div><b style="color:#ffca28;">80 🪙</b> <button onclick="buyStoreItem('trap', 'bear', 80)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Explosive Mine (+1)</span><div><b style="color:#ffca28;">120 🪙</b> <button onclick="buyStoreItem('trap', 'mine', 120)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Glue Trap Pack (+2)</span><div><b style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItem('trap', 'glue', 90)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Freeze Trap Pack (+2)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'freeze', 150)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Bounce Trap Pack (+2)</span><div><b style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItem('trap', 'bounce', 100)">Buy</button></div></div><div class="shop-item-card"><span>Laser Tripwire (+1)</span><div><b style="color:#ffca28;">160 🪙</b> <button onclick="buyStoreItem('trap', 'laser', 160)">Buy</button></div></div><div class="shop-item-card"><span>Shock Pad Pack (+2)</span><div><b style="color:#ffca28;">135 🪙</b> <button onclick="buyStoreItem('trap', 'shock', 135)">Buy</button></div></div><div class="shop-item-card"><span>Freeze Trap Pack (+2)</span><div><b style="color:#ffca28;">150 🪙</b> <button onclick="buyStoreItem('trap', 'freeze', 150)">Buy</button></div></div><div class="shop-item-card"><span>Spring Launcher Pack (+2)</span><div><b style="color:#ffca28;">115 🪙</b> <button onclick="buyStoreItem('trap', 'spring', 115)">Buy</button></div></div><div class="shop-item-card"><span>🕳️ Blackhole Trap (+1) — pulls in nearby enemies, takes their nearby loot, then reappears after 15s</span><div><b style="color:#ffca28;">2,500 🪙</b> <button onclick="buyStoreItem('trap', 'blackhole', 2500)">Buy</button></div></div>
             </div>
 
             <div id="shop-tab-rides" class="shop-content">
@@ -605,7 +605,7 @@
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><small id="grenade-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><small id="smoke-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
-            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="freeze" onclick="chooseTrapFromPicker(event,'freeze')"><canvas id="trap-icon-freeze" width="68" height="68"></canvas>Freeze<small id="trap-count-freeze">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="freeze" onclick="chooseTrapFromPicker(event,'freeze')"><canvas id="trap-icon-freeze" width="68" height="68"></canvas>Freeze<small id="trap-count-freeze">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button><button type="button" class="trap-choice" data-trap="blackhole" onclick="chooseTrapFromPicker(event,'blackhole')"><canvas id="trap-icon-blackhole" width="68" height="68"></canvas>Blackhole<small id="trap-count-blackhole">0</small></button></div></div>
         </div>
         <div id="mobile-controls" aria-label="Mobile game controls">
             <div id="move-stick"><div id="move-knob"></div></div>
@@ -812,7 +812,7 @@
         let activeSmokeClouds = [];
         let hostRemoteSmokeClouds = [];
         let activeTraps = {};
-        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0, laser: 0, shock: 0, spring: 0, freeze: 0 };
+        let trapInventory = { spike: 2, bear: 0, mine: 0, glue: 0, bounce: 0, laser: 0, shock: 0, spring: 0, freeze: 0, blackhole: 0 };
         let trapsCount = 2;
         let selectedTrapType = 'spike';
         function updateTrapTotal(){trapsCount=Object.values(trapInventory).reduce((sum,n)=>sum+(Number(n)||0),0);return trapsCount;}
@@ -823,6 +823,24 @@
         function chooseBlockFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}if(type!=='wood'&&(!blockInventory[type]||blockInventory[type]<=0)){showNotificationBox('You do not own that block. Buy it in the Block shop first.');return;}selectedBuildBlock=type;refreshHotbarUI();const p=document.getElementById('block-picker');if(p)p.classList.remove('open');selectHotbarSlot(2);}
         function toggleTrapPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('trap-picker');if(p)p.classList.toggle('open');}
         function chooseTrapFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}setSelectedTrapType(type);const p=document.getElementById('trap-picker');if(p)p.classList.remove('open');selectHotbarSlot(9);}
+        function triggerBlackholeTrap(trap, trapKey) {
+            if (!isHosting || !trap || trap.type !== 'blackhole' || Date.now() < (trap.nextReadyAt || 0)) return false;
+            const now=Date.now(), radius=185, ownerId=trap.ownerPeerId || null;
+            const ownerIsLocal=trap.ownerIsLocal === true || (!ownerId && trap.team === playerTeam);
+            const owner=ownerIsLocal ? {x:posX,y:posY} : remotePlayers[ownerId];
+            const ownerX=owner && Number.isFinite(owner.x) ? owner.x : trap.x;
+            const ownerY=owner && Number.isFinite(owner.y) ? owner.y : trap.y;
+            const enemies=[];
+            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) { currentHp=0; enemies.push({x:posX,y:posY}); }
+            for (const pid in remotePlayers) { const p=remotePlayers[pid]; if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) { p.hp=0; enemies.push({x:p.x,y:p.y}); } }
+            if (!enemies.length) return false;
+            let moved=0;
+            for (const lootId in droppedLoot) { const loot=droppedLoot[lootId]; if(!loot)continue; if(enemies.some(e=>Math.hypot((Number(loot.x)||0)-e.x,(Number(loot.y)||0)-e.y)<=230)) { loot.x=ownerX+(Math.random()-.5)*34; loot.y=ownerY+(Math.random()-.5)*34; moved++; } }
+            trap.nextReadyAt=now+15000;
+            floatingParticles.push({x:trap.x,y:trap.y,radius:12,maxRadius:190,alpha:1,isShockwave:true});
+            showNotificationBox(`🕳️ Blackhole swallowed ${enemies.length} enemy${enemies.length===1?'':'ies'}! ${moved} loot item(s) warped to you. Back in 15s.`);
+            return true;
+        }
         let playerSlowUntil = 0;
         let playerFrozenUntil = 0;
         let metalDetectorOwned = false;
@@ -1184,7 +1202,8 @@
                 else if(subType==='ball'){const g=c.createRadialGradient(-5,-6,2,0,0,14);g.addColorStop(0,'#fff');g.addColorStop(.25,'#e9eef2');g.addColorStop(1,'#303943');c.fillStyle=g;c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();c.strokeStyle='#f5f7fa';c.lineWidth=1.5;c.stroke();c.fillStyle='#202a33';c.beginPath();c.arc(0,0,5,0,Math.PI*2);c.fill();c.strokeStyle='#fff';c.stroke();}
                 else {path([[-13,-10],[13,-10],[13,10],[-13,10]],wood);c.strokeStyle='#f3c995';c.lineWidth=1.4;for(let y=-6;y<=6;y+=6){c.beginPath();c.moveTo(-10,y);c.lineTo(10,y);c.stroke();}c.fillStyle='#684329';for(const [x,y] of [[-8,-7],[8,7]]){c.beginPath();c.arc(x,y,1.5,0,Math.PI*2);c.fill();}}
             } else if(itemType==='trap'){
-                if (['laser', 'shock', 'spring'].includes(subType)) {
+                if (subType === 'blackhole') { c.fillStyle='#080514';c.shadowColor='#9c4dff';c.shadowBlur=9;c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.fill();c.shadowBlur=0;c.strokeStyle='#d7a6ff';c.lineWidth=2.5;c.beginPath();c.arc(0,0,13,0,Math.PI*2);c.stroke();c.strokeStyle='#8c42e8';c.lineWidth=3;c.beginPath();c.ellipse(0,0,17,7,-.55,0,Math.PI*2);c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(-3,-2,2,0,Math.PI*2);c.fill();
+                } else if (['laser', 'shock', 'spring'].includes(subType)) {
                     const trapTexture = assetRegistry['trap_' + subType];
                     if (trapTexture && trapTexture.complete && trapTexture.naturalWidth > 0) {
                         c.drawImage(trapTexture, -16, -16, 32, 32);
@@ -2257,7 +2276,7 @@
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
-            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,magnet_ball_plus:110,magnet_ball_minus:110,magnet_plus:140,magnet_minus:140,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
+            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150,blackhole:2500},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,magnet_ball_plus:110,magnet_ball_minus:110,magnet_plus:140,magnet_minus:140,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return false;}
             if (!creativeRules && playerCoins < expectedPrice) {
@@ -2289,7 +2308,7 @@
                 if (!isBatchPurchase) showNotificationBox(`Purchased ${subtypeName.toUpperCase()} pack!`);
             } else if (itemType === 'trap') {
                 setSelectedTrapType(subtypeName);
-                const packCount = ['mine','laser'].includes(subtypeName) ? 1 : 2;
+                const packCount = ['mine','laser','blackhole'].includes(subtypeName) ? 1 : 2;
                 addTraps(subtypeName, packCount);
                 if (!isBatchPurchase) showNotificationBox(`Purchased ${subtypeName.toUpperCase()} Trap successfully! (+${packCount}). Selected trap: ${selectedTrapType.toUpperCase()}`);
             } else if (itemType === 'block') {
@@ -3043,7 +3062,8 @@
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
                     if (trap && triggerPlayer && (trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
-                        trap.nextReadyAt = Date.now() + (trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
+                        if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
+                        else trap.nextReadyAt = Date.now() + (trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
                         if(trap.type === 'mine') {
                         const bx=trap.x,by=trap.y,radius=160,maxDamage=85;
@@ -3165,6 +3185,7 @@
                     broadcastStateToClients();
                 } else if (data.type === 'place_trap') {
                     activeTraps[data.key] = data.trap;
+                    if (activeTraps[data.key] && activeTraps[data.key].type === 'blackhole') { activeTraps[data.key].ownerPeerId = conn.peer; activeTraps[data.key].ownerIsLocal = false; activeTraps[data.key].cooldownMs = 15000; }
                     broadcastStateToClients();
                 } else if (data.type === 'mine_trap') {
                     const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
@@ -4697,7 +4718,7 @@
             else if (activeHotbar === 9 && !actionCdBuild) {
                 if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
                 const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: 1800 };
+                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, ownerPeerId: peerInstance && peerInstance.id || null, ownerIsLocal: !!isHosting, hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: selectedTrapType === 'blackhole' ? 15000 : 1800 };
                 const uniqueTrapKey=tKey+':'+Date.now()+':'+Math.random().toString(36).slice(2,6);
                 activeTraps[uniqueTrapKey] = newTrap;
                 if (isHosting) broadcastStateToClients();
@@ -5309,7 +5330,10 @@
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
                 if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
-                if (tr.type === 'mine') {
+                if (tr.type === 'blackhole') {
+                    if (isHosting) { triggerBlackholeTrap(tr, tk); broadcastStateToClients(); }
+                    else if (hostConnection && hostConnection.open) { tr.triggerPending=true; hostConnection.send({type:'trap_trigger',key:tk}); }
+                } else if (tr.type === 'mine') {
                     if (isHosting) {
                         const radius=160,maxDamage=85;
                         const applyBlast=p=>{if(!p||p.hp<=0||(tr.team!=='FFA'&&p.team===tr.team))return;const d=Math.hypot(p.x-tr.x,p.y-tr.y);if(d<radius)p.hp=Math.max(0,p.hp-Math.max(1,Math.round(maxDamage*(1-d/radius))));};
@@ -6018,10 +6042,13 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
+                if (tr.type === 'blackhole' && tr.nextReadyAt > Date.now()) continue;
                 ctx.save();
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = '#263238';
-                if (tr.type === 'bear') {
+                if (tr.type === 'blackhole') {
+                    const pulse=1+0.12*Math.sin(Date.now()/180);ctx.translate(tr.x,tr.y);ctx.scale(pulse,pulse);ctx.fillStyle='#090316';ctx.shadowColor='#9b4dff';ctx.shadowBlur=22;ctx.beginPath();ctx.arc(0,0,19,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#d7a6ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,19,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#8e45e8';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,25,10,Date.now()/900,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-4,3,0,Math.PI*2);ctx.fill();
+                } else if (tr.type === 'bear') {
                     // Distinct steel bear trap with two visible semicircular jaws and teeth.
                     ctx.fillStyle = '#778994';
                     ctx.beginPath();
@@ -6057,7 +6084,7 @@
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
                 {const hpRatio=Math.max(0,Math.min(1,(Number(tr.hp)||0)/(Number(tr.maxHp)||120)));ctx.fillStyle='#111';ctx.fillRect(tr.x-19,tr.y-23,38,5);ctx.fillStyle=hpRatio>.5?'#4caf50':hpRatio>.25?'#ffca28':'#e53935';ctx.fillRect(tr.x-19,tr.y-23,38*hpRatio,5);}
-                if(tr.nextReadyAt>Date.now()){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+                if(tr.nextReadyAt>Date.now() && tr.type !== 'blackhole'){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
                 ctx.restore();
             }
 
