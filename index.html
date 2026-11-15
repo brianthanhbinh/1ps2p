@@ -3250,29 +3250,44 @@
 
         function getConveyorAtLootPosition(item) {
             if (!item || !Number.isFinite(Number(item.x)) || !Number.isFinite(Number(item.y))) return null;
-            const gx = Math.floor(Number(item.x) / 40);
-            const gy = Math.floor(Number(item.y) / 40);
-            const block = worldBlocks[gx + ',' + gy];
-            return block && block.type === 'conveyor' ? block : null;
+            const x = Number(item.x), y = Number(item.y);
+            // Prefer the tile containing the pickup, but also tolerate a pickup
+            // resting near a conveyor tile edge (e.g. a grenade dropped beside it).
+            const gx = Math.floor(x / 40), gy = Math.floor(y / 40);
+            const direct = worldBlocks[gx + ',' + gy];
+            if (direct && direct.type === 'conveyor') return direct;
+            let nearest = null, nearestDistance = 31;
+            for (let ox = -1; ox <= 1; ox++) {
+                for (let oy = -1; oy <= 1; oy++) {
+                    const block = worldBlocks[(gx + ox) + ',' + (gy + oy)];
+                    if (!block || block.type !== 'conveyor') continue;
+                    const cx = (gx + ox) * 40 + 20;
+                    const cy = (gy + oy) * 40 + 20;
+                    const distance = Math.hypot(x - cx, y - cy);
+                    if (distance < nearestDistance) {
+                        nearest = block;
+                        nearestDistance = distance;
+                    }
+                }
+            }
+            return nearest;
         }
 
         function updateConveyorLoot() {
-            // The host owns shared loot physics; practice runs locally.
-            if (!isHosting && !isPractice) return;
+            // The host owns shared loot physics; practice and offline play run locally.
+            if (!isHosting && !isPractice && hostConnection && hostConnection.open) return;
             let movedAny = false;
             for (const lid in droppedLoot) {
                 const item = droppedLoot[lid];
                 const belt = getConveyorAtLootPosition(item);
                 if (!belt) continue;
                 const angle = Number(belt.angle) || 0;
-                // Move loose pickups along the belt. Keep this independent of player movement.
-                const speed = 2.0;
-                item.x = Number(item.x) + Math.cos(angle) * speed;
-                item.y = Number(item.y) + Math.sin(angle) * speed;
+                // Apply a steady belt velocity to loose pickups every simulation tick.
+                item.x = Number(item.x) + Math.cos(angle) * 2.2;
+                item.y = Number(item.y) + Math.sin(angle) * 2.2;
                 movedAny = true;
             }
-            // Send moving item positions in small batches instead of broadcasting
-            // the entire world state on every 60 FPS simulation tick.
+            // Only the host broadcasts authoritative positions to other players.
             if (movedAny && isHosting && Date.now() >= nextConveyorLootSyncAt) {
                 nextConveyorLootSyncAt = Date.now() + 120;
                 broadcastStateToClients();
