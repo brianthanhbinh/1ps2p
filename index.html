@@ -731,7 +731,7 @@
             for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['smoke_bomb',smokeBombsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0 };
             grenadesCount=0;bandagesCount=0;smokeBombsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
@@ -1498,7 +1498,7 @@
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
             trapInventory.spike = 2;
-            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0 };
+            blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0 };
             selectedBuildBlock = 'wood';
             updateTrapTotal();
             activeHotbar = 0;
@@ -1984,19 +1984,19 @@
 
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140,stop:220}};
+            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,smoke_bomb:55},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
-            if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return;}
+            if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return false;}
             if (activeMode !== 'creative' && playerCoins < expectedPrice) {
                 showNotificationBox('Insufficient coins!');
-                return;
+                return false;
             }
             if (itemType === 'gun') {
                 const emptyIdx = weaponBarSlots.findIndex(g => g === null);
                 if (emptyIdx === -1) {
                     if (!pushToBackpack({ type: 'gun', subtype: subtypeName })) {
                         showNotificationBox('Hotbar and inventory are completely full!');
-                        return;
+                        return false;
                     }
                 } else {
                     weaponBarSlots[emptyIdx] = subtypeName;
@@ -2005,7 +2005,7 @@
                 syncSelectedAmmo();
                 refreshHotbarUI();
             } else if (itemType === 'tool') {
-                if (subtypeName !== 'metal_detector') return;
+                if (subtypeName !== 'metal_detector') return false;
                 metalDetectorOwned = true;selectHotbarSlot(1);refreshHotbarUI();
                 if (!isBatchPurchase) showNotificationBox('Metal Detector purchased! Use slot 2 to mine traps. Pickaxe cannot damage traps.');
             } else if (itemType === 'consumable') {
@@ -2022,7 +2022,7 @@
             } else if (itemType === 'block') {
                 if (!Object.prototype.hasOwnProperty.call(blockInventory, subtypeName)) {
                     showNotificationBox('Purchase failed: unknown block type.');
-                    return;
+                    return false;
                 }
                 blockInventory[subtypeName] = (blockInventory[subtypeName] || 0) + 1;
                 selectedBuildBlock = subtypeName;
@@ -2061,6 +2061,7 @@
                 playerCoins -= expectedPrice;
                 document.getElementById('coin-num').innerText = playerCoins;
             }
+            return true;
         }
 
         const buyStoreItemSingle = buyStoreItem;
@@ -2070,8 +2071,7 @@
             let bought = 0;
             for (let i = 0; i < quantity; i++) {
                 if (mode !== 'creative' && playerCoins < Number(price)) break;
-                buyStoreItemSingle(itemType, subtypeName, price, true);
-                bought++;
+                if (buyStoreItemSingle(itemType, subtypeName, price, true) === true) bought++;
             }
             if (bought > 0) showNotificationBox(`Bought ${bought}x ${String(subtypeName).toUpperCase()} (${bought * Number(price)} coins).`);
             else showNotificationBox('Not enough coins to buy this item.');
@@ -4620,6 +4620,7 @@
                 }
 
                 let hitObs = false;
+                let bouncedOffBlock = false;
                 for (let k in worldBlocks) {
                     const parts = k.split(',');
                     const bx = parseInt(parts[0]) * 40;
@@ -4627,12 +4628,20 @@
 
                     if (b.x >= bx && b.x <= bx + 40 && b.y >= by && b.y <= by + 40) {
                         if (b.type === 'ricochet' && (b.ricochets || 0) > 0) {
-                            const edgeX = Math.min(Math.abs(b.x-bx),Math.abs(bx+40-b.x));
-                            const edgeY = Math.min(Math.abs(b.y-by),Math.abs(by+40-b.y));
-                            if (edgeX < edgeY) b.vx *= -1; else b.vy *= -1;
-                            b.ricochets--; b.x += b.vx * 2; b.y += b.vy * 2;
+                            const leftDist = Math.abs(b.x - bx), rightDist = Math.abs(bx + 40 - b.x);
+                            const topDist = Math.abs(b.y - by), bottomDist = Math.abs(by + 40 - b.y);
+                            const nearestX = Math.min(leftDist, rightDist);
+                            const nearestY = Math.min(topDist, bottomDist);
+                            if (nearestX < nearestY) {
+                                if (leftDist < rightDist) { b.vx = -Math.abs(b.vx); b.x = bx - 2; }
+                                else { b.vx = Math.abs(b.vx); b.x = bx + 42; }
+                            } else {
+                                if (topDist < bottomDist) { b.vy = -Math.abs(b.vy); b.y = by - 2; }
+                                else { b.vy = Math.abs(b.vy); b.y = by + 42; }
+                            }
+                            b.ricochets--;
                             floatingParticles.push({x:b.x,y:b.y,radius:4,alpha:.8,smoke:true});
-                            hitObs = true; break;
+                            bouncedOffBlock = true; break;
                         }
                         let dmg = 25;
                         if (b.type === 'sniper') dmg = 70;
@@ -4660,6 +4669,7 @@
                     }
                 }
 
+                if (bouncedOffBlock) continue;
                 if (hitObs) {
                     bulletsList.splice(i, 1);
                     continue;
