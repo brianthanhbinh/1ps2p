@@ -3223,7 +3223,7 @@
                 } else if (data.type === 'claim_crate') {
                     const player = remotePlayers[conn.peer];
                     const crateIndex = supplyCrates.findIndex(c => c && c.id === data.id);
-                    if (player && crateIndex !== -1 && Math.hypot(player.x - supplyCrates[crateIndex].x, player.y - supplyCrates[crateIndex].y) < 90) {
+                    if (player && crateIndex !== -1 && Math.hypot(player.x - supplyCrates[crateIndex].x, player.y - supplyCrates[crateIndex].y) < 150) {
                         const reward = Math.floor(Math.random() * 150) + 1;
                         supplyCrates.splice(crateIndex, 1);
                         player.coins = (player.coins || 0) + reward;
@@ -4222,7 +4222,8 @@
             if (e.code === 'KeyQ') dropActiveItem();
             if (e.code === 'KeyZ') openCoinModal();
             if (e.code === 'KeyX' && activeHotbar === 2) { e.preventDefault(); forceBlockRotation = (forceBlockRotation + Math.PI/4) % (Math.PI*2); showNotificationBox(selectedBuildBlock.toUpperCase()+' rotation: '+Math.round(forceBlockRotation*180/Math.PI)+'°'); }
-            else if (e.code === 'KeyX' || e.code === 'KeyF') pickupNearbyLoot();
+            else if (e.code === 'KeyF') { e.preventDefault(); pickupNearbyLoot(); }
+            else if (e.code === 'KeyX') pickupNearbyLoot();
             if (e.code === 'KeyR') { e.preventDefault(); executeSelfDestruct(); }
             if (e.code === 'KeyJ') tryHopOnVehicle();
             if (e.code === 'KeyH') dismountVehicle();
@@ -4545,7 +4546,7 @@
         let nextCrateOpenAttemptAt = 0;
         function openNearbySupplyCrate() {
             if (Date.now() < nextCrateOpenAttemptAt) return;
-            const nearbyCrate = supplyCrates.find(crate => crate && crate.id && Math.hypot(posX - crate.x, posY - crate.y) < 85);
+            const nearbyCrate = supplyCrates.find(crate => crate && crate.id && Math.hypot(posX - crate.x, posY - crate.y) < 140);
             if (!nearbyCrate || pendingCrateClaims.has(nearbyCrate.id)) return;
             if (isHosting || isPractice) {
                 const crateIndex = supplyCrates.findIndex(crate => crate && crate.id === nearbyCrate.id);
@@ -4566,6 +4567,8 @@
             }
         }
         function pickupNearbyLoot() {
+            // F/USE is the only way to open a crate; keep it separate from the game tick.
+            openNearbySupplyCrate();
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
                 // Items sitting on a conveyor belong to the belt until they leave it.
@@ -4624,7 +4627,6 @@
                 break;
             }
 
-            openNearbySupplyCrate();
         }
 
         function getVehicleDamageReduction() {
@@ -5087,7 +5089,6 @@
 
         function updateGameLogic() {
             if (!inGameActive) return;
-            openNearbySupplyCrate();
             updatePushableBalls();
             updateConveyorLoot();
             if (activeWarpPortals.length === 2 && Date.now() >= warpTeleportReadyAt) {
