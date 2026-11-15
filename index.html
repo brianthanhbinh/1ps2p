@@ -4210,8 +4210,10 @@
                 if (Math.hypot(posX - portalA.x, posY - portalA.y) < 24) destination = portalB;
                 else if (Math.hypot(posX - portalB.x, posY - portalB.y) < 24) destination = portalA;
                 if (destination) {
-                    posX = destination.x;
-                    posY = destination.y;
+                    const source = destination === portalA ? portalB : portalA;
+                    const exitAngle = Math.atan2(destination.y - source.y, destination.x - source.x);
+                    posX = destination.x + Math.cos(exitAngle) * 36;
+                    posY = destination.y + Math.sin(exitAngle) * 36;
                     playerMomentumX *= 0.65; playerMomentumY *= 0.65;
                     warpTeleportReadyAt = Date.now() + 900;
                     floatingParticles.push({x:posX,y:posY,radius:8,maxRadius:48,alpha:1,isShockwave:true});
