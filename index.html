@@ -4025,7 +4025,7 @@
                 // Force pads accelerate nearby balls in the direction of their arrow.
                 for (const forceKey in worldBlocks) {
                     const forceBlock = worldBlocks[forceKey];
-                    if (!forceBlock || !['force','force2','force3'].includes(forceBlock.type)) continue;
+                    if (!forceBlock || !['force','force2','force3','conveyor'].includes(forceBlock.type)) continue;
                     const forceParts = forceKey.split(',');
                     const forceX = parseInt(forceParts[0]) * 40 + 20;
                     const forceY = parseInt(forceParts[1]) * 40 + 20;
