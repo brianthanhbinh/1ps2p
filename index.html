@@ -112,7 +112,7 @@
         #mobile-reload { width:48px;height:48px;right:112px;bottom:calc(40px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-sprint { width:48px;height:48px;left:170px;bottom:calc(34px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-hop { width:48px;height:48px;right:32px;bottom:calc(220px + env(safe-area-inset-bottom));font-size:10px; }
-        #mobile-action { width:58px;height:58px;right:88px;bottom:calc(215px + env(safe-area-inset-bottom));font-size:10px;background:rgba(46,125,50,.9); }
+        #mobile-action { width:58px;height:58px;left:22px;right:auto;bottom:calc(190px + env(safe-area-inset-bottom));font-size:10px;background:rgba(46,125,50,.9); }
         #mobile-drop { width:46px;height:46px;left:174px;bottom:calc(92px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-scope { width:44px;height:44px;right:166px;bottom:calc(38px + env(safe-area-inset-bottom));font-size:10px; }
         .mobile-action.active { background:rgba(255,183,0,.9);color:#171717; }
@@ -140,7 +140,7 @@
             #mobile-reload { width:43px;height:43px;right:84px;bottom:calc(70px + env(safe-area-inset-bottom)); }
             #mobile-sprint { width:43px;height:43px;left:132px;bottom:calc(64px + env(safe-area-inset-bottom)); }
             #mobile-hop { width:43px;height:43px;right:18px;bottom:calc(198px + env(safe-area-inset-bottom)); }
-            #mobile-action { width:46px;height:46px;right:66px;bottom:calc(250px + env(safe-area-inset-bottom)); }
+            #mobile-action { width:46px;height:46px;left:22px;right:auto;bottom:calc(190px + env(safe-area-inset-bottom)); }
             #mobile-drop { width:42px;height:42px;left:132px;bottom:calc(116px + env(safe-area-inset-bottom)); }
             #mobile-scope { width:40px;height:40px;right:126px;bottom:calc(70px + env(safe-area-inset-bottom)); }
             #move-stick,#aim-pad { -webkit-user-select:none; user-select:none; }
@@ -4089,6 +4089,9 @@
 
         canvas.addEventListener('mousedown', (e) => {
             if (!inGameActive) return;
+            // Building and trap placement must only happen through the dedicated PLACE button.
+            // Clicking/tapping the battlefield while a buildable is selected should only aim.
+            if (activeHotbar === 2 || activeHotbar === 9) return;
             const point = clientToCanvasPoint(e.clientX, e.clientY);
             triggerWeaponAttack(point.x, point.y);
         });
