@@ -862,6 +862,28 @@
         }
         function updateBlackholeVictims() {
             const now=Date.now();
+            // The visible gravity ring is an actual pull field, not just decoration.
+            // Apply a steady inward force while an enemy is within the 185px ring.
+            const gravityRadius=185;
+            const pullPlayerIntoRing=(player) => {
+                if(!player || player.hp<=0) return;
+                for(const key in activeTraps) {
+                    const trap=activeTraps[key];
+                    if(!trap || trap.type!=='blackhole') continue;
+                    if(trap.team!=='FFA' && trap.team===player.team) continue;
+                    const dx=trap.x-player.x, dy=trap.y-player.y;
+                    const distance=Math.hypot(dx,dy);
+                    if(distance>0 && distance<=gravityRadius) {
+                        const strength=0.025 + 0.025*(1-distance/gravityRadius);
+                        player.x += dx*strength;
+                        player.y += dy*strength;
+                    }
+                }
+            };
+            pullPlayerIntoRing({ get x(){return posX;}, set x(v){posX=v;}, get y(){return posY;}, set y(v){posY=v;}, hp:currentHp, team:playerTeam });
+            if(isHosting || isPractice) {
+                for(const pid in remotePlayers) pullPlayerIntoRing(remotePlayers[pid]);
+            }
             if(localBlackholeUntil) {
                 const progress=Math.max(0,Math.min(1,1-(localBlackholeUntil-now)/2000));
                 const pull=Math.min(1,.10+progress*.08);
