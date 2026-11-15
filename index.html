@@ -824,7 +824,7 @@
         function toggleTrapPicker(event){if(event){event.stopPropagation();}const p=document.getElementById('trap-picker');if(p)p.classList.toggle('open');}
         function chooseTrapFromPicker(event,type){if(event){event.preventDefault();event.stopPropagation();}setSelectedTrapType(type);const p=document.getElementById('trap-picker');if(p)p.classList.remove('open');selectHotbarSlot(9);}
         function triggerBlackholeTrap(trap, trapKey) {
-            if (!isHosting || !trap || trap.type !== 'blackhole' || Date.now() < (trap.nextReadyAt || 0)) return false;
+            if ((!isHosting && !isPractice) || !trap || trap.type !== 'blackhole' || Date.now() < (trap.nextReadyAt || 0)) return false;
             const now=Date.now(), radius=185, ownerId=trap.ownerPeerId || null;
             const ownerIsLocal=trap.ownerIsLocal === true || (!ownerId && trap.team === playerTeam);
             const owner=ownerIsLocal ? {x:posX,y:posY} : remotePlayers[ownerId];
@@ -4718,7 +4718,7 @@
             else if (activeHotbar === 9 && !actionCdBuild) {
                 if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
                 const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, ownerPeerId: peerInstance && peerInstance.id || null, ownerIsLocal: !!isHosting, hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: selectedTrapType === 'blackhole' ? 15000 : 1800 };
+                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, ownerPeerId: peerInstance && peerInstance.id || null, ownerIsLocal: !!(isHosting || isPractice), hp: 120, maxHp: 120, nextReadyAt: 0, cooldownMs: selectedTrapType === 'blackhole' ? 15000 : 1800 };
                 const uniqueTrapKey=tKey+':'+Date.now()+':'+Math.random().toString(36).slice(2,6);
                 activeTraps[uniqueTrapKey] = newTrap;
                 if (isHosting) broadcastStateToClients();
@@ -5331,7 +5331,7 @@
                 const tr = activeTraps[tk];
                 if (!tr || (tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=25 || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'blackhole') {
-                    if (isHosting) { triggerBlackholeTrap(tr, tk); broadcastStateToClients(); }
+                    if (isHosting || isPractice) { triggerBlackholeTrap(tr, tk); if (isHosting) broadcastStateToClients(); }
                     else if (hostConnection && hostConnection.open) { tr.triggerPending=true; hostConnection.send({type:'trap_trigger',key:tk}); }
                 } else if (tr.type === 'mine') {
                     if (isHosting) {
