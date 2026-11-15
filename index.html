@@ -2575,7 +2575,7 @@
 
         function respawnPlayer() {
             document.getElementById('death-modal').style.display = 'none';
-            currentHp = playerGameMode === 'creative' && (currentMode === 'creative' || hostGameMode === 'creative') ? 300 : 100;
+            currentHp = (localCreativeMode || (playerGameMode === 'creative' && (currentMode === 'creative' || hostGameMode === 'creative'))) ? 300 : 100;
             currentStamina = 100;
             deathLootDropped = false;
             syncSelectedAmmo();
