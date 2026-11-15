@@ -1149,6 +1149,23 @@
             return true;
         }
 
+        function drawBlackholeCaptureEffect(context, until) {
+            if (!context || !(Number(until) > Date.now())) return;
+            const remaining=Math.max(0,Math.min(1,(until-Date.now())/2000));
+            context.save();
+            context.globalAlpha=.82;
+            context.shadowColor='#a34cff'; context.shadowBlur=18;
+            context.strokeStyle='#d7a6ff'; context.lineWidth=2.5;
+            for(let ring=0;ring<3;ring++){
+                context.beginPath();
+                context.ellipse(0,0,RADIUS_PLAYER+5+ring*4,RADIUS_PLAYER+2+ring*3,Date.now()/260*(ring%2?1:-1),0,Math.PI*2);
+                context.stroke();
+            }
+            context.fillStyle='rgba(8,5,20,.48)';
+            context.beginPath(); context.arc(0,0,RADIUS_PLAYER+3+(1-remaining)*5,0,Math.PI*2); context.fill();
+            context.restore();
+        }
+
         function drawFrozenPlayerEffect(context, frozenUntil) {
             if (!context || !(Number(frozenUntil) > Date.now())) return;
             const pulse = 0.5 + 0.12 * Math.sin(Date.now() / 90);
@@ -6287,6 +6304,7 @@
                 }
 
                 drawFrozenPlayerEffect(ctx, rp.frozenUntil || 0);
+                drawBlackholeCaptureEffect(ctx, rp.blackholeUntil || 0);
                 if(rp.burningUntil>Date.now()){ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#ff3d00';ctx.shadowBlur=18;ctx.fillStyle='#ff6d00';for(let f=0;f<5;f++){const a=f*1.25+Date.now()/180;ctx.beginPath();ctx.ellipse(Math.cos(a)*13,Math.sin(a)*12,5,10,0,0,Math.PI*2);ctx.fill();}ctx.restore();}
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 11px sans-serif';
@@ -6391,6 +6409,7 @@
                 }
 
                 drawFrozenPlayerEffect(ctx, playerFrozenUntil);
+                drawBlackholeCaptureEffect(ctx, localBlackholeUntil);
 
                 // Draw the equipped item relative to the player, not a second time in world space.
                 ctx.save();
