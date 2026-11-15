@@ -842,7 +842,7 @@
             // are not killed merely for entering the surrounding area.
             const now=Date.now(), radius=42;
             const victims=[];
-            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) {
+            if (currentHp>0 && !trap.ownerIsLocal && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) {
                 victims.push('you');
                 currentHp=0;
                 localBlackholeUntil=0;
@@ -850,7 +850,7 @@
             }
             for (const pid in remotePlayers) {
                 const p=remotePlayers[pid];
-                if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) {
+                if(p && p.hp>0 && !(trap.ownerPeerId && trap.ownerPeerId===pid) && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) {
                     victims.push(p.username || 'an enemy');
                     p.hp=0;
                     p.blackholeUntil=0;
@@ -867,11 +867,13 @@
             // The visible gravity ring is an actual pull field, not just decoration.
             // Apply a steady inward force while an enemy is within the 185px ring.
             const gravityRadius=185;
-            const pullPlayerIntoRing=(player) => {
+            const pullPlayerIntoRing=(player, isLocalPlayer=false, playerId=null) => {
                 if(!player || player.hp<=0) return;
                 for(const key in activeTraps) {
                     const trap=activeTraps[key];
                     if(!trap || trap.type!=='blackhole') continue;
+                    // FFA traps are hostile to everyone except the player who placed them.
+                    if((isLocalPlayer && trap.ownerIsLocal) || (playerId && trap.ownerPeerId===playerId)) continue;
                     if(trap.team!=='FFA' && trap.team===player.team) continue;
                     const dx=trap.x-player.x, dy=trap.y-player.y;
                     const distance=Math.hypot(dx,dy);
@@ -882,9 +884,9 @@
                     }
                 }
             };
-            pullPlayerIntoRing({ get x(){return posX;}, set x(v){posX=v;}, get y(){return posY;}, set y(v){posY=v;}, hp:currentHp, team:playerTeam });
+            pullPlayerIntoRing({ get x(){return posX;}, set x(v){posX=v;}, get y(){return posY;}, set y(v){posY=v;}, hp:currentHp, team:playerTeam }, true);
             if(isHosting || isPractice) {
-                for(const pid in remotePlayers) pullPlayerIntoRing(remotePlayers[pid]);
+                for(const pid in remotePlayers) pullPlayerIntoRing(remotePlayers[pid], false, pid);
             }
             if(localBlackholeUntil) {
                 const progress=Math.max(0,Math.min(1,1-(localBlackholeUntil-now)/2000));
@@ -5594,7 +5596,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || (tr.team !== 'FFA' && tr.team === playerTeam) || (tr.ownerPeerId && peerInstance && tr.ownerPeerId === peerInstance.id) || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
+                if (!tr || tr.ownerIsLocal || (tr.team !== 'FFA' && tr.team === playerTeam) || (tr.ownerPeerId && peerInstance && tr.ownerPeerId === peerInstance.id) || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'warp') {
                     if (isHosting || isPractice) { tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);const a=Math.random()*Math.PI*2,d=500+Math.random()*700;posX=tr.x+Math.cos(a)*d;posY=tr.y+Math.sin(a)*d;showNotificationBox('🌀 Warp trap! Teleported to a random location!');if(isHosting)broadcastStateToClients(); }
                     else if(hostConnection&&hostConnection.open){tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});}
