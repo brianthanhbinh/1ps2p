@@ -4931,12 +4931,15 @@
                     const forceParts = forceKey.split(',');
                     const forceX = parseInt(forceParts[0]) * 40 + 20;
                     const forceY = parseInt(forceParts[1]) * 40 + 20;
-                    if (Math.hypot(ball.x - forceX, ball.y - forceY) > 48) continue;
+                    // Force pads push every movable ball, including both magnet-ball polarities.
+                    // Use the tile center and a slightly wider contact radius so a ball
+                    // touching the pad's edge still receives a clear directional shove.
+                    if (Math.hypot(ball.x - forceX, ball.y - forceY) > 58) continue;
                     const forceAngle = Number(forceBlock.angle) || 0;
-                    const acceleration = forceBlock.type === 'conveyor' ? 0.16 : forceBlock.type === 'force3' ? 0.85 : forceBlock.type === 'force2' ? 0.48 : 0.22;
+                    const acceleration = forceBlock.type === 'conveyor' ? 0.16 : forceBlock.type === 'force3' ? 1.05 : forceBlock.type === 'force2' ? 0.72 : 0.62;
                     ball.vx += Math.cos(forceAngle) * acceleration;
                     ball.vy += Math.sin(forceAngle) * acceleration;
-                    const maxBallSpeed = forceBlock.type === 'force3' ? 15 : 12;
+                    const maxBallSpeed = forceBlock.type === 'force3' ? 15 : forceBlock.type === 'force2' ? 13 : 12;
                     const ballSpeed = Math.hypot(ball.vx, ball.vy);
                     if (ballSpeed > maxBallSpeed) {
                         ball.vx = ball.vx / ballSpeed * maxBallSpeed;
