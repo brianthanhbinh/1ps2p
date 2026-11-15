@@ -1683,11 +1683,11 @@
                 if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? '∞' : playerCoins;
 
             currentStamina = 100;
             if (activeMode === 'flatworld' && flatWorldMultiplayer && flatWorldLoadedPlayerData) {
-                restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, true);
+                restoreFlatWorldPlayerData(flatWorldLoadedPlayerData, flatWorldRules === 'survival');
                 flatWorldLoadedPlayerData = null;
             }
             baseLockedOut = false;
@@ -3011,7 +3011,7 @@
                         return;
                     }
                     const targetIsHost = data.targetId === peerInstance.id;
-                    const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp, maxHp: currentMode === 'creative' ? 300 : 100 } : remotePlayers[data.targetId];
+                    const target = targetIsHost ? { x: posX, y: posY, team: playerTeam, hp: currentHp, maxHp: (currentMode === 'creative' || (currentMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100 } : remotePlayers[data.targetId];
                     const hitX = Number(data.hitX), hitY = Number(data.hitY);
                     const weapon = data.weapon;
                     const damageByWeapon = { pistol:35, smg:22, ak:28, shotgun:18, sniper:75, rocket:65, minigun:16, laser:40, plasma:45, flame:18, burst:30, freeze:22 };
@@ -4853,7 +4853,7 @@
             updateAirdropHud();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            if (activeMode === 'creative' || (activeMode === 'flatworld' && !flatWorldMultiplayer)) {
+            if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
                 currentStamina = 100;
@@ -4921,7 +4921,7 @@
                     }
                 }
                 if (touchingHealingBlock) {
-                    currentHp = Math.min(activeMode === 'creative' ? 300 : 100, currentHp + 5);
+                    currentHp = Math.min((activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, currentHp + 5);
                 }
                 nextBlockHealAt = Date.now() + 250;
             }
