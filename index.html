@@ -5072,7 +5072,7 @@
                 const closestX = Math.max(bx, Math.min(x, bx + 40));
                 const closestY = Math.max(by, Math.min(y, by + 40));
 
-                if(worldBlocks[k] && ['force','force2','force3','ball','magnet_ball_plus','magnet_ball_minus'].includes(worldBlocks[k].type)) continue;
+                if(worldBlocks[k] && ['force','force2','force3','ball','magnet_ball_plus','magnet_ball_minus','iron_ball'].includes(worldBlocks[k].type)) continue;
                 if (worldBlocks[k]?.type === 'oneway') {
                     // A one-way platform is a 32px line segment. Its blocking normal
                     // rotates with the block, so players can land on any oriented face.
@@ -5185,7 +5185,7 @@
                     for (let gy = minGY; gy <= maxGY; gy++) {
                         for (let gx = minGX; gx <= maxGX; gx++) {
                             const wall = worldBlocks[gx + ',' + gy];
-                            if (!wall || ['ball','magnet_ball_plus','magnet_ball_minus','force','force2','force3','conveyor'].includes(wall.type) || wall.passThrough || wall.type === 'trap') continue;
+                            if (!wall || ['ball','magnet_ball_plus','magnet_ball_minus','iron_ball','force','force2','force3','conveyor'].includes(wall.type) || wall.passThrough || wall.type === 'trap') continue;
                             const left = gx * 40, top = gy * 40;
                             const closestX = Math.max(left, Math.min(ball.x, left + 40));
                             const closestY = Math.max(top, Math.min(ball.y, top + 40));
