@@ -3202,7 +3202,7 @@
                     }
                 } else if (data.type === 'trap_trigger') {
                     const trap = activeTraps[data.key], triggerPlayer = remotePlayers[conn.peer];
-                    if (trap && triggerPlayer && (trap.type === 'sawblade' || trap.team === 'FFA' || trap.team !== triggerPlayer.team) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
+                    if (trap && triggerPlayer && (trap.team === 'FFA' || (trap.team !== triggerPlayer.team && (!trap.ownerPeerId || trap.ownerPeerId !== conn.peer))) && Math.hypot(triggerPlayer.x-trap.x,triggerPlayer.y-trap.y)<42 && Date.now() >= (trap.nextReadyAt || 0)) {
                         if (trap.type === 'blackhole') { triggerBlackholeTrap(trap, data.key); broadcastStateToClients(); }
                         else trap.nextReadyAt = Date.now() + (trap.type === 'sawblade' ? 550 : trap.type === 'freeze' ? 4500 : (trap.cooldownMs || 1800));
                         let slowUntil = 0;
@@ -3328,7 +3328,7 @@
                     broadcastStateToClients();
                 } else if (data.type === 'place_trap') {
                     activeTraps[data.key] = data.trap;
-                    if (activeTraps[data.key] && activeTraps[data.key].type === 'blackhole') { activeTraps[data.key].ownerPeerId = conn.peer; activeTraps[data.key].ownerIsLocal = false; activeTraps[data.key].cooldownMs = 15000; }
+                    if (activeTraps[data.key]) { activeTraps[data.key].ownerPeerId = conn.peer; activeTraps[data.key].ownerIsLocal = false; if (activeTraps[data.key].type === 'blackhole') activeTraps[data.key].cooldownMs = 15000; }
                     broadcastStateToClients();
                 } else if (data.type === 'mine_trap') {
                     const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
@@ -5560,7 +5560,7 @@
 
             for (let tk in activeTraps) {
                 const tr = activeTraps[tk];
-                if (!tr || (tr.type !== 'sawblade' && tr.team === playerTeam && tr.team !== 'FFA') || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
+                if (!tr || (tr.team !== 'FFA' && tr.team === playerTeam) || (tr.ownerPeerId && peerInstance && tr.ownerPeerId === peerInstance.id) || Math.hypot(posX-tr.x,posY-tr.y)>=(tr.type==='blackhole'?185:(tr.type==='sawblade'?29:25)) || tr.triggerPending || Date.now() < (tr.nextReadyAt || 0)) continue;
                 if (tr.type === 'warp') {
                     if (isHosting || isPractice) { tr.nextReadyAt=Date.now()+(tr.cooldownMs||1800);const a=Math.random()*Math.PI*2,d=500+Math.random()*700;posX=tr.x+Math.cos(a)*d;posY=tr.y+Math.sin(a)*d;showNotificationBox('🌀 Warp trap! Teleported to a random location!');if(isHosting)broadcastStateToClients(); }
                     else if(hostConnection&&hostConnection.open){tr.triggerPending=true;hostConnection.send({type:'trap_trigger',key:tk});}
@@ -6352,8 +6352,8 @@
                 }else if(tr.type==='laser'){const pulse=.65+.35*Math.sin(Date.now()/110);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff1744';ctx.lineWidth=3;ctx.shadowColor='#ff1744';ctx.shadowBlur=16;ctx.beginPath();ctx.moveTo(tr.x-38,tr.y);ctx.lineTo(tr.x+38,tr.y);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=pulse;ctx.fillStyle='#ff8a80';ctx.fillRect(tr.x-5,tr.y-5,10,10);}else if(tr.type==='shock'){ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#40c4ff';ctx.lineWidth=3;ctx.shadowColor='#40c4ff';ctx.shadowBlur=12;for(let z=0;z<4;z++){const a=Date.now()/250+z*Math.PI/2;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*5,tr.y+Math.sin(a)*5);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}ctx.shadowBlur=0;}else if(tr.type==='spring'){ctx.fillStyle='#37474f';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a5d6a7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tr.x,tr.y,10,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-9,tr.y+7);ctx.lineTo(tr.x-4,tr.y-1);ctx.lineTo(tr.x+1,tr.y+7);ctx.lineTo(tr.x+6,tr.y-1);ctx.lineTo(tr.x+10,tr.y+7);ctx.stroke();}else if(tr.type==='bounce'){
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
-                {const hpRatio=Math.max(0,Math.min(1,(Number(tr.hp)||0)/(Number(tr.maxHp)||120)));const barY=tr.type==='sawblade'?tr.y-30:tr.y-23;ctx.fillStyle='#111';ctx.fillRect(tr.x-19,barY,38,5);ctx.fillStyle=hpRatio>.5?'#4caf50':hpRatio>.25?'#ffca28':'#e53935';ctx.fillRect(tr.x-19,barY,38*hpRatio,5);}
-                if(tr.nextReadyAt>Date.now() && tr.type !== 'blackhole'){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+                {const hp=Number.isFinite(Number(tr.hp))?Number(tr.hp):120;const maxHp=Number.isFinite(Number(tr.maxHp))&&Number(tr.maxHp)>0?Number(tr.maxHp):120;const hpRatio=Math.max(0,Math.min(1,hp/maxHp));const isSaw=tr.type==='sawblade';const barY=isSaw?tr.y-29:tr.y-23;const barWidth=isSaw?44:38;ctx.save();ctx.globalAlpha=1;ctx.fillStyle='#080b0d';ctx.fillRect(tr.x-barWidth/2-1,barY-1,barWidth+2,7);ctx.fillStyle='#e53935';ctx.fillRect(tr.x-barWidth/2,barY,barWidth,5);ctx.fillStyle='#4caf50';ctx.fillRect(tr.x-barWidth/2,barY,barWidth*hpRatio,5);ctx.restore();}
+                if(tr.nextReadyAt>Date.now() && tr.type !== 'blackhole' && tr.type !== 'sawblade'){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
                 ctx.restore();
             }
 
