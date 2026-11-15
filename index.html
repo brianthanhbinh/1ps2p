@@ -1540,10 +1540,15 @@
                 <button style="background:#ff9800; color:#fff;" onclick="selectGameModeAndTeam('creative')">🎨 Creative Mode</button>
                 <button style="background:#607d8b;color:#fff;" onclick="beginMultiplayerFlatWorldSetup()">🌍 Load Flat World (.arena)</button>
                 <button style="background:#8e24aa; color:#fff;" onclick="promptBossDifficulty()">👑 Bossfight — Co-op Raid</button>
+                <button style="background:#555;color:#fff;margin-top:10px;" onclick="closeGameModeSelection()">✕ Close</button>
             `;
             modal.style.display = 'flex';
         }
 
+        function closeGameModeSelection() {
+            pendingMultiplayerFlatWorldLoad = false;
+            document.getElementById('modal-screen').style.display = 'none';
+        }
 
         function promptBossDifficulty() {
             const modal = document.getElementById('modal-screen');
