@@ -989,7 +989,7 @@
         }
         function formatPlayerName(name, trophies) {
             const count = Math.max(0, Math.floor(Number(trophies) || 0));
-            return (name || 'Combatant') + (count > 0 ? ' 🏆' + count : '');
+            return (name || 'Player') + (count > 0 ? ' 🏆' + count : '');
         }
 
         // Every tier uses the same bot stats; difficulty changes AI decisions only.
@@ -2034,7 +2034,7 @@
                 const opts = document.getElementById('modal-options');
                 title.innerText = `Join Room: ${room.toUpperCase()}`;
                 opts.innerHTML = `
-                    <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Combatant" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
+                    <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Player115" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
                     <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
                 `;
                 modal.style.display = 'flex';
@@ -2044,7 +2044,7 @@
 
         function executeDirectLinkJoin(room, teamReq) {
             const nameInput = document.getElementById('direct-name-input');
-            if (nameInput) myUsername = nameInput.value.trim() || 'Combatant';
+            if (nameInput) myUsername = nameInput.value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = room;
             document.getElementById('modal-screen').style.display = 'none';
 
@@ -2166,7 +2166,7 @@
         }
 
         function joinGlobalServer(serverCode, gameMode) {
-            myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || 'Combatant';
+            myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = serverCode;
             currentMode = gameMode;
             hostGameMode = gameMode;
@@ -2662,21 +2662,33 @@
                 const targetHostId = formatPeerId(roomCode);
                 const conn = peerInstance.connect(targetHostId);
                 let connected = false;
+                let fallbackStarted = false;
+                const fallbackToHost = () => {
+                    if (!autoHostIfEmpty || connected || fallbackStarted) return;
+                    fallbackStarted = true;
+                    hostHistoryRoom(roomCode);
+                };
                 conn.on('open', () => {
                     connected = true;
                     rememberPeerRoom(roomCode);
-                    setupClientConnection(conn);
+                    if (autoHostIfEmpty) setupClientConnection(conn);
                 });
-                conn.on('error', () => { if (autoHostIfEmpty && !connected) hostHistoryRoom(roomCode); });
-                if (autoHostIfEmpty) setTimeout(() => {
-                    if (!connected && peerInstance && !peerInstance.destroyed) hostHistoryRoom(roomCode);
-                }, 2500);
-                if (!autoHostIfEmpty) setupClientConnection(conn);
+                conn.on('error', fallbackToHost);
+                if (autoHostIfEmpty) setTimeout(fallbackToHost, 2500);
+                else {
+                    conn.on('open', () => rememberPeerRoom(roomCode));
+                    setupClientConnection(conn);
+                }
             });
             peerInstance.on('error', (err) => {
                 document.getElementById('net-status').innerText = `Connection Failed: ${err.type}`;
-                if (autoHostIfEmpty) hostHistoryRoom(roomCode);
-                else showNotificationBox('Could not connect to host room. Please check room code.');
+                if (autoHostIfEmpty) {
+                    if (!window.peerHistoryFallbackStarted) {
+                        window.peerHistoryFallbackStarted = true;
+                        hostHistoryRoom(roomCode);
+                        setTimeout(() => { window.peerHistoryFallbackStarted = false; }, 4000);
+                    }
+                } else showNotificationBox('Could not connect to host room. Please check room code.');
             });
         }
 
@@ -4246,7 +4258,7 @@
                 return;
             }
             document.getElementById('input-room').value = info.roomCode;
-            document.getElementById('input-username').value = myUsername || 'Combatant';
+            document.getElementById('input-username').value = myUsername || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             if (info.gameMode) hostGameMode = info.gameMode;
             switchChatTab('all');
             if (inGameActive) exitToLobby();
