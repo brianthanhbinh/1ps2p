@@ -3840,6 +3840,7 @@
                 if (distance >= radius) continue;
                 const block = worldBlocks[key];
                 if (!block) continue;
+                if (!Number.isFinite(block.hp)) block.hp = Number(block.maxHp) || 100;
                 block.hp -= Math.max(1, Math.round(90 * (1 - distance / radius)));
                 if (block.hp <= 0) {
                     delete worldBlocks[key];
@@ -4795,6 +4796,8 @@
                 }
 
                 if (hitWall || g.fuseTime <= 0 || Math.hypot(g.x - g.targetX, g.y - g.targetY) < 15) {
+                    // Grenade blast damages every nearby block, not only the block it directly hits.
+                    damageBlocksInRocketBlast(g.x, g.y);
                     const explRadius = 100;
                     if(isHosting){const apply=t=>{if(!t||t.hp<=0||(g.team!=='FFA'&&t.team===g.team))return;const d=Math.hypot(g.x-t.x,g.y-t.y);if(d<explRadius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(70*(1-d/explRadius))));};for(const pid in remotePlayers)apply(remotePlayers[pid]);}
                     else if(hostConnection&&hostConnection.open)hostConnection.send({type:'explosion_request',x:g.x,y:g.y,radius:explRadius,damage:70});
