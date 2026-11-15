@@ -4988,7 +4988,7 @@
             else if (activeHotbar === 9 && !actionCdBuild) {
                 if (!consumeTrap(selectedTrapType)) { showNotificationBox(`No ${selectedTrapType} traps remaining! Choose another trap or buy more.`); return; }
                 const tKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
-                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, ownerPeerId: peerInstance && peerInstance.id || null, ownerIsLocal: !!(isHosting || isPractice), hp: 120, maxHp: 120, nextReadyAt: 0, placedAt: Date.now(), cooldownMs: selectedTrapType === 'blackhole' ? 15000 : 1800 };
+                const newTrap = { x: targetWorldX, y: targetWorldY, team: playerTeam, type: selectedTrapType, ownerPeerId: peerInstance && peerInstance.id || null, ownerIsLocal: !!(isHosting || isPractice || (!hostConnection && !peerInstance)), hp: 120, maxHp: 120, nextReadyAt: 0, placedAt: Date.now(), cooldownMs: selectedTrapType === 'blackhole' ? 15000 : 1800 };
                 const uniqueTrapKey=tKey+':'+Date.now()+':'+Math.random().toString(36).slice(2,6);
                 activeTraps[uniqueTrapKey] = newTrap;
                 if (isHosting) broadcastStateToClients();
