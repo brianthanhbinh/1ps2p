@@ -831,8 +831,8 @@
             const ownerX=owner && Number.isFinite(owner.x) ? owner.x : trap.x;
             const ownerY=owner && Number.isFinite(owner.y) ? owner.y : trap.y;
             const enemies=[];
-            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) { currentHp=0; enemies.push({x:posX,y:posY}); }
-            for (const pid in remotePlayers) { const p=remotePlayers[pid]; if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) { p.hp=0; enemies.push({x:p.x,y:p.y}); } }
+            if (currentHp>0 && (trap.team==='FFA' || trap.team!==playerTeam) && Math.hypot(posX-trap.x,posY-trap.y)<=radius) { enemies.push({x:posX,y:posY}); posX=trap.x;posY=trap.y;currentHp=0; }
+            for (const pid in remotePlayers) { const p=remotePlayers[pid]; if(p && p.hp>0 && (trap.team==='FFA' || p.team!==trap.team) && Math.hypot(p.x-trap.x,p.y-trap.y)<=radius) { enemies.push({x:p.x,y:p.y});p.x=trap.x;p.y=trap.y;p.hp=0; } }
             if (!enemies.length) return false;
             let moved=0;
             for (const lootId in droppedLoot) { const loot=droppedLoot[lootId]; if(!loot)continue; if(enemies.some(e=>Math.hypot((Number(loot.x)||0)-e.x,(Number(loot.y)||0)-e.y)<=230)) { loot.x=ownerX+(Math.random()-.5)*34; loot.y=ownerY+(Math.random()-.5)*34; moved++; } }
