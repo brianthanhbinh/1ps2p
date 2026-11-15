@@ -116,9 +116,6 @@
         #mobile-drop { width:46px;height:46px;left:174px;bottom:calc(92px + env(safe-area-inset-bottom));font-size:10px; }
         #mobile-scope { width:44px;height:44px;right:166px;bottom:calc(38px + env(safe-area-inset-bottom));font-size:10px; }
         .mobile-action.active { background:rgba(255,183,0,.9);color:#171717; }
-        #desktop-place { display:none; position:absolute; right:24px; bottom:88px; z-index:110; pointer-events:auto; padding:13px 22px; border:2px solid #a5d6a7; border-radius:9px; background:rgba(46,125,50,.96); color:#fff; font-weight:900; font-size:14px; cursor:pointer; box-shadow:0 4px 14px #0009; }
-        #desktop-place:hover { background:#388e3c; }
-        @media (hover:none) and (pointer:coarse) { #desktop-place { display:none !important; } }
         @media (hover:none) and (pointer:coarse) {
             #mobile-controls.mobile-enabled { display:block; }
             /* Keep the hotbar in its own clear strip; controls never cover its slots. */
@@ -554,7 +551,6 @@
             <button id="mobile-scope" class="mobile-action" onclick="toggleMobileScope()">SCOPE</button>
         </div>
     </div>
-        <button id="desktop-place" type="button" onclick="desktopPrimaryAction(event)">PLACE</button>
 
 
     <script>
@@ -625,15 +621,6 @@
             mobileSprint = !mobileSprint;
             document.getElementById('mobile-sprint')?.classList.toggle('active', mobileSprint);
             keyboardInput['ShiftLeft'] = mobileSprint;
-        }
-        function updatePlaceButtonVisibility() {
-            const button = document.getElementById("desktop-place");
-            if (button) button.style.display = inGameActive && (activeHotbar === 2 || activeHotbar === 9) ? "block" : "none";
-        }
-        function desktopPrimaryAction(event) {
-            if (event) { event.preventDefault(); event.stopPropagation(); }
-            if (!inGameActive || (activeHotbar !== 2 && activeHotbar !== 9)) return;
-            triggerWeaponAttack(mouseXCoord, mouseYCoord);
         }
         function mobilePrimaryAction() {
             if (!inGameActive) return;
@@ -1303,7 +1290,6 @@
             document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('selected'));
             const el = document.getElementById(`hslot-${idx}`);
             if (el) el.classList.add('selected');
-            updatePlaceButtonVisibility();
         }
 
         /* Mobile & desktop hotbar interaction without cancelling native drag & drop */
@@ -1912,8 +1898,7 @@
             document.getElementById('tip-banner').style.display = active ? 'block' : 'none';
             document.getElementById('room-notification').style.display = active ? 'none' : 'block';
             document.getElementById('hotbar-dock').style.display = active ? 'flex' : 'none';
-            updatePlaceButtonVisibility();
-            const backpackPanelOnExit = document.getElementById('inventory-panel');
+                const backpackPanelOnExit = document.getElementById('inventory-panel');
             if (backpackPanelOnExit && !active) { backpackPanelOnExit.style.display = 'none'; backpackPanelOnExit.setAttribute('aria-hidden','true'); }
             document.getElementById('chat-text-input').style.display = active ? 'block' : 'none';
             const chatBox = document.getElementById('chat-box');
@@ -4152,10 +4137,17 @@
 
         canvas.addEventListener('mousedown', (e) => {
             if (!inGameActive) return;
-            // Building and trap placement must only happen through the dedicated PLACE button.
-            // Clicking/tapping the battlefield while a buildable is selected should only aim.
-            if (activeHotbar === 2 || activeHotbar === 9) return;
             const point = clientToCanvasPoint(e.clientX, e.clientY);
+            if (activeHotbar === 2 || activeHotbar === 9) {
+                // Desktop has a real cursor position, so clicking the battlefield places
+                // the selected block/trap exactly at the clicked location. Keep mobile on
+                // its explicit PLACE control because touch has no hover position.
+                if (!isTouchDevice() && e.button === 0) {
+                    e.preventDefault();
+                    triggerWeaponAttack(point.x, point.y);
+                }
+                return;
+            }
             triggerWeaponAttack(point.x, point.y);
         });
 
