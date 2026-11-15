@@ -3842,7 +3842,7 @@
                 const bKey = `${Math.floor(targetWorldX / 40)},${Math.floor(targetWorldY / 40)}`;
                 const activeMode = isHosting ? currentMode : hostGameMode;
                 const buildType = selectedBuildBlock;
-                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200 };
+                const buildStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, conveyor: 220, mud: 240 };
                 if (buildType !== 'wood' && (!blockInventory[buildType] || blockInventory[buildType] <= 0)) {
                     selectedBuildBlock = 'wood';
                     showNotificationBox('That purchased block is out of stock. Using basic wood.');
@@ -4031,7 +4031,7 @@
                     const forceY = parseInt(forceParts[1]) * 40 + 20;
                     if (Math.hypot(ball.x - forceX, ball.y - forceY) > 48) continue;
                     const forceAngle = Number(forceBlock.angle) || 0;
-                    const acceleration = forceBlock.type === 'force3' ? 0.85 : forceBlock.type === 'force2' ? 0.48 : 0.22;
+                    const acceleration = forceBlock.type === 'conveyor' ? 0.16 : forceBlock.type === 'force3' ? 0.85 : forceBlock.type === 'force2' ? 0.48 : 0.22;
                     ball.vx += Math.cos(forceAngle) * acceleration;
                     ball.vy += Math.sin(forceAngle) * acceleration;
                     const maxBallSpeed = forceBlock.type === 'force3' ? 15 : 12;
@@ -4328,6 +4328,32 @@
                             vy:-Math.sin(a)*(1.5+Math.random()*2),
                             radius:2+Math.random()*2,alpha:.85,smoke:true
                         });
+                    }
+                }
+            }
+            // Conveyor blocks push players in the arrow direction; mud blocks slow movement.
+            for (const k in worldBlocks) {
+                const surface = worldBlocks[k];
+                if (!surface || !['conveyor','mud'].includes(surface.type)) continue;
+                const parts = k.split(','), sx = Number(parts[0]) * 40 + 20, sy = Number(parts[1]) * 40 + 20;
+                if (Math.hypot(posX - sx, posY - sy) > 31) continue;
+                if (surface.type === 'conveyor') {
+                    const a = Number(surface.angle) || 0;
+                    playerMomentumX += Math.cos(a) * 0.42;
+                    playerMomentumY += Math.sin(a) * 0.42;
+                } else {
+                    playerSlowUntil = Math.max(playerSlowUntil || 0, Date.now() + 140);
+                }
+                if (isHosting) {
+                    for (const pid in remotePlayers) {
+                        const target = remotePlayers[pid];
+                        if (!target || target.hp <= 0 || (surface.team !== 'FFA' && target.team === surface.team)) continue;
+                        if (Math.hypot(target.x - sx, target.y - sy) > 31) continue;
+                        if (surface.type === 'conveyor') {
+                            const a = Number(surface.angle) || 0;
+                            target.x += Math.cos(a) * 2.2;
+                            target.y += Math.sin(a) * 2.2;
+                        }
                     }
                 }
             }
@@ -5012,10 +5038,12 @@
                  else if(['force','force2','force3'].includes(blk.type)){const a=Number(blk.angle)||0,col=blk.type==='force3'?'#ff6688':blk.type==='force2'?'#ffad55':'#70f7ff';ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(a);ctx.shadowColor=col;ctx.shadowBlur=12;ctx.fillStyle=blk.type==='force3'?'rgba(255,55,95,.28)':blk.type==='force2'?'rgba(255,145,35,.25)':'rgba(0,234,255,.28)';ctx.fillRect(-16,-16,32,32);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.strokeRect(-16,-16,32,32);ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(-5,-9);ctx.lineTo(-5,9);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.restore();}
                   else if(blk.type==='oneway'){ctx.save();ctx.translate(bx+20,by+8);ctx.rotate(Number(blk.angle)||0);ctx.shadowColor='#54cfff';ctx.shadowBlur=9;ctx.fillStyle='#247da8';ctx.fillRect(-18,-4,36,8);ctx.fillStyle='#83ddff';ctx.fillRect(-16,-3,32,5);ctx.shadowBlur=0;ctx.fillStyle='#eafaff';ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(-6,-5);ctx.lineTo(6,-5);ctx.closePath();ctx.fill();ctx.strokeStyle='#247da8';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();}
                   else if(blk.type==='damage'){ctx.fillStyle='#ff6464';ctx.strokeStyle='#5b1118';ctx.lineWidth=2;for(let q=0;q<4;q++){const sx=bx+7+q*9;ctx.beginPath();ctx.moveTo(sx-4,by+31);ctx.lineTo(sx,by+8);ctx.lineTo(sx+4,by+31);ctx.closePath();ctx.fill();ctx.stroke();}ctx.strokeStyle='#ffd0d0';ctx.beginPath();ctx.moveTo(bx+6,by+32);ctx.lineTo(bx+34,by+32);ctx.stroke();}
+                 else if(blk.type==='conveyor'){ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(Number(blk.angle)||0);ctx.strokeStyle='#bafff8';ctx.lineWidth=3;for(let x=-12;x<=8;x+=10){ctx.beginPath();ctx.moveTo(x-4,-7);ctx.lineTo(x+3,0);ctx.lineTo(x-4,7);ctx.stroke();}ctx.restore();}
+                 else if(blk.type==='mud'){ctx.fillStyle='#8a623c';for(let q=0;q<5;q++){ctx.beginPath();ctx.arc(bx+8+(q%3)*11,by+10+Math.floor(q/3)*15,3+(q%2),0,Math.PI*2);ctx.fill();}ctx.strokeStyle='#d7b17b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx+5,by+31);ctx.quadraticCurveTo(bx+20,by+22,bx+35,by+31);ctx.stroke();}
                  else if(blk.type==='wood'){ctx.save();ctx.translate(bx+20,by+20);ctx.rotate(Number(blk.angle)||0);ctx.fillStyle='#c18a55';ctx.fillRect(-15,-14,30,28);ctx.strokeStyle='#704522';ctx.lineWidth=2;ctx.strokeRect(-15,-14,30,28);ctx.beginPath();ctx.moveTo(-14,-4);ctx.lineTo(14,-4);ctx.moveTo(-14,6);ctx.lineTo(14,6);ctx.stroke();ctx.fillStyle='#f0c28e';for(const [nx,ny] of [[-10,-9],[10,1],[-8,11]]){ctx.beginPath();ctx.arc(nx,ny,1.4,0,Math.PI*2);ctx.fill();}ctx.restore();}
                  else{ctx.fillStyle='rgba(255,255,255,0.18)';ctx.beginPath();ctx.roundRect(bx+7,by+6,26,5,3);ctx.fill();}
                 ctx.restore();
-                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900,force:180,ball:100,force2:220,force3:260,oneway:160,damage:200}[blk.type]||100);
+                const maxHp=blk.maxHp||({reinforced:220,metal:400,healing:160,obsidian:650,glass:90,bounce:180,ice:260,crystal:320,bunker:900,force:180,ball:100,force2:220,force3:260,oneway:160,damage:200,conveyor:220,mud:240}[blk.type]||100);
                 if(blk.hp<maxHp){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx,by-8,40,5);ctx.fillStyle='#4caf50';ctx.fillRect(bx,by-8,(Math.max(0,blk.hp)/maxHp)*40,5);}
             }
 
@@ -5080,7 +5108,7 @@
                 const item = droppedLoot[lid];
                 if (item.type === 'trap') { const colors={spike:'#ef5350',bear:'#b0bec5',mine:'#ff7043',glue:'#80cbc4',bounce:'#26c6da',laser:'#ff1744',shock:'#40c4ff',spring:'#a5d6a7'};const color=colors[item.subtype]||'#90a4ae';ctx.save();ctx.translate(item.x,item.y);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(({spike:'▲',bear:'⌘',mine:'✹',glue:'●',bounce:'⌒',laser:'⚡',shock:'ϟ',spring:'↟'})[item.subtype]||'T',0,1);ctx.restore();continue; }
                 if (item.type === 'block') {
-                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0' };
+                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0', conveyor: '#45d9ce', mud: '#a77b4d' };
                     ctx.save(); ctx.fillStyle = colors[item.subtype] || '#a8794f'; ctx.strokeStyle = '#eef7ff'; ctx.lineWidth = 2;
                     ctx.fillRect(item.x-10,item.y-10,20,20); ctx.strokeRect(item.x-10,item.y-10,20,20);
                     if(item.subtype==='healing'){ctx.fillStyle='#fff';ctx.fillRect(item.x-2,item.y-7,4,14);ctx.fillRect(item.x-7,item.y-2,14,4);}
