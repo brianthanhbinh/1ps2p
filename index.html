@@ -290,7 +290,7 @@
                 <div class="shop-item-card"><span>Sonic Emitter</span><div><b style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItem('gun', 'sonic', 1050)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItem('gun', 'warp', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItem('consumable', 'grenade', 60)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
+                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItem('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItem('consumable', 'bandage', 40)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItem('consumable', 'smoke_bomb', 55)">Buy</button></div></div>
             </div>
 
@@ -994,6 +994,7 @@
                 if(subType==='ice'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#7bdcf2');path([[-13,-6],[0,1],[0,14],[-13,7]],'#367f9e');path([[0,1],[13,-6],[13,7],[0,14]],'#245b78');c.strokeStyle='#e2fbff';c.lineWidth=1.5;c.beginPath();c.moveTo(-8,-5);c.lineTo(0,0);c.lineTo(8,-5);c.stroke();}
                 else if(subType==='crystal'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#c79cff');path([[-13,-6],[0,1],[0,14],[-13,7]],'#7951a8');path([[0,1],[13,-6],[13,7],[0,14]],'#503777');c.strokeStyle='#f3dcff';c.beginPath();c.moveTo(0,-12);c.lineTo(0,13);c.stroke();}
                 else if(subType==='bunker'){path([[-13,-6],[0,-13],[13,-6],[0,1]],'#8998a4');path([[-13,-6],[0,1],[0,14],[-13,7]],'#53616c');path([[0,1],[13,-6],[13,7],[0,14]],'#34414b');c.strokeStyle='#dce5eb';c.lineWidth=2;c.strokeRect(-7,-5,14,13);}
+                else if(subType==='stop'){path([[-13,-11],[13,-11],[13,11],[-13,11]],'#c62828');c.strokeStyle='#ffcdd2';c.lineWidth=2;c.strokeRect(-10,-8,20,16);c.beginPath();c.moveTo(-8,0);c.lineTo(8,0);c.stroke();}
                 else if(subType==='reinforced'){path([[-13,-9],[13,-9],[13,9],[-13,9]],'#9ba8b2');c.strokeStyle='#f4f8fa';c.lineWidth=2;c.strokeRect(-9,-6,18,12);c.beginPath();c.moveTo(-12,0);c.lineTo(12,0);c.stroke();}
                 else if(subType==='metal'){path([[-13,-10],[13,-10],[13,10],[-13,10]],metal);c.strokeStyle='#e8f8ff';c.lineWidth=2;c.beginPath();c.moveTo(-9,-7);c.lineTo(9,7);c.moveTo(9,-7);c.lineTo(-9,7);c.stroke();for(const [x,y] of [[-9,-7],[9,-7],[-9,7],[9,7]]){c.fillStyle='#f5fbff';c.beginPath();c.arc(x,y,1.7,0,Math.PI*2);c.fill();}}
                 else if(subType==='healing'){path([[-13,-11],[13,-11],[13,11],[-13,11]],'#246b4a');c.shadowColor='#49ff9c';c.shadowBlur=8;c.strokeStyle='#83ffb5';c.strokeRect(-13,-11,26,22);c.shadowBlur=0;c.fillStyle='#eafff1';c.fillRect(-3,-9,6,18);c.fillRect(-9,-3,18,6);}
@@ -2741,6 +2742,7 @@
                             if (d < radius) damageRaidBoss(Math.max(1,Math.round(maxDamage*(1-d/radius))));
                         }
                         floatingParticles.push({x:bx,y:by,radius:8,maxRadius:radius,alpha:1,isShockwave:true});
+                        delete activeTraps[data.key];
                         } else if(trap.type==='freeze') { triggerPlayer.frozenUntil=Date.now()+2200;triggerPlayer.vx=0;triggerPlayer.vy=0; } else if(trap.type==='glue'||trap.type==='shock') { slowUntil=Date.now()+(trap.type==='shock'?3200:2500);triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='shock'?12:0)); }
                         else if(trap.type==='bounce'||trap.type==='spring') { const a=Math.atan2(triggerPlayer.y-trap.y,triggerPlayer.x-trap.x),boost=trap.type==='spring'?105:55;triggerPlayer.x+=Math.cos(a)*boost;triggerPlayer.y+=Math.sin(a)*boost; }
                         else triggerPlayer.hp=Math.max(0,triggerPlayer.hp-(trap.type==='laser'?36:trap.type==='bear'?28:20));
@@ -2850,7 +2852,7 @@
                     broadcastStateToClients();
                 } else if (data.type === 'mine_trap') {
                     const tr=activeTraps[data.key],p=remotePlayers[conn.peer];
-                    if(tr&&p&&Math.hypot(p.x-tr.x,p.y-tr.y)<105){
+                    if(tr&&p&&data.metalDetector===true&&Math.hypot(p.x-tr.x,p.y-tr.y)<105){
                         tr.hp=(Number(tr.hp)||120)-Math.min(35,Math.max(1,Number(data.damage)||35));
                         if(tr.hp<=0){delete activeTraps[data.key];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);}
                         broadcastStateToClients();
@@ -3813,7 +3815,7 @@
             else if (activeHotbar === 1 && !actionCdAttack) {
                 let minedTrap=false;
                 for(let tk in activeTraps){const tr=activeTraps[tk];if(!tr||!metalDetectorOwned||Math.hypot(posX-tr.x,posY-tr.y)>90||Math.hypot(targetWorldX-tr.x,targetWorldY-tr.y)>24)continue;
-                    if(!isHosting){if(hostConnection&&hostConnection.open){hostConnection.send({type:'mine_trap',key:tk,damage:35});showNotificationBox('Mining trap...');}else showNotificationBox('Only the host can update traps right now.');}
+                    if(!isHosting){if(hostConnection&&hostConnection.open){hostConnection.send({type:'mine_trap',key:tk,damage:35,metalDetector:true});showNotificationBox('Mining trap...');}else showNotificationBox('Only the host can update traps right now.');}
                     else{tr.hp=(Number(tr.hp)||120)-35;if(tr.hp<=0){delete activeTraps[tk];spawnWorldLoot('trap',tr.type,tr.x,tr.y,1);showNotificationBox('Trap destroyed! It dropped as loot.');}else showNotificationBox('Mining trap... HP: '+tr.hp);broadcastStateToClients();}
                     minedTrap=true;break;}
                 if(!minedTrap) for (let k in worldBlocks) {
@@ -5153,7 +5155,7 @@
                 }else if(tr.type==='laser'){const pulse=.65+.35*Math.sin(Date.now()/110);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ff1744';ctx.lineWidth=3;ctx.shadowColor='#ff1744';ctx.shadowBlur=16;ctx.beginPath();ctx.moveTo(tr.x-38,tr.y);ctx.lineTo(tr.x+38,tr.y);ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=pulse;ctx.fillStyle='#ff8a80';ctx.fillRect(tr.x-5,tr.y-5,10,10);}else if(tr.type==='shock'){ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#40c4ff';ctx.lineWidth=3;ctx.shadowColor='#40c4ff';ctx.shadowBlur=12;for(let z=0;z<4;z++){const a=Date.now()/250+z*Math.PI/2;ctx.beginPath();ctx.moveTo(tr.x+Math.cos(a)*5,tr.y+Math.sin(a)*5);ctx.lineTo(tr.x+Math.cos(a)*16,tr.y+Math.sin(a)*16);ctx.stroke();}ctx.shadowBlur=0;}else if(tr.type==='spring'){ctx.fillStyle='#37474f';ctx.beginPath();ctx.arc(tr.x,tr.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a5d6a7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tr.x,tr.y,10,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-9,tr.y+7);ctx.lineTo(tr.x-4,tr.y-1);ctx.lineTo(tr.x+1,tr.y+7);ctx.lineTo(tr.x+6,tr.y-1);ctx.lineTo(tr.x+10,tr.y+7);ctx.stroke();}else if(tr.type==='bounce'){
                     ctx.fillStyle='#00838f';ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#b2ebf2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,9,Math.PI,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tr.x-7,tr.y+2);ctx.quadraticCurveTo(tr.x,tr.y-8,tr.x+7,tr.y+2);ctx.stroke();
                 }
-                if((tr.hp||120)<(tr.maxHp||120)){ctx.fillStyle='#111';ctx.fillRect(tr.x-17,tr.y-23,34,4);ctx.fillStyle='#ffb74d';ctx.fillRect(tr.x-17,tr.y-23,34*Math.max(0,(tr.hp||0))/(tr.maxHp||120),4);}
+                {const hpRatio=Math.max(0,Math.min(1,(Number(tr.hp)||0)/(Number(tr.maxHp)||120)));ctx.fillStyle='#111';ctx.fillRect(tr.x-19,tr.y-23,38,5);ctx.fillStyle=hpRatio>.5?'#4caf50':hpRatio>.25?'#ffca28':'#e53935';ctx.fillRect(tr.x-19,tr.y-23,38*hpRatio,5);}
                 if(tr.nextReadyAt>Date.now()){ctx.globalAlpha=.55;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,21,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
                 ctx.restore();
             }
@@ -5162,7 +5164,7 @@
                 const item = droppedLoot[lid];
                 if (item.type === 'trap') { const colors={spike:'#ef5350',bear:'#b0bec5',mine:'#ff7043',glue:'#80cbc4',bounce:'#26c6da',laser:'#ff1744',shock:'#40c4ff',spring:'#a5d6a7'};const color=colors[item.subtype]||'#90a4ae';ctx.save();ctx.translate(item.x,item.y);ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();ctx.fillStyle=color;ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(({spike:'▲',bear:'⌘',mine:'✹',glue:'●',bounce:'⌒',laser:'⚡',shock:'ϟ',spring:'↟'})[item.subtype]||'T',0,1);ctx.restore();continue; }
                 if (item.type === 'block') {
-                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0', conveyor: '#45d9ce', mud: '#a77b4d' };
+                    const colors = { reinforced: '#aeb8c1', metal: '#64b5d8', healing: '#52d68b', obsidian: '#7660a8', glass: '#8eeaff', bounce: '#b56be0', stop: '#ef5350', conveyor: '#45d9ce', mud: '#a77b4d' };
                     ctx.save(); ctx.fillStyle = colors[item.subtype] || '#a8794f'; ctx.strokeStyle = '#eef7ff'; ctx.lineWidth = 2;
                     ctx.fillRect(item.x-10,item.y-10,20,20); ctx.strokeRect(item.x-10,item.y-10,20,20);
                     if(item.subtype==='healing'){ctx.fillStyle='#fff';ctx.fillRect(item.x-2,item.y-7,4,14);ctx.fillRect(item.x-7,item.y-2,14,4);}
