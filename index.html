@@ -624,13 +624,18 @@
         }
         function mobilePrimaryAction() {
             if (!inGameActive) return;
-            // PLACE is deliberately limited to buildables and traps so it cannot
-            // accidentally fire a weapon, throw a grenade, or use another item.
+            // PLACE is deliberately limited to buildables and traps.
             if (activeHotbar !== 2 && activeHotbar !== 9) {
                 showNotificationBox('Select a block or trap in your hotbar first.');
                 return;
             }
-            triggerWeaponAttack(mouseXCoord || canvas.width / 2, mouseYCoord || canvas.height / 2);
+            // Touch aim controls update aimAngle, not the desktop mouse coordinates.
+            // Convert a point 80 world-units ahead of the player back to canvas space.
+            const zoom = getCameraZoom();
+            const placeX = posX + Math.cos(aimAngle) * 80;
+            const placeY = posY + Math.sin(aimAngle) * 80;
+            triggerWeaponAttack(canvas.width / 2 + (placeX - posX) * zoom,
+                                canvas.height / 2 + (placeY - posY) * zoom);
         }
         function toggleMobileScope() {
             cameraScoped = !cameraScoped;
@@ -753,6 +758,7 @@
         const ammoByWeapon = {};
         let activeWarpPortals = [];
         let warpTeleportReadyAt = 0;
+        let warpShotReadyAt = 0;
         let deathLootDropped = false;
         function getAmmoCapacity(w){return ammoCapacity[w]||10;}
         function saveSelectedAmmo(){const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;if(w)ammoByWeapon[w]=currentAmmo;}
@@ -3688,7 +3694,7 @@
             const el=document.getElementById('ammo-num'),hint=document.getElementById('ammo-hint');
             if(!el)return;
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
-            if(w){el.textContent=isReloading?'Reloading…':`${currentAmmo}/${maxAmmo}`;if(hint)hint.textContent='[SPACE to Reload]';}
+            if(w){el.textContent=isReloading?'Reloading…':`${currentAmmo}/${maxAmmo}`;if(hint)hint.textContent=w==='warp'&&Date.now()<warpShotReadyAt?`Warp ready in ${((warpShotReadyAt-Date.now())/1000).toFixed(1)}s`:'[SPACE to Reload]';}
             else if(activeHotbar===6){el.textContent=String(grenadesCount);if(hint)hint.textContent='Grenades';}
             else if(activeHotbar===7){el.textContent=String(bandagesCount);if(hint)hint.textContent='Bandages';}
             else if(activeHotbar===8){el.textContent=String(smokeBombsCount);if(hint)hint.textContent='Smoke bombs';}
@@ -4061,6 +4067,7 @@
                     return;
                 }
                 if (isReloading) return;
+                if (gunEquipped === 'warp' && Date.now() < warpShotReadyAt) return;
                 if (currentAmmo <= 0) {
                     showNotificationBox('Out of ammo! Press SPACE to reload.');
                     return;
@@ -4071,6 +4078,8 @@
                     refreshAmmoHud();
                     let cdTime = 250;
                     if (gunEquipped === 'warp') {
+                        warpShotReadyAt = Date.now() + 500;
+                        actionCdAttack = true;
                         activeWarpPortals.push({x:targetWorldX,y:targetWorldY,createdAt:Date.now()});
                         if (activeWarpPortals.length >= 2) {
                             activeWarpPortals = activeWarpPortals.slice(-2);
@@ -4101,7 +4110,7 @@
                     if (gunEquipped === 'ricochet') cdTime = 260;
                     if (gunEquipped === 'gravity') cdTime = 650;
                     if (gunEquipped === 'sonic') cdTime = 420;
-                    if (gunEquipped === 'warp') cdTime = 350;
+                    if (gunEquipped === 'warp') cdTime = 500;
                     }
                     setTimeout(() => { actionCdAttack = false; }, cdTime);
                 }
