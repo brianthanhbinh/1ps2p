@@ -3698,6 +3698,74 @@
             feed.scrollTop = feed.scrollHeight;
         }
 
+        // Flat World build command: /fill x1 y1 x2 y2 [block]
+        // Coordinates are block-grid coordinates (each block is 40 world units).
+        function runFlatWorldCommand(commandText) {
+            if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') return false;
+            const parts = String(commandText || '').trim().split(/\\s+/);
+            if (parts[0]?.toLowerCase() !== '/fill') return false;
+            if (parts.length < 5 || parts.length > 6) {
+                showNotificationBox('Usage: /fill x1 y1 x2 y2 [block]');
+                return true;
+            }
+
+            const playerTileX = Math.floor(posX / 40);
+            const playerTileY = Math.floor(posY / 40);
+            const readCoord = (value, origin) => {
+                if (value === '~') return origin;
+                if (value.startsWith('~')) {
+                    const offset = value.length === 1 ? 0 : Number(value.slice(1));
+                    return Number.isFinite(offset) ? origin + Math.trunc(offset) : NaN;
+                }
+                const number = Number(value);
+                return Number.isFinite(number) ? Math.trunc(number) : NaN;
+            };
+
+            const x1 = readCoord(parts[1], playerTileX);
+            const y1 = readCoord(parts[2], playerTileY);
+            const x2 = readCoord(parts[3], playerTileX);
+            const y2 = readCoord(parts[4], playerTileY);
+            const blockType = String(parts[5] || selectedBuildBlock || 'wood').toLowerCase();
+            const blockStats = { wood: 100, reinforced: 220, metal: 400, healing: 160, obsidian: 650, glass: 90, bounce: 180, ice: 260, crystal: 320, bunker: 900, force: 180, ball: 100, force2: 220, force3: 260, oneway: 160, damage: 200, stop: 300, conveyor: 220, mud: 240 };
+            if (![x1, y1, x2, y2].every(Number.isSafeInteger) || !Object.prototype.hasOwnProperty.call(blockStats, blockType)) {
+                showNotificationBox('Invalid coordinates or block. Try /fill -5 -5 5 5 wood');
+                return true;
+            }
+
+            const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+            const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+            const width = maxX - minX + 1, height = maxY - minY + 1;
+            if (width * height > 10000) {
+                showNotificationBox('Fill is too large (max 10,000 blocks per command).');
+                return true;
+            }
+
+            const maxWorldTile = Math.floor(FLAT_WORLD_HALF_SIZE / 40);
+            if (minX < -maxWorldTile || maxX > maxWorldTile || minY < -maxWorldTile || maxY > maxWorldTile) {
+                showNotificationBox('Fill coordinates must stay inside the Flat World boundary.');
+                return true;
+            }
+
+            let placed = 0;
+            for (let ty = minY; ty <= maxY; ty++) {
+                for (let tx = minX; tx <= maxX; tx++) {
+                    const key = tx + ',' + ty;
+                    if (worldBlocks[key]) continue;
+                    worldBlocks[key] = {
+                        type: blockType,
+                        hp: blockStats[blockType],
+                        maxHp: blockStats[blockType],
+                        team: playerTeam,
+                        angle: forceBlockRotation,
+                        ...(blockType === 'ball' ? { x: tx * 40 + 20, y: ty * 40 + 20, vx: 0, vy: 0 } : {})
+                    };
+                    placed++;
+                }
+            }
+            showNotificationBox('Filled ' + placed + ' block' + (placed === 1 ? '' : 's') + ' with ' + blockType + '.');
+            return true;
+        }
+
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
@@ -3708,6 +3776,13 @@
                 return;
             }
             if (txt) {
+                if (runFlatWorldCommand(txt)) {
+                    input.value = '';
+                    input.blur();
+                    input.style.display = 'none';
+                    canvas.focus({ preventScroll: true });
+                    return;
+                }
                 const packet = { type: 'chat_message', channel: activeChatTab, message: txt, teamColor: playerColor, trophies: getBossTrophies() };
                 localChatBubbleText = txt;
                 localChatBubbleUntil = Date.now() + 4500;
