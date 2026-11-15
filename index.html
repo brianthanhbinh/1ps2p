@@ -5599,17 +5599,16 @@
                 ctx.beginPath(); ctx.moveTo(gridLeft, gy); ctx.lineTo(gridRight, gy); ctx.stroke();
             }
 
-            // Arras-style arena boundary: a solid, dark wall-like outline.
+            // Arras-style boundary: a darker shade of the arena's green ground.
             // Flat World intentionally remains borderless.
             if (currentMode !== 'flatworld' && hostGameMode !== 'flatworld') {
                 ctx.save();
-                ctx.shadowColor = 'rgba(0,0,0,0.65)';
-                ctx.shadowBlur = 12 / cameraZoom;
-                ctx.strokeStyle = '#171b20';
-                ctx.lineWidth = 14 / cameraZoom;
-                ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = '#303840';
+                ctx.fillStyle = '#14271f';
+                ctx.fillRect(-18, -18, MAP_SIZE + 36, 18);
+                ctx.fillRect(-18, MAP_SIZE, MAP_SIZE + 36, 18);
+                ctx.fillRect(-18, 0, 18, MAP_SIZE);
+                ctx.fillRect(MAP_SIZE, 0, 18, MAP_SIZE);
+                ctx.strokeStyle = '#244335';
                 ctx.lineWidth = 3 / cameraZoom;
                 ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
                 ctx.restore();
