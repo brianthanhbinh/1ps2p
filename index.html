@@ -6377,7 +6377,11 @@
                     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,2,0,Math.PI*2);ctx.stroke();
                     ctx.restore();
                 } else if (tr.type === 'blackhole') {
+                    // Keep the pulsing artwork transform isolated so the HP bar below
+                    // is drawn once at the trap's actual world position, not translated twice.
+                    ctx.save();
                     const pulse=1+0.12*Math.sin(Date.now()/180);ctx.translate(tr.x,tr.y);ctx.scale(pulse,pulse);ctx.fillStyle='#090316';ctx.shadowColor='#9b4dff';ctx.shadowBlur=22;ctx.beginPath();ctx.arc(0,0,19,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#d7a6ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,19,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#8e45e8';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,25,10,Date.now()/900,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-4,3,0,Math.PI*2);ctx.fill();
+                    ctx.restore();
                 } else if (tr.type === 'bear') {
                     // Distinct steel bear trap with two visible semicircular jaws and teeth.
                     ctx.fillStyle = '#778994';
