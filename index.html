@@ -4076,6 +4076,8 @@
                     ball.vx -= nx * Math.min(2.8, overlap * 0.18 + 0.8);
                     ball.vy -= ny * Math.min(2.8, overlap * 0.18 + 0.8);
                 }
+                let insideStopBlock=false;for(const stopKey in worldBlocks){const stopBlock=worldBlocks[stopKey];if(!stopBlock||stopBlock.type!=='stop')continue;const stopParts=stopKey.split(','),stopX=Number(stopParts[0])*40+20,stopY=Number(stopParts[1])*40+20;if(Math.hypot(ball.x-stopX,ball.y-stopY)<38){insideStopBlock=true;break;}}
+                if(insideStopBlock){ball.vx=0;ball.vy=0;}
                 const nextX = ball.x + ball.vx, nextY = ball.y + ball.vy;
                 ball.x = Math.max(18, Math.min(MAP_SIZE - 18, nextX));
                 ball.y = Math.max(18, Math.min(MAP_SIZE - 18, nextY));
