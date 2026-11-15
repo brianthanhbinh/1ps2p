@@ -1491,6 +1491,10 @@
         }
 
         function applyLocalMode(localMode) {
+            flatWorldMultiplayer = false;
+            pendingMultiplayerFlatWorldLoad = false;
+            flatWorldLoadedPlayerData = null;
+            flatWorldSpawnPoint = { x: 0, y: 0 };
             myUsername = document.getElementById('input-username').value.trim() || 'Trainee';
             isHosting = false;
             isPractice = (localMode === 'pvp' || localMode === 'zombie' || localMode === 'creative_pvp');
@@ -1579,6 +1583,7 @@
         }
 
         function selectGameModeAndTeam(mode) {
+            pendingMultiplayerFlatWorldLoad = false;
             currentMode = mode;
             hostGameMode = mode;
             flatWorldMultiplayer = false;
@@ -4009,6 +4014,7 @@
             currentHp = Math.max(1, Math.min(survivalOnly ? 100 : 300, Number(data.hp) || 100));
             currentStamina = Math.max(0, Math.min(100, Number(data.stamina) || 100));
             playerCoins = Math.max(0, Math.floor(Number(data.coins) || 0));
+            if (survivalOnly) playerCoins = Math.min(100, playerCoins);
             if (Array.isArray(data.weaponBarSlots)) weaponBarSlots = data.weaponBarSlots.slice(0, 3).map(v => typeof v === 'string' ? v : null);
             if (Array.isArray(data.backpackInventory)) backpackInventory = data.backpackInventory.slice(0, 32);
             grenadesCount = Math.max(0, Math.floor(Number(data.grenadesCount) || 0));
@@ -4041,6 +4047,8 @@
             const name = (prompt('Name this map:', 'My Flat World') || '').trim().slice(0, 40);
             if (!name) return;
             try {
+                saveSelectedAmmo();
+                flatWorldSpawnPoint = { x: posX, y: posY };
                 const worldFile = {
                     format: 'arena-world',
                     version: 1,
