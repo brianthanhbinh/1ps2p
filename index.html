@@ -1862,14 +1862,15 @@
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
-            if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) {
+            const roomHasCreativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
+            if (roomHasCreativeRules && playerGameMode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
                 if (playerCoins >= 999999) playerCoins = 100;
                 currentHp = 100;
             }
-            document.getElementById('coin-num').innerText = (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? '∞' : playerCoins;
+            document.getElementById('coin-num').innerText = (roomHasCreativeRules && playerGameMode === 'creative') ? '∞' : playerCoins;
 
             currentStamina = 100;
             if (activeMode === 'flatworld' && flatWorldMultiplayer && flatWorldLoadedPlayerData) {
@@ -2544,7 +2545,7 @@
 
         function respawnPlayer() {
             document.getElementById('death-modal').style.display = 'none';
-            currentHp = playerGameMode === 'creative' ? 300 : ((currentMode === 'flatworld' || hostGameMode === 'flatworld') && flatWorldRules === 'creative' ? 300 : 100);
+            currentHp = playerGameMode === 'creative' && (currentMode === 'creative' || hostGameMode === 'creative') ? 300 : 100;
             currentStamina = 100;
             deathLootDropped = false;
             syncSelectedAmmo();
@@ -4237,7 +4238,7 @@
         // Host-only personal gamemode command for Creative rooms.
         // Usage: /gamemode <creative|survival> [player name]
         function runGamemodeCommand(commandText) {
-            const parts = String(commandText || '').trim().split(/\\s+/);
+            const parts = String(commandText || '').trim().split(' ').filter(Boolean);
             if ((parts[0] || '').toLowerCase() !== '/gamemode') return false;
             if (!isHosting) {
                 showNotificationBox('Only the room host can use /gamemode.');
