@@ -799,6 +799,7 @@
         let aimAngle = 0;
         let currentHp = 100;
         let playerGameMode = 'survival';
+        let localCreativeMode = false;
         let currentStamina = 100;
         let playerCoins = 100;
         let activeRide = null;
@@ -1694,6 +1695,7 @@
 
         function applyLocalMode(localMode) {
             flushPreviousMap();
+            localCreativeMode = localMode === 'creative' || localMode === 'creative_pvp' || localMode === 'flatworld';
             flatWorldMultiplayer = false;
             pendingMultiplayerFlatWorldLoad = false;
             flatWorldLoadedPlayerData = null;
@@ -1888,10 +1890,9 @@
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             if (activeMode === 'bossfight') { playerTeam = 'Raiders'; playerColor = '#42a5f5'; }
-            const roomHasCreativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
-            // Re-assert the local room's selected mode at the final spawn point.
-            // This prevents an earlier menu selection from leaving a Creative room in Survival.
-            if (!isHosting && roomHasCreativeRules) playerGameMode = 'creative';
+            const roomHasCreativeRules = localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
+            // Local mode selection is tracked independently from multiplayer room state.
+            if (localCreativeMode) playerGameMode = 'creative';
             if (roomHasCreativeRules && playerGameMode === 'creative') {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
@@ -5352,9 +5353,9 @@
             updateAirdropHud();
 
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
-            const roomHasCreativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
-            // Local Creative rooms always retain Creative player mode after spawning.
-            if (!isHosting && roomHasCreativeRules) playerGameMode = 'creative';
+            const roomHasCreativeRules = localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
+            // Keep the explicitly selected local Creative mode independent of network mode flags.
+            if (localCreativeMode) playerGameMode = 'creative';
             // A Creative room can contain players individually switched to Survival.
             // Only personal Creative mode receives the Creative HP, coins, and stamina reset.
             if (roomHasCreativeRules && playerGameMode === 'creative') {
@@ -5627,7 +5628,7 @@
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
                 const localMaxHp = playerGameMode === 'creative' &&
-                    (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
+                    (localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
                 currentHp = Math.min(localMaxHp, currentHp + 0.2);
             }
 
@@ -6090,7 +6091,7 @@
                 });
             }
 
-            const displayedMaxHp = playerGameMode === 'creative' ? 300 : 100;
+            const displayedMaxHp = (localCreativeMode || playerGameMode === 'creative') ? 300 : 100;
             document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
             document.getElementById('hp-bar-fill').style.width = Math.min(100, Math.max(0, currentHp) / displayedMaxHp * 100) + '%';
             document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
