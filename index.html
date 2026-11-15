@@ -3223,7 +3223,7 @@
                 } else if (data.type === 'claim_crate') {
                     const player = remotePlayers[conn.peer];
                     const crateIndex = supplyCrates.findIndex(c => c && c.id === data.id);
-                    if (player && crateIndex !== -1 && Math.hypot(player.x - supplyCrates[crateIndex].x, player.y - supplyCrates[crateIndex].y) < 55) {
+                    if (player && crateIndex !== -1 && Math.hypot(player.x - supplyCrates[crateIndex].x, player.y - supplyCrates[crateIndex].y) < 90) {
                         const reward = Math.floor(Math.random() * 150) + 1;
                         supplyCrates.splice(crateIndex, 1);
                         player.coins = (player.coins || 0) + reward;
@@ -4542,6 +4542,29 @@
         }
 
         const pendingCrateClaims = new Set();
+        let nextCrateOpenAttemptAt = 0;
+        function openNearbySupplyCrate() {
+            if (Date.now() < nextCrateOpenAttemptAt) return;
+            const nearbyCrate = supplyCrates.find(crate => crate && crate.id && Math.hypot(posX - crate.x, posY - crate.y) < 85);
+            if (!nearbyCrate || pendingCrateClaims.has(nearbyCrate.id)) return;
+            if (isHosting || isPractice) {
+                const crateIndex = supplyCrates.findIndex(crate => crate && crate.id === nearbyCrate.id);
+                if (crateIndex === -1) return;
+                const reward = Math.floor(Math.random() * 150) + 1;
+                supplyCrates.splice(crateIndex, 1);
+                playerCoins += reward;
+                const coinNum = document.getElementById('coin-num');
+                if (coinNum) coinNum.innerText = playerCoins;
+                if (isHosting) broadcastStateToClients();
+                showNotificationBox(`Opened Airdrop Crate (+${reward} 🪙)!`);
+                nextCrateOpenAttemptAt = Date.now() + 500;
+            } else if (hostConnection && hostConnection.open) {
+                pendingCrateClaims.add(nearbyCrate.id);
+                hostConnection.send({ type: 'claim_crate', id: nearbyCrate.id });
+                nextCrateOpenAttemptAt = Date.now() + 5000;
+                setTimeout(() => pendingCrateClaims.delete(nearbyCrate.id), 5000);
+            }
+        }
         function pickupNearbyLoot() {
             for (let lid in droppedLoot) {
                 const item = droppedLoot[lid];
@@ -4601,24 +4624,7 @@
                 break;
             }
 
-            const nearbyCrate = supplyCrates.find(crate => crate && Math.hypot(posX - crate.x, posY - crate.y) < 50);
-            if (nearbyCrate && nearbyCrate.id && !pendingCrateClaims.has(nearbyCrate.id)) {
-                if (isHosting || isPractice) {
-                    const crateIndex = supplyCrates.findIndex(crate => crate && crate.id === nearbyCrate.id);
-                    if (crateIndex !== -1) {
-                        const randomCoinReward = Math.floor(Math.random() * 150) + 1;
-                        supplyCrates.splice(crateIndex, 1);
-                        playerCoins += randomCoinReward;
-                        document.getElementById('coin-num').innerText = playerCoins;
-                        if (isHosting) broadcastStateToClients();
-                        showNotificationBox(`Opened Airdrop Crate (+${randomCoinReward} 🪙)!`);
-                    }
-                } else if (hostConnection && hostConnection.open) {
-                    pendingCrateClaims.add(nearbyCrate.id);
-                    hostConnection.send({ type: 'claim_crate', id: nearbyCrate.id });
-                    setTimeout(() => pendingCrateClaims.delete(nearbyCrate.id), 5000);
-                }
-            }
+            openNearbySupplyCrate();
         }
 
         function getVehicleDamageReduction() {
@@ -5081,6 +5087,7 @@
 
         function updateGameLogic() {
             if (!inGameActive) return;
+            openNearbySupplyCrate();
             updatePushableBalls();
             updateConveyorLoot();
             if (activeWarpPortals.length === 2 && Date.now() >= warpTeleportReadyAt) {
