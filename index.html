@@ -14,13 +14,13 @@
         #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Lobby Menu */
-        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto !important; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 1000002 !important; isolation: isolate; }
+        #lobby-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18,18,26,0.96); color: #fff; padding: 28px; border-radius: 14px; text-align: center; pointer-events: auto !important; width: 440px; border: 1px solid #333; box-shadow: 0 15px 40px rgba(0,0,0,0.85); z-index: 100; }
         #lobby-box * { pointer-events: auto; }
-        #lobby-box .lobby-tabs, #lobby-box .lobby-tab { position: relative; z-index: 1000003; pointer-events: auto !important; }
+        #lobby-box .lobby-tabs, #lobby-box .lobby-tab { position: relative; z-index: 101; pointer-events: auto !important; }
         #lobby-box button { touch-action: manipulation; }
         #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
         .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer !important; font-weight: bold; font-size: 11px; pointer-events: auto !important; position: relative; z-index: 1000004; transition: background .15s, border-color .15s, color .15s; }
+        .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer !important; font-weight: bold; font-size: 11px; pointer-events: auto !important; position: relative; z-index: 102; transition: background .15s, border-color .15s, color .15s; }
         .lobby-tab:hover { background: #3a3a4c !important; color: #fff !important; border-color: #888 !important; }
         .lobby-tab:active { transform: translateY(1px); }
         .lobby-tab.active { background: #4caf50; color: #fff; border-color: #66bb6a; }
