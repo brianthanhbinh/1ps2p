@@ -5620,7 +5620,7 @@
             const sprintKeyDown = !!(keyboardInput['ShiftLeft'] || keyboardInput['ShiftRight']);
             if (sprintKeyDown && hasMovementInput) {
                 if (activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative') || currentStamina > 2) {
-                    sprintMultiplier = 1.15;
+                    sprintMultiplier = 1.20;
                     if (activeMode !== 'creative' && !(activeMode === 'flatworld' && flatWorldRules === 'creative')) currentStamina = Math.max(0, currentStamina - 0.5);
                 }
             } else if (activeMode !== 'creative' && !(activeMode === 'flatworld' && flatWorldRules === 'creative')) {
@@ -5651,7 +5651,7 @@
                     boardedVehicle.type === 'hovercraft' ? 1.75 :
                     boardedVehicle.type === 'mech' ? 1.50 :
                     boardedVehicle.type === 'bike' ? 1.15 : 1.95;
-                sprintMultiplier = vehicleSpeedBonus * (sprintKeyDown && hasMovementInput ? 1.15 : 1);
+                sprintMultiplier = vehicleSpeedBonus * (sprintKeyDown && hasMovementInput ? 1.20 : 1);
             }
 
             let dx = 0, dy = 0;
