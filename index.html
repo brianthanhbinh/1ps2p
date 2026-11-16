@@ -583,6 +583,7 @@
         <div id="lobby-box">
             <h1>2D P2P Arena</h1>
             <p id="lobby-description">1ps2p is a free 2D multiplayer browser arena. Create or join a room, play free-for-all or team matches, and battle with weapons, items, blocks, and traps.</p>
+            <button id="sound-toggle-btn" type="button" onclick="toggleArenaSound()" style="width:auto;margin:0 auto 12px;padding:6px 12px;background:#303b35;border:1px solid #52665a;color:#d7eadc;font-size:12px;">Sound: On</button>
             <div class="lobby-tabs">
                 <button type="button" class="lobby-tab active" data-lobby-tab="main" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Match Setup</button>
                 <button type="button" class="lobby-tab" data-lobby-tab="globals" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Global Servers</button>
@@ -669,6 +670,60 @@
 
 
     <script>
+        // Lightweight synthesized sound effects; no external audio files required.
+        let arenaAudioContext = null;
+        let arenaSoundEnabled = true;
+        try { arenaSoundEnabled = localStorage.getItem('1ps2p-sound') !== 'off'; } catch (_) {}
+
+        function updateArenaSoundButton() {
+            const button = document.getElementById('sound-toggle-btn');
+            if (button) button.textContent = 'Sound: ' + (arenaSoundEnabled ? 'On' : 'Off');
+        }
+
+        function toggleArenaSound() {
+            arenaSoundEnabled = !arenaSoundEnabled;
+            try { localStorage.setItem('1ps2p-sound', arenaSoundEnabled ? 'on' : 'off'); } catch (_) {}
+            updateArenaSoundButton();
+            if (arenaSoundEnabled) playArenaSound('confirm');
+        }
+
+        function playArenaSound(type = 'click') {
+            if (!arenaSoundEnabled) return;
+            try {
+                const AudioCtor = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtor) return;
+                if (!arenaAudioContext) arenaAudioContext = new AudioCtor();
+                if (arenaAudioContext.state === 'suspended') arenaAudioContext.resume();
+                const ctx = arenaAudioContext;
+                const now = ctx.currentTime;
+                const presets = {
+                    click:   { freq: 520, end: 390, duration: 0.045, volume: 0.035, wave: 'sine' },
+                    confirm: { freq: 660, end: 880, duration: 0.12, volume: 0.045, wave: 'sine' },
+                    shoot:   { freq: 170, end: 85, duration: 0.075, volume: 0.055, wave: 'triangle' },
+                    reload:  { freq: 420, end: 620, duration: 0.16, volume: 0.04, wave: 'sine' },
+                    spawn:   { freq: 300, end: 720, duration: 0.2, volume: 0.045, wave: 'sine' }
+                };
+                const p = presets[type] || presets.click;
+                const oscillator = ctx.createOscillator();
+                const gain = ctx.createGain();
+                oscillator.type = p.wave;
+                oscillator.frequency.setValueAtTime(p.freq, now);
+                oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, p.end), now + p.duration);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(p.volume, now + 0.008);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + p.duration);
+                oscillator.connect(gain);
+                gain.connect(ctx.destination);
+                oscillator.start(now);
+                oscillator.stop(now + p.duration + 0.01);
+            } catch (_) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', updateArenaSoundButton);
+        document.addEventListener('click', event => {
+            if (event.target.closest('button') && !event.target.closest('#sound-toggle-btn')) playArenaSound('click');
+        });
+
         function createPeer(...args) {
             if (window.peerJsLoadFailed || typeof window.Peer !== 'function') {
                 const status = document.getElementById('net-status');
@@ -1982,6 +2037,7 @@
         function assignTeamAndSpawn(teamName, hexColor) {
             playerTeam = teamName;
             playerColor = hexColor;
+            playArenaSound('spawn');
             document.getElementById('modal-screen').style.display = 'none';
 
             resetPlayerInventoryForNewMatch();
@@ -4783,7 +4839,10 @@
         });
 
         window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) isMouseDown = true;
+            if (e.button === 0) {
+                isMouseDown = true;
+                if (inGameActive && e.target === canvas) playArenaSound('shoot');
+            }
         });
         window.addEventListener('mouseup', (e) => {
             if (e.button === 0) isMouseDown = false;
@@ -5082,7 +5141,7 @@
         function reloadWeapon() {
             const w=activeHotbar>=3&&activeHotbar<=5?weaponBarSlots[activeHotbar-3]:null;
             if(!w||isReloading)return;
-            isReloading=true;refreshAmmoHud();showNotificationBox('Reloading weapon...');
+            isReloading=true;refreshAmmoHud();playArenaSound('reload');showNotificationBox('Reloading weapon...');
             if(w==='warp'){activeWarpPortals=[];warpTeleportReadyAt=0;}
             setTimeout(()=>{ammoByWeapon[w]=getAmmoCapacity(w);if(w===weaponBarSlots[activeHotbar-3]){currentAmmo=ammoByWeapon[w];maxAmmo=getAmmoCapacity(w);}isReloading=false;refreshAmmoHud();showNotificationBox('Reload complete!');},w==='rocket'||w==='sniper'?1300:900);
         }
