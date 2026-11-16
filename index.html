@@ -356,7 +356,7 @@
             <div>Velocity X: <span id="velocity-x">0.00</span></div>
             <div>Velocity Y: <span id="velocity-y">0.00</span></div>
         </div>
-        <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span></div>
+        <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span> <button id="watch-coins-btn" onclick="watchRewardedCoins()" style="pointer-events:auto;margin-left:8px;padding:5px 8px;background:#1976d2;color:white;border:1px solid #64b5f6;border-radius:5px;font-weight:bold;cursor:pointer;">+50 Coins · Watch</button></div>
         <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
         <button id="skin-toggle-btn" onclick="toggleSkinModal()">🎨 Custom PNG Skin</button>
 
@@ -2760,6 +2760,44 @@
                     if (info && info.breakStatus && !['viewed'].includes(info.breakStatus)) {
                         console.info('Host start ad placement:', info.breakStatus);
                     }
+                }
+            });
+        }
+
+        function watchRewardedCoins() {
+            if (typeof adBreak !== 'function') {
+                showNotificationBox('Rewarded ads are not ready yet. Please try again later.');
+                return;
+            }
+            const coinButton = document.getElementById('watch-coins-btn');
+            if (coinButton) coinButton.disabled = true;
+            let rewardGranted = false;
+            adBreak({
+                type: 'reward',
+                name: 'reward_50_coins',
+                beforeReward: (showAdFn) => { showAdFn(); },
+                beforeAd: () => { inGameActive = false; },
+                afterAd: () => { inGameActive = true; },
+                adViewed: () => {
+                    if (rewardGranted) return;
+                    rewardGranted = true;
+                    const creativeRules = currentMode === 'creative' || hostGameMode === 'creative' ||
+                        (currentMode === 'flatworld' && flatWorldRules === 'creative');
+                    if (!creativeRules) {
+                        playerCoins += 50;
+                        const coinDisplay = document.getElementById('coin-num');
+                        if (coinDisplay) coinDisplay.innerText = String(playerCoins);
+                    }
+                    showNotificationBox(creativeRules ? 'Creative mode already has unlimited coins.' : 'Reward received: +50 coins!');
+                },
+                adDismissed: () => {
+                    showNotificationBox('Ad closed early. No coins were awarded.');
+                },
+                adBreakDone: (info) => {
+                    if (!rewardGranted && info && !['dismissed', 'viewed'].includes(info.breakStatus)) {
+                        showNotificationBox('No rewarded ad is available right now. No coins were awarded.');
+                    }
+                    if (coinButton) coinButton.disabled = false;
                 }
             });
         }
