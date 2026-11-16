@@ -380,7 +380,7 @@
                 <div class="shop-item-card"><span>Sonic Emitter</span><div><b class="shop-price" data-base-price="1050" style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItemBatch('gun', 'sonic', 1050)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b class="shop-price" data-base-price="1500" style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItemBatch('gun', 'warp', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b class="shop-price" data-base-price="60" style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'grenade', 60)">Buy</button></div></div>
-                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItemBatch('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'bandage', 40)">Buy</button></div></div><div class="shop-item-card"><span>🩹 Medkit (+1 · heals 70 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'medkit', 100)">Buy</button></div></div><div class="shop-item-card"><span>🧰 Trauma Kit (+1 · restores full HP)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'trauma_kit', 180)">Buy</button></div></div>
+                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItemBatch('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'bandage', 40)">Buy</button></div></div><div class="shop-item-card"><span>🩹 Medkit (+1 · heals 70 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'medkit', 100)">Buy</button></div></div><div class="shop-item-card"><span>🧰 Trauma Kit (+1 · 100 total healing, reusable)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'trauma_kit', 180)">Buy</button></div></div><div class="shop-item-card"><span>💉 HP Injection (+50 HP, up to 150)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'hp_injection', 140)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'teleport_orb', 90)">Buy</button></div></div>
             </div>
 
@@ -627,7 +627,7 @@
             <div class="hotbar-slot" id="hslot-4" draggable="true" ondragstart="dragHotbar(event, 4)" ondragend="draggedData=null" onclick="selectHotbarSlot(4)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 4)"><span>5</span><canvas class="hotbar-canvas" id="hcanvas-4" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-5" draggable="true" ondragstart="dragHotbar(event, 5)" ondragend="draggedData=null" onclick="selectHotbarSlot(5)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 5)"><span>6</span><canvas class="hotbar-canvas" id="hcanvas-5" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-6" onclick="selectHotbarSlot(6);toggleThrowablePicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 6)"><span>7</span><small id="grenade-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-6" width="68" height="68"></canvas><div id="throwable-picker"><button type="button" class="trap-choice" data-throwable="grenade" onclick="chooseThrowable(event,'grenade')"><canvas id="throwable-icon-grenade" width="68" height="68"></canvas>Grenade<small id="throwable-count-grenade">0</small></button><button type="button" class="trap-choice" data-throwable="smoke_bomb" onclick="chooseThrowable(event,'smoke_bomb')"><canvas id="throwable-icon-smoke_bomb" width="68" height="68"></canvas>Smoke bomb<small id="throwable-count-smoke_bomb">0</small></button><button type="button" class="trap-choice" data-throwable="teleport_orb" onclick="chooseThrowable(event,'teleport_orb')"><canvas id="throwable-icon-teleport_orb" width="68" height="68"></canvas>Teleport orb<small id="throwable-count-teleport_orb">0</small></button></div></div>
-            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7);toggleHealPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas><div id="heal-picker"><button type="button" class="trap-choice" data-heal-item="bandage" onclick="chooseHealingItem(event,'bandage')"><canvas id="heal-icon-bandage" width="68" height="68"></canvas>Bandage<small id="heal-count-bandage">0</small></button><button type="button" class="trap-choice" data-heal-item="medkit" onclick="chooseHealingItem(event,'medkit')"><canvas id="heal-icon-medkit" width="68" height="68"></canvas>Medkit<small id="heal-count-medkit">0</small></button><button type="button" class="trap-choice" data-heal-item="trauma_kit" onclick="chooseHealingItem(event,'trauma_kit')"><canvas id="heal-icon-trauma_kit" width="68" height="68"></canvas>Trauma kit<small id="heal-count-trauma_kit">0</small></button></div></div>
+            <div class="hotbar-slot" id="hslot-7" onclick="selectHotbarSlot(7);toggleHealPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 7)"><span>8</span><small id="bandage-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-7" width="68" height="68"></canvas><div id="heal-picker"><button type="button" class="trap-choice" data-heal-item="bandage" onclick="chooseHealingItem(event,'bandage')"><canvas id="heal-icon-bandage" width="68" height="68"></canvas>Bandage<small id="heal-count-bandage">0</small></button><button type="button" class="trap-choice" data-heal-item="medkit" onclick="chooseHealingItem(event,'medkit')"><canvas id="heal-icon-medkit" width="68" height="68"></canvas>Medkit<small id="heal-count-medkit">0</small></button><button type="button" class="trap-choice" data-heal-item="trauma_kit" onclick="chooseHealingItem(event,'trauma_kit')"><canvas id="heal-icon-trauma_kit" width="68" height="68"></canvas>Trauma kit<small id="heal-count-trauma_kit">0</small></button><button type="button" class="trap-choice" data-heal-item="hp_injection" onclick="chooseHealingItem(event,'hp_injection')"><canvas id="heal-icon-hp_injection" width="68" height="68"></canvas>HP injection<small id="heal-count-hp_injection">0</small></button></div></div>
             <div class="hotbar-slot" id="hslot-8" onclick="selectHotbarSlot(8)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 8)"><span>9</span><small id="smoke-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-8" width="68" height="68"></canvas></div>
             <div class="hotbar-slot" id="hslot-9" onclick="selectHotbarSlot(9);toggleTrapPicker(event)" ondragover="allowDrop(event)" ondrop="dropToHotbar(event, 9)"><span class="hotbar-key">0</span><small id="trap-slot-count" class="hotbar-count">0</small><canvas class="hotbar-canvas" id="hcanvas-9" width="68" height="68"></canvas><div id="trap-picker"><button type="button" class="trap-choice" data-trap="spike" onclick="chooseTrapFromPicker(event,'spike')"><canvas id="trap-icon-spike" width="68" height="68"></canvas>Spike<small id="trap-count-spike">0</small></button><button type="button" class="trap-choice" data-trap="bear" onclick="chooseTrapFromPicker(event,'bear')"><canvas id="trap-icon-bear" width="68" height="68"></canvas>Bear<small id="trap-count-bear">0</small></button><button type="button" class="trap-choice" data-trap="mine" onclick="chooseTrapFromPicker(event,'mine')"><canvas id="trap-icon-mine" width="68" height="68"></canvas>Mine<small id="trap-count-mine">0</small></button><button type="button" class="trap-choice" data-trap="glue" onclick="chooseTrapFromPicker(event,'glue')"><canvas id="trap-icon-glue" width="68" height="68"></canvas>Glue<small id="trap-count-glue">0</small></button><button type="button" class="trap-choice" data-trap="bounce" onclick="chooseTrapFromPicker(event,'bounce')"><canvas id="trap-icon-bounce" width="68" height="68"></canvas>Bounce<small id="trap-count-bounce">0</small></button><button type="button" class="trap-choice" data-trap="laser" onclick="chooseTrapFromPicker(event,'laser')"><canvas id="trap-icon-laser" width="68" height="68"></canvas>Laser<small id="trap-count-laser">0</small></button><button type="button" class="trap-choice" data-trap="shock" onclick="chooseTrapFromPicker(event,'shock')"><canvas id="trap-icon-shock" width="68" height="68"></canvas>Shock<small id="trap-count-shock">0</small></button><button type="button" class="trap-choice" data-trap="freeze" onclick="chooseTrapFromPicker(event,'freeze')"><canvas id="trap-icon-freeze" width="68" height="68"></canvas>Freeze<small id="trap-count-freeze">0</small></button><button type="button" class="trap-choice" data-trap="spring" onclick="chooseTrapFromPicker(event,'spring')"><canvas id="trap-icon-spring" width="68" height="68"></canvas>Spring<small id="trap-count-spring">0</small></button><button type="button" class="trap-choice" data-trap="blackhole" onclick="chooseTrapFromPicker(event,'blackhole')"><canvas id="trap-icon-blackhole" width="68" height="68"></canvas>Blackhole<small id="trap-count-blackhole">0</small></button><button type="button" class="trap-choice" data-trap="warp" onclick="chooseTrapFromPicker(event,'warp')"><canvas id="trap-icon-warp" width="68" height="68"></canvas>Warp<small id="trap-count-warp">0</small></button><button type="button" class="trap-choice" data-trap="sawblade" onclick="chooseTrapFromPicker(event,'sawblade')"><canvas id="trap-icon-sawblade" width="68" height="68"></canvas>Sawblade<small id="trap-count-sawblade">0</small></button></div></div>
         </div>
@@ -835,7 +835,8 @@
         let grenadesCount = 3;
         let bandagesCount = 2;
         let medkitsCount = 0;
-        let traumaKitsCount = 0;
+        let traumaKitCharges = [];
+        let hpInjectionsCount = 0;
         let selectedHealingItem = 'bandage';
         let smokeBombsCount = 0;
         let teleportOrbsCount = 0;
@@ -852,7 +853,7 @@
         function consumeTrap(type){if(!trapInventory[type])return false;trapInventory[type]--;updateTrapTotal();refreshHotbarUI();return true;}
         function setSelectedTrapType(type){if(!Object.prototype.hasOwnProperty.call(trapInventory,type))return;selectedTrapType=type;refreshHotbarUI();refreshAmmoHud();}
         function toggleThrowablePicker(event){if(event){event.preventDefault();event.stopPropagation();}const p=document.getElementById('throwable-picker');if(p)p.classList.toggle('open');}
-        function getHealingItemCount(type){return type==='bandage'?bandagesCount:type==='medkit'?medkitsCount:type==='trauma_kit'?traumaKitsCount:0;}
+        function getHealingItemCount(type){return type==='bandage'?bandagesCount:type==='medkit'?medkitsCount:type==='trauma_kit'?traumaKitCharges.length:type==='hp_injection'?hpInjectionsCount:0;}
         function toggleHealPicker(event){if(event){event.preventDefault();event.stopPropagation();}const p=document.getElementById('heal-picker');if(p)p.classList.toggle('open');}
         function chooseHealingItem(event,type){if(event){event.preventDefault();event.stopPropagation();}if(!['bandage','medkit','trauma_kit'].includes(type))return;selectedHealingItem=type;const p=document.getElementById('heal-picker');if(p)p.classList.remove('open');selectHotbarSlot(7);refreshHotbarUI();refreshAmmoHud();}
         function chooseThrowable(event,type){if(event){event.preventDefault();event.stopPropagation();}if(!['grenade','smoke_bomb','teleport_orb'].includes(type))return;selectedThrowable=type;const p=document.getElementById('throwable-picker');if(p)p.classList.remove('open');selectHotbarSlot(6);refreshHotbarUI();refreshAmmoHud();}
@@ -971,11 +972,12 @@
             if(deathLootDropped)return;deathLootDropped=true;
             for(let i=0;i<weaponBarSlots.length;i++){const w=weaponBarSlots[i];if(w){spawnWorldLoot('gun',w,posX+(Math.random()-.5)*45,posY+(Math.random()-.5)*45,0);weaponBarSlots[i]=null;}}
             for(let i=0;i<backpackInventory.length;i++){const it=backpackInventory[i];if(it){spawnWorldLoot(it.type,it.subtype||null,posX+(Math.random()-.5)*55,posY+(Math.random()-.5)*55,it.count||1);backpackInventory[i]=null;}}
-            for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['medkit',medkitsCount],['trauma_kit',traumaKitsCount],['smoke_bomb',smokeBombsCount],['teleport_orb',teleportOrbsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            for(const [type,count] of [['grenade',grenadesCount],['bandage',bandagesCount],['medkit',medkitsCount],['hp_injection',hpInjectionsCount],['smoke_bomb',smokeBombsCount],['teleport_orb',teleportOrbsCount]])if(count>0)spawnWorldLoot(type,null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
+            for(const charge of traumaKitCharges)spawnWorldLoot('trauma_kit',null,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,charge);
             for(const [trapType,count] of Object.entries(trapInventory))if(count>0)spawnWorldLoot('trap',trapType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             for(const [blockType,count] of Object.entries(blockInventory))if(count>0)spawnWorldLoot('block',blockType,posX+(Math.random()-.5)*60,posY+(Math.random()-.5)*60,count);
             blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, iron_ball: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0 };
-            grenadesCount=0;bandagesCount=0;medkitsCount=0;traumaKitsCount=0;smokeBombsCount=0;teleportOrbsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
+            grenadesCount=0;bandagesCount=0;medkitsCount=0;traumaKitCharges=[];hpInjectionsCount=0;smokeBombsCount=0;teleportOrbsCount=0;for(const t of Object.keys(trapInventory))trapInventory[t]=0;updateTrapTotal();
             if(playerCoins>0&&playerCoins<Number.MAX_SAFE_INTEGER){spawnWorldLoot('coin',null,posX+18,posY+18,playerCoins);playerCoins=0;document.getElementById('coin-num').innerText='0';}
             refreshHotbarUI();renderBackpackGrid();syncSelectedAmmo();showNotificationBox('You dropped your inventory!');
         }
@@ -1426,6 +1428,8 @@
                 c.save();c.fillStyle='#e8ecee';c.strokeStyle='#53636b';c.lineWidth=2;c.beginPath();c.roundRect(-12,-9,24,18,3);c.fill();c.stroke();c.fillStyle='#e34c4c';c.fillRect(-3,-7,6,14);c.fillRect(-9,-3,18,6);c.restore();
             } else if(itemType==='trauma_kit'){
                 c.save();c.fillStyle='#344f43';c.strokeStyle='#a9d8bd';c.lineWidth=2;c.beginPath();c.roundRect(-13,-9,26,18,3);c.fill();c.stroke();c.fillStyle='#e8f5e9';c.fillRect(-3,-6,6,12);c.fillRect(-8,-2,16,4);c.fillStyle='#b7d8c2';c.fillRect(-5,-12,10,4);c.restore();
+            } else if(itemType==='hp_injection'){
+                c.save();c.rotate(-.5);c.strokeStyle='#dce8ef';c.lineWidth=3;c.beginPath();c.moveTo(-8,10);c.lineTo(8,-10);c.stroke();c.fillStyle='#eaf6ff';c.fillRect(-5,-11,10,5);c.fillStyle='#36d6a0';c.fillRect(-2,-5,4,13);c.strokeStyle='#344c5b';c.lineWidth=1.4;c.strokeRect(-5,-6,10,17);c.restore();
             } else if(itemType==='teleport_orb'){
                 c.shadowColor='#5deaff';c.shadowBlur=8;c.fillStyle='#20c9e8';c.strokeStyle='#d9fbff';c.lineWidth=2;c.beginPath();c.arc(0,0,11,0,Math.PI*2);c.fill();c.stroke();c.shadowBlur=0;c.strokeStyle='#fff';c.beginPath();c.arc(0,0,6,-1.2,2.2);c.stroke();
             } else if(itemType==='smoke_bomb'){
@@ -1529,7 +1533,7 @@
             else if(healCanvas)healCanvas.getContext('2d').clearRect(0,0,healCanvas.width,healCanvas.height);
             const bandageCountEl=document.getElementById('bandage-slot-count');
             if(bandageCountEl)bandageCountEl.textContent=selectedHealCount;
-            for(const type of ['bandage','medkit','trauma_kit']){const icon=document.getElementById('heal-icon-'+type);if(icon)drawItemArtOnCanvas(icon,type,null);const count=document.getElementById('heal-count-'+type);if(count)count.textContent=getHealingItemCount(type);}
+            for(const type of ['bandage','medkit','trauma_kit','hp_injection']){const icon=document.getElementById('heal-icon-'+type);if(icon)drawItemArtOnCanvas(icon,type,null);const count=document.getElementById('heal-count-'+type);if(count)count.textContent=getHealingItemCount(type);}
             document.querySelectorAll('[data-heal-item]').forEach(btn=>btn.classList.toggle('selected',btn.dataset.healItem===selectedHealingItem));
 
             const smokeCanvas = document.getElementById('hcanvas-8');
@@ -1935,7 +1939,8 @@
             grenadesCount = 3;
             bandagesCount = 2;
             medkitsCount = 0;
-            traumaKitsCount = 0;
+            traumaKitCharges = [];
+            hpInjectionsCount = 0;
             selectedHealingItem = 'bandage';
             smokeBombsCount = 0;
             for (const type of Object.keys(trapInventory)) trapInventory[type] = 0;
@@ -2577,8 +2582,9 @@
             } else if (activeHotbar === 6) {
                 if(selectedThrowable==='grenade'&&grenadesCount>0){grenadesCount--;spawnWorldLoot('grenade',null,dropPos.x,dropPos.y,1);}else if(selectedThrowable==='smoke_bomb'&&smokeBombsCount>0){smokeBombsCount--;spawnWorldLoot('smoke_bomb',null,dropPos.x,dropPos.y,1);}else if(selectedThrowable==='teleport_orb'&&teleportOrbsCount>0){teleportOrbsCount--;spawnWorldLoot('teleport_orb',null,dropPos.x,dropPos.y,1);}refreshHotbarUI();
             } else if (activeHotbar === 7 && getHealingItemCount(selectedHealingItem) > 0) {
-                if(selectedHealingItem==='bandage')bandagesCount--;else if(selectedHealingItem==='medkit')medkitsCount--;else traumaKitsCount--;
-                spawnWorldLoot(selectedHealingItem, null, dropPos.x, dropPos.y, 1);
+                let droppedValue=1;
+                if(selectedHealingItem==='bandage')bandagesCount--;else if(selectedHealingItem==='medkit')medkitsCount--;else if(selectedHealingItem==='hp_injection')hpInjectionsCount--;else droppedValue=traumaKitCharges.shift();
+                spawnWorldLoot(selectedHealingItem, null, dropPos.x, dropPos.y, droppedValue);
                 refreshHotbarUI();
             } else if (activeHotbar === 8 && smokeBombsCount > 0) {
                 smokeBombsCount--;
@@ -2592,7 +2598,7 @@
         function buyStoreItem(itemType, subtypeName, price, isBatchPurchase = false) {
             const activeMode = currentMode === 'creative' ? 'creative' : (isHosting ? currentMode : hostGameMode);
             const creativeRules = activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
-            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,medkit:100,trauma_kit:180,smoke_bomb:55,teleport_orb:90},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150,blackhole:2500,warp:100,sawblade:180},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,magnet_ball_plus:110,magnet_ball_minus:110,iron_ball:125,magnet_plus:140,magnet_minus:140,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
+            const shopPrices = {tool:{metal_detector:750},gun:{pistol:50,smg:120,ak:260,shotgun:180,sniper:300,rocket:900,minigun:600,laser:750,plasma:900,flame:1100,burst:850,freeze:950,ricochet:700,gravity:1250,sonic:1050,warp:1500},consumable:{grenade:60,bandage:40,medkit:100,trauma_kit:180,hp_injection:140,smoke_bomb:55,teleport_orb:90},trap:{spike:50,bear:80,mine:120,glue:90,bounce:100,laser:160,shock:135,spring:115,freeze:150,blackhole:2500,warp:100,sawblade:180},vehicle:{bike:250,car:600,tank:1200,hovercraft:1500,mech:2200},block:{reinforced:45,metal:90,healing:1000,obsidian:180,glass:35,bounce:100,ice:75,crystal:125,bunker:240,force:180,ball:75,magnet_ball_plus:110,magnet_ball_minus:110,iron_ball:125,magnet_plus:140,magnet_minus:140,force2:260,force3:380,oneway:85,damage:140,stop:220,conveyor:220,mud:240}};
             const expectedPrice=shopPrices[itemType]&&shopPrices[itemType][subtypeName];
             if(!Number.isFinite(expectedPrice)||Number(price)!==expectedPrice){showNotificationBox('Purchase blocked: invalid item or price.');return false;}
             if (!creativeRules && playerCoins < expectedPrice) {
@@ -2620,7 +2626,8 @@
                 if (subtypeName === 'grenade') grenadesCount += 3;
                 if (subtypeName === 'bandage') bandagesCount += 2;
                 if (subtypeName === 'medkit') medkitsCount += 1;
-                if (subtypeName === 'trauma_kit') traumaKitsCount += 1;
+                if (subtypeName === 'trauma_kit') traumaKitCharges.push(100);
+                if (subtypeName === 'hp_injection') hpInjectionsCount += 1;
                 if (subtypeName === 'smoke_bomb') smokeBombsCount += 2;
                 if (subtypeName === 'teleport_orb') teleportOrbsCount += 2;
                 refreshHotbarUI();
@@ -5092,7 +5099,10 @@
                     medkitsCount += amount;
                     collected = true;
                 } else if (item.type === 'trauma_kit') {
-                    traumaKitsCount += amount;
+                    traumaKitCharges.push(Math.max(0,Math.min(100,Number(item.value)||100)));
+                    collected = true;
+                } else if (item.type === 'hp_injection') {
+                    hpInjectionsCount += amount;
                     collected = true;
                 } else if (item.type === 'trap') {
                     addTraps(item.subtype || 'spike', amount);
@@ -5270,15 +5280,19 @@
             }
 
             else if (activeHotbar === 7) {
-                const healValues={bandage:40,medkit:70,trauma_kit:100};
-                const healNames={bandage:'Bandage',medkit:'Medkit',trauma_kit:'Trauma kit'};
+                const healNames={bandage:'Bandage',medkit:'Medkit',trauma_kit:'Trauma kit',hp_injection:'HP injection'};
                 if(getHealingItemCount(selectedHealingItem)<=0){showNotificationBox('No '+healNames[selectedHealingItem].toLowerCase()+' remaining!');return;}
-                if(currentHp>=100){showNotificationBox('Health is already full!');return;}
-                if(selectedHealingItem==='bandage')bandagesCount--;else if(selectedHealingItem==='medkit')medkitsCount--;else traumaKitsCount--;
-                const healed=Math.min(healValues[selectedHealingItem],100-currentHp);
-                currentHp=Math.min(100,currentHp+healValues[selectedHealingItem]);
-                refreshHotbarUI();
-                showNotificationBox('Used '+healNames[selectedHealingItem]+' (+'+healed+' HP)!');
+                if(selectedHealingItem==='hp_injection'){
+                    if(currentHp>=150){showNotificationBox('HP is already at the 150 maximum!');return;}
+                    hpInjectionsCount--;currentHp=Math.min(150,currentHp+50);refreshHotbarUI();showNotificationBox('HP injection used (+50 HP)!');return;
+                }
+                if(currentHp>=100){showNotificationBox('Healing items can only restore HP below 100. Your bonus HP must be used up first!');return;}
+                let healed=0;
+                if(selectedHealingItem==='bandage'){healed=Math.min(15,100-currentHp);bandagesCount--;}
+                else if(selectedHealingItem==='medkit'){healed=Math.min(50,100-currentHp);medkitsCount--;}
+                else {const kit=traumaKitCharges[0];healed=Math.min(50,100-currentHp,kit);if(healed<=0){traumaKitCharges.shift();showNotificationBox('Trauma kit is empty!');refreshHotbarUI();return;}traumaKitCharges[0]=Math.max(0,kit-healed);if(traumaKitCharges[0]<=0)traumaKitCharges.shift();}
+                currentHp+=healed;refreshHotbarUI();
+                showNotificationBox('Used '+healNames[selectedHealingItem]+' (+'+healed+' HP)'+(selectedHealingItem==='trauma_kit'&&traumaKitCharges.length?' · '+traumaKitCharges[0]+' HP left in kit':'')+'!');
             }
 
             else if (activeHotbar >= 3 && activeHotbar <= 5) {
@@ -6365,7 +6379,7 @@
                 });
             }
 
-            const displayedMaxHp = (localCreativeMode || playerGameMode === 'creative') ? 300 : 100;
+            const displayedMaxHp = (localCreativeMode || playerGameMode === 'creative') ? 300 : 150;
             document.getElementById('hp-num').innerText = Math.max(0, Math.floor(currentHp));
             document.getElementById('hp-bar-fill').style.width = Math.min(100, Math.max(0, currentHp) / displayedMaxHp * 100) + '%';
             document.getElementById('stamina-num').innerText = Math.floor(currentStamina);
