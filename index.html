@@ -832,6 +832,8 @@
         let currentStamina = 100;
         let playerCoins = 100;
         let hostStartAdRequested = false;
+        let deathsSinceLastAd = 0;
+        let deathAdCounted = false;
         let activeRide = null;
         let boardedVehicle = null;
         let cameraScoped = false;
@@ -2762,6 +2764,17 @@
             });
         }
 
+        function requestDeathMilestoneAd() {
+            if (typeof adBreak !== 'function') return;
+            adBreak({
+                type: 'next',
+                name: 'every_four_deaths',
+                adBreakDone: (info) => {
+                    if (info && info.breakStatus) console.info('Death milestone ad:', info.breakStatus);
+                }
+            });
+        }
+
         function watchRewardedItem(itemType) {
             const allowed = ['bandage', 'force', 'magnet_ball_plus', 'magnet_ball_minus', 'magnet_plus', 'magnet_minus'];
             if (!allowed.includes(itemType)) return;
@@ -2879,6 +2892,7 @@
         }
 
         function respawnPlayer() {
+            deathAdCounted = false;
             document.getElementById('death-modal').style.display = 'none';
             currentHp = (localCreativeMode || (playerGameMode === 'creative' && (currentMode === 'creative' || hostGameMode === 'creative'))) ? 300 : 100;
             currentStamina = 100;
@@ -5755,6 +5769,14 @@
             if (currentHp <= 0) {
                 dropAllPlayerLoot();
                 document.getElementById('death-modal').style.display = 'flex';
+                if (!deathAdCounted) {
+                    deathAdCounted = true;
+                    deathsSinceLastAd++;
+                    if (deathsSinceLastAd >= 4) {
+                        deathsSinceLastAd = 0;
+                        requestDeathMilestoneAd();
+                    }
+                }
                 return;
             }
 
