@@ -5935,9 +5935,13 @@
             }
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
-                const localMaxHp = playerGameMode === 'creative' &&
-                    (localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 150;
-                currentHp = Math.min(localMaxHp, currentHp + 0.2);
+                const isCreativeHp = playerGameMode === 'creative' &&
+                    (localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative'));
+                const localMaxHp = isCreativeHp ? 300 : 100;
+                // Base regeneration restores normal HP only; it must not grant bonus HP.
+                if (currentHp < localMaxHp) {
+                    currentHp = Math.min(localMaxHp, currentHp + 0.2);
+                }
             }
 
             const screenCenterX = canvas.width / 2;
