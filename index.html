@@ -2198,6 +2198,20 @@
                 return Array.isArray(value) ? value.filter(item => item && typeof item.code === 'string') : [];
             } catch (_) { return []; }
         }
+        function autofillLatestRoom() {
+            const input = document.getElementById('input-room');
+            if (!input || input.value.trim()) return;
+            // A room code in the URL is an explicit invite; don't overwrite it.
+            const inviteHash = (window.location.hash || '').replace(/^#/, '').split('%')[0].trim();
+            if (inviteHash) return;
+            const latestRoom = getPeerHistory()[0];
+            if (latestRoom && latestRoom.code) input.value = latestRoom.code;
+        }
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', autofillLatestRoom, { once: true });
+        } else {
+            autofillLatestRoom();
+        }
         function rememberPeerRoom(code) {
             const room = String(code || '').trim().toLowerCase();
             if (!room) return;
