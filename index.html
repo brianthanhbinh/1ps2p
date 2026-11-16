@@ -1954,6 +1954,7 @@
         }
 
         function selectGameModeAndTeam(mode) {
+            localCreativeMode = false;
             flushPreviousMap();
             pendingMultiplayerFlatWorldLoad = false;
             currentMode = mode;
@@ -2104,6 +2105,7 @@
         }
 
         function initHostRoom() {
+            localCreativeMode = false;
             myUsername = document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = document.getElementById('input-room').value.trim();
             if (!roomCode) { showNotificationBox('Enter a room name first.'); return; }
@@ -2200,6 +2202,8 @@
         });
 
         function executeDirectLinkJoin(room, teamReq) {
+            // A previous offline Creative session must never carry into a network room.
+            localCreativeMode = false;
             const nameInput = document.getElementById('direct-name-input');
             if (nameInput) {
                 myUsername = nameInput.value.trim() || getSavedPlayerName() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
@@ -2366,6 +2370,8 @@
         }
 
         function joinGlobalServer(serverCode, gameMode) {
+            // Multiplayer room rules, not the previous local session, determine this mode.
+            localCreativeMode = false;
             myUsername = document.getElementById('input-username-global').value.trim() || document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = serverCode;
             currentMode = gameMode;
@@ -3862,7 +3868,8 @@
                     document.getElementById('coin-num').innerText = playerCoins;
                     showNotificationBox(`Opened Airdrop Crate (+${data.reward} 🪙)!`);
                 } else if (data.type === 'room_config') {
-                    // Clear the previous room before applying the new host snapshot.
+                    // Clear local-only mode state before applying the authoritative room rules.
+                    localCreativeMode = false;
                     flushPreviousMap();
                     hostGameMode = data.mode || '4team';
                     // The room configuration is authoritative for a newly joined player.
