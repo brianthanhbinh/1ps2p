@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>2D P2P Arena</title>
+    <title>1ps2p - Free 2D Multiplayer Browser Arena</title>
+    <meta name="description" content="Play 1ps2p, a free 2D multiplayer browser arena. Create or join rooms, battle in free-for-all or team matches, and use weapons, items, blocks, and traps.">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="1ps2p">
+    <meta property="og:title" content="1ps2p - Free 2D Multiplayer Browser Arena">
+    <meta property="og:description" content="Create or join multiplayer rooms, fight in free-for-all or team matches, and use weapons, items, blocks, and traps in this free 2D browser arena.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="1ps2p - Free 2D Multiplayer Browser Arena">
+    <meta name="twitter:description" content="A free 2D multiplayer browser arena with rooms, team battles, free-for-all, weapons, items, blocks, and traps.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -19,6 +29,7 @@
         #lobby-box .lobby-tabs, #lobby-box .lobby-tab { position: relative; z-index: 101; pointer-events: auto !important; }
         #lobby-box button { touch-action: manipulation; }
         #lobby-box h1 { margin-bottom: 14px; color: #4caf50; font-size: 24px; letter-spacing: 0.5px; }
+        #lobby-description { margin: -5px 0 14px; color: #b8c3bd; font-size: 12px; line-height: 1.5; font-weight: normal; }
         .lobby-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
         .lobby-tab { flex: 1; padding: 7px; background: #252533; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer !important; font-weight: bold; font-size: 11px; pointer-events: auto !important; position: relative; z-index: 102; transition: background .15s, border-color .15s, color .15s; }
         .lobby-tab:hover { background: #3a3a4c !important; color: #fff !important; border-color: #888 !important; }
@@ -571,6 +582,7 @@
         <!-- Lobby Setup Panel -->
         <div id="lobby-box">
             <h1>2D P2P Arena</h1>
+            <p id="lobby-description">1ps2p is a free 2D multiplayer browser arena. Create or join a room, play free-for-all or team matches, and battle with weapons, items, blocks, and traps.</p>
             <div class="lobby-tabs">
                 <button type="button" class="lobby-tab active" data-lobby-tab="main" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Match Setup</button>
                 <button type="button" class="lobby-tab" data-lobby-tab="globals" onclick="(function(b){var k=b.dataset.lobbyTab;document.querySelectorAll('#lobby-box .lobby-tab').forEach(function(x){x.classList.toggle('active',x===b)});document.querySelectorAll('#lobby-box .lobby-content').forEach(function(x){x.classList.toggle('active',x.id==='lobby-tab-'+k)});if(k==='peers'&&typeof renderPeerHistory==='function')renderPeerHistory()})(this)">Global Servers</button>
