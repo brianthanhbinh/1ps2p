@@ -2853,7 +2853,7 @@
             if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
             const banner = document.getElementById('self-destruct-banner');
             if (banner) banner.style.display = 'none';
-            currentHp = Math.min(100, currentHp + 50);
+            currentHp = Math.min(150, currentHp + 50);
             showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
         }
 
@@ -4780,7 +4780,7 @@
                 posY = Math.max(-FLAT_WORLD_HALF_SIZE, Math.min(FLAT_WORLD_HALF_SIZE, Number(data.pos.y)));
                 flatWorldSpawnPoint = { x: posX, y: posY };
             }
-            currentHp = Math.max(1, Math.min(survivalOnly ? 100 : 300, Number(data.hp) || 100));
+            currentHp = Math.max(1, Math.min(survivalOnly ? 150 : 300, Number(data.hp) || 100));
             currentStamina = Math.max(0, Math.min(100, Number(data.stamina) || 100));
             playerCoins = Math.max(0, Math.floor(Number(data.coins) || 0));
             // Keep the saved coin balance in Survival worlds; mode metadata now
@@ -5714,7 +5714,7 @@
                     }
                 }
                 if (touchingHealingBlock) {
-                    currentHp = Math.min((activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100, currentHp + 5);
+                    currentHp = Math.min((activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 150, currentHp + 5);
                 }
                 nextBlockHealAt = Date.now() + 250;
             }
@@ -5916,7 +5916,7 @@
 
             if (!baseLockedOut && checkInsideBase(posX, posY, playerTeam)) {
                 const localMaxHp = playerGameMode === 'creative' &&
-                    (localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 100;
+                    (localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative')) ? 300 : 150;
                 currentHp = Math.min(localMaxHp, currentHp + 0.2);
             }
 
