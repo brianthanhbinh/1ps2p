@@ -390,7 +390,7 @@
                 <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b class="shop-price" data-base-price="1500" style="color:#ffca28;">1500 🪙</b> <button onclick="buyStoreItemBatch('gun', 'warp', 1500)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b class="shop-price" data-base-price="60" style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'grenade', 60)">Buy</button></div></div>
                 <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItemBatch('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'bandage', 40)">Buy</button> <button onclick="watchRewardedItem('bandage')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>🩹 Medkit (+1 · heals 70 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'medkit', 100)">Buy</button></div></div><div class="shop-item-card"><span>🧰 Trauma Kit (+1 · 100 total healing, reusable)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'trauma_kit', 180)">Buy</button></div></div><div class="shop-item-card"><span>💉 HP Injection (+50 HP, up to 150)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'hp_injection', 140)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'teleport_orb', 90)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'teleport_orb', 90)">Buy</button> <button onclick="watchRewardedItem('teleport_orb')" style="background:#1976d2;">Watch</button></div></div>
             </div>
 
             <div id="shop-tab-traps" class="shop-content">
@@ -414,7 +414,7 @@
                 <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b class="shop-price" data-base-price="1000" style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItemBatch('block', 'healing', 1000)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('block', 'obsidian', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b class="shop-price" data-base-price="35" style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItemBatch('block', 'glass', 35)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('block', 'bounce', 100)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('block', 'bounce', 100)">Buy</button> <button onclick="watchRewardedItem('bounce')" style="background:#1976d2;">Watch</button></div></div>
                 <div class="shop-item-card"><span>🧊 Ice Block (260 HP)</span><div><b class="shop-price" data-base-price="75" style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItemBatch('block', 'ice', 75)">Buy</button></div></div>
                 <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b class="shop-price" data-base-price="125" style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItemBatch('block', 'crystal', 125)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b class="shop-price" data-base-price="240" style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItemBatch('block', 'bunker', 240)">Buy</button></div></div>
@@ -2814,7 +2814,7 @@
         }
 
         function watchRewardedItem(itemType) {
-            const allowed = ['bandage', 'force', 'magnet_ball_plus', 'magnet_ball_minus', 'magnet_plus', 'magnet_minus'];
+            const allowed = ['bandage', 'force', 'magnet_ball_plus', 'magnet_ball_minus', 'magnet_plus', 'magnet_minus', 'bounce', 'teleport_orb'];
             if (!allowed.includes(itemType)) return;
             if (typeof adBreak !== 'function') {
                 showNotificationBox('Rewarded ads are not ready yet. Please try again later.');
@@ -2835,6 +2835,12 @@
                         bandagesCount += 2;
                         refreshHotbarUI();
                         showNotificationBox('Reward received: +2 bandages!');
+                    } else if (itemType === 'teleport_orb') {
+                        teleportOrbsCount += 1;
+                        selectedThrowable = 'teleport_orb';
+                        selectHotbarSlot(6);
+                        refreshHotbarUI();
+                        showNotificationBox('Reward received: 1 teleport orb!');
                     } else {
                         if (!Object.prototype.hasOwnProperty.call(blockInventory, itemType)) return;
                         blockInventory[itemType] = (blockInventory[itemType] || 0) + 1;
