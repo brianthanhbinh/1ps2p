@@ -2023,14 +2023,38 @@
             });
         }
 
+        const SAVED_PLAYER_NAME_KEY = 'arena_saved_player_name_v1';
+        function getSavedPlayerName() {
+            try { return localStorage.getItem(SAVED_PLAYER_NAME_KEY) || ''; }
+            catch (_) { return ''; }
+        }
+        function savePlayerName(name) {
+            const cleanName = String(name || '').trim();
+            if (!cleanName) return;
+            try { localStorage.setItem(SAVED_PLAYER_NAME_KEY, cleanName); } catch (_) {}
+        }
+        function syncPlayerNameInputs(source) {
+            const name = source.value;
+            savePlayerName(name);
+            ['input-username', 'input-username-global'].forEach(id => {
+                const field = document.getElementById(id);
+                if (field && field !== source) field.value = name;
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             setupSkinDrawing();
             setupSkinFileUpload();
             const lobbyName = document.getElementById('input-username');
             const globalName = document.getElementById('input-username-global');
-            const generatedName = 'Player' + (Math.floor(Math.random() * 1000) + 1);
-            if (lobbyName && !lobbyName.value) lobbyName.value = generatedName;
-            if (globalName && !globalName.value) globalName.value = generatedName;
+            const savedName = getSavedPlayerName();
+            const initialName = savedName || ('Player' + (Math.floor(Math.random() * 1000) + 1));
+            if (lobbyName) lobbyName.value = initialName;
+            if (globalName) globalName.value = initialName;
+            if (!savedName) savePlayerName(initialName);
+            [lobbyName, globalName].forEach(field => {
+                if (field) field.addEventListener('input', () => syncPlayerNameInputs(field));
+            });
             initializeFriendsSystem();
             if (new URLSearchParams(window.location.search).get('friendManagerWindow') === '1') {
                 document.title = '1PS2P - Friends';
@@ -2059,6 +2083,8 @@
                     <input type="text" id="direct-name-input" placeholder="Enter Your Name" value="Player115" style="width:100%; margin:8px 0; padding:10px; background:#252533; color:#fff; border:1px solid #444; border-radius:6px; text-align:center; outline:none;" />
                     <button class="btn-team-ffa" onclick="executeDirectLinkJoin('${room}', '${teamReq || ''}')">Join Game</button>
                 `;
+                const directName = document.getElementById('direct-name-input');
+                if (directName) directName.value = getSavedPlayerName() || directName.value;
                 modal.style.display = 'flex';
             }
             refreshHotbarUI();
@@ -2066,7 +2092,14 @@
 
         function executeDirectLinkJoin(room, teamReq) {
             const nameInput = document.getElementById('direct-name-input');
-            if (nameInput) myUsername = nameInput.value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
+            if (nameInput) {
+                myUsername = nameInput.value.trim() || getSavedPlayerName() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
+                savePlayerName(myUsername);
+                const lobbyName = document.getElementById('input-username');
+                const globalName = document.getElementById('input-username-global');
+                if (lobbyName) lobbyName.value = myUsername;
+                if (globalName) globalName.value = myUsername;
+            }
             roomCode = room;
             document.getElementById('modal-screen').style.display = 'none';
 
