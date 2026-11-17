@@ -7100,8 +7100,14 @@
                 } else {
                     ctx.fillStyle = playerColor;
                     ctx.beginPath(); ctx.arc(0, 0, RADIUS_PLAYER, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
                 }
+
+                // Always outline the local player, including when a custom skin texture is active.
+                ctx.beginPath();
+                ctx.arc(0, 0, RADIUS_PLAYER + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
 
                 drawFrozenPlayerEffect(ctx, playerFrozenUntil);
                 drawBlackholeCaptureEffect(ctx, localBlackholeUntil);
