@@ -318,6 +318,11 @@
         .friend-row .friend-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .friend-online { color:#66dd88; } .friend-offline { color:#aaa; }
         #chat-text-input { background: rgba(14,18,28,0.95); border: 1px solid #555; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; outline: none; display: none; }
+        #command-helper { display:none; max-height:150px; overflow-y:auto; background:rgba(8,12,20,.97); border:1px solid #52677d; border-radius:7px; padding:5px; color:#dce8f5; font-size:11px; box-shadow:0 4px 14px #0009; }
+        #command-helper.active { display:block; }
+        .command-helper-row { display:flex; justify-content:space-between; gap:10px; padding:5px 6px; border-radius:4px; cursor:pointer; }
+        .command-helper-row:hover { background:#29445f; }
+        .command-helper-row code { color:#8ecbff; font-weight:bold; }
 
         #room-notification { position: absolute; top: 55px; width: 100%; text-align: center; color: #eee; font-size: 13px; text-shadow: 0 1px 2px #000; pointer-events: none; }
     /* Force hotbar visible and positioned */
@@ -537,7 +542,8 @@
                 </div>
 
             </div>
-            <input type="text" id="chat-text-input" placeholder="Message everyone..." maxlength="120" />
+            <input type="text" id="chat-text-input" placeholder="Message everyone..." maxlength="120" oninput="updateCommandHelper(this.value)" onfocus="updateCommandHelper(this.value)" />
+            <div id="command-helper" aria-live="polite"></div>
         </div>
 
         <!-- Separate Friend Manager window -->
@@ -2062,7 +2068,7 @@
             const roomHasCreativeRules = localCreativeMode || activeMode === 'creative' || (activeMode === 'flatworld' && flatWorldRules === 'creative');
             // Local mode selection is tracked independently from multiplayer room state.
             if (localCreativeMode || (!isHosting && currentMode === 'creative')) playerGameMode = 'creative';
-            if (roomHasCreativeRules && playerGameMode === 'creative') {
+            if (roomHasCreativeRules && playerGameMode === 'creative' && currentHp > 0) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
             } else {
@@ -4785,16 +4791,16 @@
             return true;
         }
 
-        // Host-only personal gamemode command for Creative rooms.
+        // Host-only personal gamemode command for multiplayer Creative rooms.
         // Usage: /gamemode <creative|survival> [player name]
         function runGamemodeCommand(commandText) {
-            const parts = String(commandText || '').trim().split(' ').filter(Boolean);
+            const parts = String(commandText || '').trim().split(/\s+/).filter(Boolean);
             if ((parts[0] || '').toLowerCase() !== '/gamemode') return false;
             if (!isHosting) {
                 showNotificationBox('Only the room host can use /gamemode.');
                 return true;
             }
-            if (currentMode !== 'creative' || hostGameMode !== 'creative') {
+            if (currentMode !== 'creative' && hostGameMode !== 'creative') {
                 showNotificationBox('/gamemode only works in Creative rooms.');
                 return true;
             }
@@ -4845,6 +4851,60 @@
             return true;
         }
 
+        const COMMAND_HELP = [
+            { command: '/help', description: 'Show all available commands' },
+            { command: '/gamemode creative', description: 'Set your mode to Creative (host, Creative server)' },
+            { command: '/gamemode survival', description: 'Set your mode to Survival (host, Creative server)' },
+            { command: '/gamemode creative PlayerName', description: "Change a player's mode by username" },
+            { command: '/tp x y', description: 'Teleport in local Creative Flat World' },
+            { command: '/fill x1 y1 x2 y2 [block]', description: 'Fill an area in local Creative Flat World' },
+            { command: '/setspawnp', description: 'Set your Flat World spawn point' }
+        ];
+        function updateCommandHelper(value) {
+            const panel = document.getElementById('command-helper');
+            if (!panel) return;
+            const textValue = String(value || '').trim();
+            if (!textValue.startsWith('/')) {
+                panel.classList.remove('active');
+                panel.replaceChildren();
+                return;
+            }
+            const query = textValue.toLowerCase();
+            const commandToken = query.split(/\s+/)[0];
+            const matches = COMMAND_HELP.filter(item => item.command.toLowerCase().startsWith(commandToken));
+            panel.replaceChildren();
+            const title = document.createElement('div');
+            title.textContent = 'COMMANDS · click to insert';
+            title.style.cssText = 'padding:4px 6px;color:#9fb5ca;font-weight:bold;';
+            panel.appendChild(title);
+            for (const item of (matches.length ? matches : COMMAND_HELP)) {
+                const row = document.createElement('div');
+                row.className = 'command-helper-row';
+                const command = document.createElement('code');
+                command.textContent = item.command;
+                const description = document.createElement('span');
+                description.textContent = item.description;
+                row.append(command, description);
+                row.addEventListener('mousedown', event => event.preventDefault());
+                row.addEventListener('click', () => {
+                    const input = document.getElementById('chat-text-input');
+                    if (!input) return;
+                    input.value = item.command;
+                    input.focus();
+                    input.setSelectionRange(input.value.length, input.value.length);
+                    updateCommandHelper(input.value);
+                });
+                panel.appendChild(row);
+            }
+            panel.classList.add('active');
+        }
+
+        function runHelpCommand(commandText) {
+            if (String(commandText || '').trim().toLowerCase() !== '/help') return false;
+            showNotificationBox('Commands: /gamemode creative|survival [player], /tp x y, /fill x1 y1 x2 y2 [block], /setspawnp. Type / for the command helper.');
+            return true;
+        }
+
         function sendChatMessage() {
             const input = document.getElementById('chat-text-input');
             const txt = input.value.trim().slice(0, 120);
@@ -4855,8 +4915,9 @@
                 return;
             }
             if (txt) {
-                if (runGamemodeCommand(txt) || runFlatWorldCommand(txt)) {
+                if (runHelpCommand(txt) || runGamemodeCommand(txt) || runFlatWorldCommand(txt)) {
                     input.value = '';
+                    updateCommandHelper('');
                     input.blur();
                     input.style.display = 'none';
                     canvas.focus({ preventScroll: true });
@@ -4879,6 +4940,7 @@
                     appendChatMessage('System', 'Not connected to a room.', activeChatTab);
                 }
                 input.value = '';
+                updateCommandHelper('');
             }
             input.blur();
             input.style.display = 'none';
@@ -5948,7 +6010,7 @@
             if (localCreativeMode) playerGameMode = 'creative';
             // A Creative room can contain players individually switched to Survival.
             // Only personal Creative mode receives the Creative HP, coins, and stamina reset.
-            if (roomHasCreativeRules && playerGameMode === 'creative') {
+            if (roomHasCreativeRules && playerGameMode === 'creative' && currentHp > 0) {
                 playerCoins = Number.MAX_SAFE_INTEGER;
                 currentHp = 300;
                 currentStamina = 100;
