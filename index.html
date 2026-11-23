@@ -900,6 +900,8 @@
         let localCreativeMode = false;
         let currentStamina = 100;
         let playerCoins = 100;
+        let playerKills = 0;
+        let teamKillScores = { Red: 0, Blue: 0 };
         let hostStartAdRequested = false;
         let deathsSinceLastAd = 0;
         let deathAdCounted = false;
@@ -3067,6 +3069,12 @@
             }, 1000);
         }
 
+        function recordPlayerKill(killerId, killerTeam) {
+            if (killerId === 'local') playerKills++;
+            else if (remotePlayers[killerId]) remotePlayers[killerId].kills = (Number(remotePlayers[killerId].kills) || 0) + 1;
+            if (killerTeam && killerTeam !== 'FFA') teamKillScores[killerTeam] = (Number(teamKillScores[killerTeam]) || 0) + 1;
+        }
+
         function onEnemyEliminated() {
             baseLockedOut = false;
             selfDestructCountdown = 0;
@@ -3532,6 +3540,7 @@
             if (bot.hp <= 0) {
                 bot.hp = 0;
                 onEnemyEliminated();
+                recordPlayerKill('local', playerTeam);
                 if (bot.isZombie) {
                     bot.respawnAt = Date.now() + 3000;
                     playerCoins += 10;
@@ -3730,6 +3739,7 @@
                                 if (otherId !== data.targetId && splash(other)) { const d=Math.hypot(other.x-hitX,other.y-hitY); other.hp=Math.max(0,other.hp-Math.round(45*(1-d/splashRadius))); }
                             }
                         }
+                        if (targetIsHost ? currentHp <= 0 : target.hp <= 0) recordPlayerKill(conn.peer, shooter.team);
                         conn.send({ type: 'hit_confirm', targetId: data.targetId, damage, splashDamage, hp: targetIsHost ? currentHp : target.hp });
                         broadcastStateToClients();
                     }
@@ -3751,7 +3761,8 @@
                         maxHp: joinHp,
                         coins: joinMode === 'creative' ? Number.MAX_SAFE_INTEGER : 100,
                         gameMode: joinMode,
-                        trophies: Math.max(0, Math.floor(Number(data.trophies) || 0))
+                        trophies: Math.max(0, Math.floor(Number(data.trophies) || 0)),
+                        kills: 0
                     };
                     broadcastStateToClients();
                 } else if (data.type === 'player_update') {
@@ -3901,6 +3912,7 @@
                     if (data.botDifficulty && BOT_DIFFICULTY_SETTINGS[data.botDifficulty]) botDifficulty = data.botDifficulty;
                     bossEntity = data.boss || null;
                     bossVictoryId = data.bossVictoryId || null;
+                    if (data.teamKillScores && typeof data.teamKillScores === 'object') teamKillScores = data.teamKillScores;
                     if (data.blocks) worldBlocks = data.blocks;
                     if (data.traps) activeTraps = data.traps;
                     if (data.loot) droppedLoot = data.loot;
@@ -3977,7 +3989,7 @@
         function broadcastStateToClients() {
             if (!isHosting) return;
             let allPlayersState = {
-                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, trophies: getBossTrophies(), gameMode: playerGameMode, chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: playerGameMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, blackholeUntil: localBlackholeUntil, blackholeX: localBlackholeX, blackholeY: localBlackholeY, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
+                [peerInstance.id]: { username: myUsername, deviceId: myDeviceId, team: playerTeam, color: playerColor, kills: playerKills, trophies: getBossTrophies(), gameMode: playerGameMode, chatBubbleText: localChatBubbleText, chatBubbleUntil: localChatBubbleUntil, x: posX, y: posY, hp: currentHp, maxHp: playerGameMode === 'creative' ? 300 : 100, heldItem: getCurrentHeldItem(), coins: playerCoins, burningUntil: window.localBurnUntil || 0, nextBurnTick: window.localBurnTick || 0, blackholeUntil: localBlackholeUntil, blackholeX: localBlackholeX, blackholeY: localBlackholeY, bullets: bulletsList.slice(0, 120).map(b => ({id:b.id,x:b.x,y:b.y,vx:b.vx,vy:b.vy,type:b.type,team:b.team})), smokeClouds: activeSmokeClouds.slice(0,30).map(c=>({x:c.x,y:c.y,expiresAt:c.expiresAt})) }
             };
             for (let pid in remotePlayers) {
                 allPlayersState[pid] = remotePlayers[pid];
@@ -3985,6 +3997,7 @@
             const packet = { 
                 type: 'server_state', 
                 players: allPlayersState,
+                teamKillScores: teamKillScores,
                 blocks: worldBlocks,
                 traps: activeTraps,
                 loot: droppedLoot,
@@ -5216,11 +5229,14 @@
             if (!panel) return;
             panel.style.display = show ? 'block' : 'none';
             if (show) {
-                let htmlStr = `<div class="sb-row"><b>Name</b><b>Team</b><b>HP</b><b>Coins</b></div>`;
-                htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span><span>${playerTeam}</span><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
+                const teamRows = Object.entries(teamKillScores).sort((a,b) => b[1]-a[1]).map(([team,kills]) => `<span style="color:${team === 'Red' ? '#ff6b6b' : '#64b5f6'};font-weight:bold">${team}: ${kills} points</span>`).join('');
+                let htmlStr = `<div class="sb-row" style="justify-content:center;gap:18px;flex-wrap:wrap">${teamRows || 'Team points: 0'}</div>`;
+                htmlStr += `<div class="sb-row"><b>Name</b><b>Team</b><b>Kills</b><b>HP</b><b>Coins</b></div>`;
+                const teamBadge = team => `<span style="display:inline-block;padding:2px 7px;border-radius:10px;background:${team === 'Red' ? '#7f2525' : team === 'Blue' ? '#174d83' : '#444'};border:1px solid ${team === 'Red' ? '#ff6b6b' : team === 'Blue' ? '#64b5f6' : '#888'}">${team || 'FFA'}</span>`;
+                htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span>${teamBadge(playerTeam)}<b>${playerKills}</b><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
                 for (let pid in remotePlayers) {
                     const rp = remotePlayers[pid];
-                    htmlStr += `<div class="sb-row"><span>${rp.username}</span><span>${rp.team}</span><span>${Math.max(0, Math.floor(rp.hp))}</span><span>${rp.coins || 0}</span></div>`;
+                    htmlStr += `<div class="sb-row"><span>${rp.username}</span>${teamBadge(rp.team)}<b>${Number(rp.kills) || 0}</b><span>${Math.max(0, Math.floor(rp.hp))}</span><span>${rp.coins || 0}</span></div>`;
                 }
                 document.getElementById('scoreboard-list').innerHTML = htmlStr;
             }
@@ -6400,7 +6416,7 @@
                                 if(b.type==='flame'){rp.burningUntil=Date.now()+5000;rp.nextBurnTick=Date.now()+1000;}
                                 if(b.type==='freeze'){rp.frozenUntil=Date.now()+3000;}
                                 rp.hp = Math.max(0, rp.hp - hitDmg);
-                                if (rp.hp <= 0) onEnemyEliminated();
+                                if (rp.hp <= 0) { recordPlayerKill('local', playerTeam); onEnemyEliminated(); }
                                 broadcastStateToClients();
                             } else if (hostConnection && hostConnection.open) {
                                 hostConnection.send({ type: 'hit_request', targetId: pid, hitX: b.x, hitY: b.y, weapon: b.type });
