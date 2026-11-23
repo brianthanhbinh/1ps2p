@@ -2040,6 +2040,8 @@
         }
 
         function assignTeamAndSpawn(teamName, hexColor) {
+            playerKills = 0;
+            if (isHosting) teamKillScores = {};
             playerTeam = teamName;
             playerColor = hexColor;
             playArenaSound('spawn');
@@ -5229,10 +5231,11 @@
             if (!panel) return;
             panel.style.display = show ? 'block' : 'none';
             if (show) {
-                const teamRows = Object.entries(teamKillScores).sort((a,b) => b[1]-a[1]).map(([team,kills]) => `<span style="color:${team === 'Red' ? '#ff6b6b' : '#64b5f6'};font-weight:bold">${team}: ${kills} points</span>`).join('');
+                const teamColors = { Red: '#ff6b6b', Blue: '#64b5f6', Green: '#81c784', Yellow: '#ffd54f' };
+                const teamRows = Object.entries(teamKillScores).sort((a,b) => b[1]-a[1]).map(([team,kills]) => `<span style="color:${teamColors[team] || '#fff'};font-weight:bold">${team}: ${kills} points</span>`).join('');
                 let htmlStr = `<div class="sb-row" style="justify-content:center;gap:18px;flex-wrap:wrap">${teamRows || 'Team points: 0'}</div>`;
                 htmlStr += `<div class="sb-row"><b>Name</b><b>Team</b><b>Kills</b><b>HP</b><b>Coins</b></div>`;
-                const teamBadge = team => `<span style="display:inline-block;padding:2px 7px;border-radius:10px;background:${team === 'Red' ? '#7f2525' : team === 'Blue' ? '#174d83' : '#444'};border:1px solid ${team === 'Red' ? '#ff6b6b' : team === 'Blue' ? '#64b5f6' : '#888'}">${team || 'FFA'}</span>`;
+                const teamBadge = team => { const color = teamColors[team] || '#888'; return `<span style="display:inline-block;padding:2px 7px;border-radius:10px;background:${color}33;border:1px solid ${color};color:#fff;font-weight:bold">${team || 'FFA'}</span>`; };
                 htmlStr += `<div class="sb-row"><span>${myUsername} (You)</span>${teamBadge(playerTeam)}<b>${playerKills}</b><span>${Math.max(0, Math.floor(currentHp))}</span><span>${playerCoins}</span></div>`;
                 for (let pid in remotePlayers) {
                     const rp = remotePlayers[pid];
