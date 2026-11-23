@@ -3701,6 +3701,34 @@
                         }
                         broadcastStateToClients();
                     }
+                } else if (data.type === 'melee_request') {
+                    const attacker = remotePlayers[conn.peer];
+                    const hitX = Number(data.hitX), hitY = Number(data.hitY);
+                    if (attacker && attacker.hp > 0 && Number.isFinite(hitX) && Number.isFinite(hitY) &&
+                        Math.hypot(attacker.x - hitX, attacker.y - hitY) <= 90) {
+                        let hitCount = 0;
+                        for (const targetId in remotePlayers) {
+                            if (targetId === conn.peer) continue;
+                            const target = remotePlayers[targetId];
+                            if (!target || target.hp <= 0 || (attacker.team !== 'FFA' && target.team === attacker.team)) continue;
+                            if (Math.hypot(target.x - hitX, target.y - hitY) <= 45 &&
+                                Math.hypot(target.x - attacker.x, target.y - attacker.y) <= 105) {
+                                const wasAlive = target.hp > 0;
+                                target.hp = Math.max(0, target.hp - 40);
+                                if (wasAlive && target.hp <= 0) recordPlayerKill(conn.peer, attacker.team);
+                                hitCount++;
+                            }
+                        }
+                        const hostDistance = Math.hypot(posX - hitX, posY - hitY);
+                        if (currentHp > 0 && (attacker.team === 'FFA' || attacker.team !== playerTeam) &&
+                            hostDistance <= 45 && Math.hypot(posX - attacker.x, posY - attacker.y) <= 105) {
+                            currentHp = Math.max(0, currentHp - 40);
+                            if (currentHp <= 0) recordPlayerKill(conn.peer, attacker.team);
+                            hitCount++;
+                        }
+                        if (hitCount) conn.send({ type: 'melee_confirm', hits: hitCount });
+                        broadcastStateToClients();
+                    }
                 } else if (data.type === 'hit_request') {
                     const shooter = remotePlayers[conn.peer];
                     if (data.targetId === 'boss' && bossEntity && bossEntity.hp > 0 && shooter) {
@@ -3882,6 +3910,8 @@
                     showNotificationBox(`☠ Damage block! -${Number(data.damage) || 12} HP`);
                 } else if (data.type === 'hit_confirm') {
                     showNotificationBox(`Hit confirmed! -${data.damage} HP`);
+                } else if (data.type === 'melee_confirm') {
+                    showNotificationBox(data.hits ? 'Sword hit!' : 'Sword missed.');
                 } else if (data.type === 'crate_reward') {
                     pendingCrateClaims.delete(data.id);
                     playerCoins += Number(data.reward) || 0;
@@ -4401,6 +4431,12 @@
                     return;
                 }
                 if (data.type !== 'friend_presence') return;
+                const announcedId = String(data.deviceId || '').toUpperCase();
+                if (announcedId !== id || !/^[A-Z]{8}[A-Z0-9]{2,12}[0-9]{4}$/.test(id)) return;
+                if (!friends.includes(id) && friends.length < 100) {
+                    friends.push(id);
+                    saveFriends();
+                }
                 friendPresence[id] = {
                     online: true,
                     username: String(data.username || 'Friend').slice(0, 24),
@@ -5419,14 +5455,32 @@
             const targetWorldY = posY + (clickY - canvas.height/2) / cameraZoom;
 
             if (activeHotbar === 0 && !actionCdAttack) {
+                let swordHits = 0;
                 if (isPractice) {
                     aiBots.forEach(bot => {
                         if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
                             damagePracticeBot(bot, 40);
-                            showNotificationBox('Hit bot with sword!');
+                            swordHits++;
                         }
                     });
+                } else if (inGameActive) {
+                    if (isHosting) {
+                        for (const targetId in remotePlayers) {
+                            const target = remotePlayers[targetId];
+                            if (!target || target.hp <= 0 || (playerTeam !== 'FFA' && target.team === playerTeam)) continue;
+                            if (Math.hypot(target.x - targetWorldX, target.y - targetWorldY) <= 45 &&
+                                Math.hypot(target.x - posX, target.y - posY) <= 105) {
+                                target.hp = Math.max(0, target.hp - 40);
+                                if (target.hp <= 0) recordPlayerKill('local', playerTeam);
+                                swordHits++;
+                            }
+                        }
+                        if (swordHits) broadcastStateToClients();
+                    } else if (hostConnection && hostConnection.open) {
+                        hostConnection.send({ type: 'melee_request', hitX: targetWorldX, hitY: targetWorldY });
+                    }
                 }
+                if (swordHits) showNotificationBox('Sword hit! -40 HP');
                 actionCdAttack = true;
                 setTimeout(() => { actionCdAttack = false; }, 250);
             }
