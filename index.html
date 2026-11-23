@@ -3073,7 +3073,7 @@
             if (selfDestructTimerHandle) clearInterval(selfDestructTimerHandle);
             const banner = document.getElementById('self-destruct-banner');
             if (banner) banner.style.display = 'none';
-            currentHp = Math.min(150, currentHp + 50);
+            currentHp = Math.min(100, currentHp + 5);
             showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
         }
 
