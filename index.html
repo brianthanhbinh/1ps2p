@@ -3074,7 +3074,12 @@
             const banner = document.getElementById('self-destruct-banner');
             if (banner) banner.style.display = 'none';
             currentHp = Math.min(100, currentHp + 5);
-            showNotificationBox('Enemy eliminated! Base re-entry unlocked.');
+            if (playerCoins < Number.MAX_SAFE_INTEGER) {
+                playerCoins += 10;
+                const coinDisplay = document.getElementById('coin-num');
+                if (coinDisplay) coinDisplay.innerText = String(playerCoins);
+            }
+            showNotificationBox('Enemy eliminated! +5 HP, +10 🪙. Base re-entry unlocked.');
         }
 
 
