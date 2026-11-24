@@ -41,7 +41,7 @@ jobs:
               (Path("creative/index.html"), "creative"),
           ]:
               html = source.read_text(encoding="utf-8")
-              scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script>", html, re.I)
+              scripts = re.findall(r"<script\b[^>]*>([\s\S]*?)</script>", html, re.I)
               inline = [script for script in scripts if script.strip()]
               if not inline:
                   raise SystemExit(f"No inline JavaScript found in {source}")
