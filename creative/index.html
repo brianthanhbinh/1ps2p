@@ -448,16 +448,90 @@ function addDm(name,msg,sendIt=true){const feed=document.getElementById('dm-feed
 function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;addDm(me.name,v,true);input.value=''}
 document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});
 let moveVx=0,moveVy=0,lastUpdate=0,lastBallSync=0;
-function solidAt(px,py,r){for(const [k,t] of world){if(isBall(t)||['force','force2','force3'].includes(t))continue;const [tx,ty]=parse(k),cx=Math.max(tx,Math.min(px,tx+1)),cy=Math.max(ty,Math.min(py,ty+1));if(Math.hypot(px-cx,py-cy)<r)return true}return false}
+function solidAt(px,py,r){
+ for(const [k,t] of world){
+  const [tx,ty]=parse(k);
+  if(isBall(t)){
+   const b=ballBodies.get(k),bx=b?.x??tx+.5,by=b?.y??ty+.5;
+   if(Math.hypot(px-bx,py-by)<r+.44)return true;
+   continue;
+  }
+  if(['force','force2','force3'].includes(t))continue;
+  const cx=Math.max(tx,Math.min(px,tx+1)),cy=Math.max(ty,Math.min(py,ty+1));
+  if(Math.hypot(px-cx,py-cy)<r)return true;
+ }
+ return false;
+}
 function movePlayerAxis(axis,amount){if(!amount)return;const nx=me.x+(axis==='x'?amount:0),ny=me.y+(axis==='y'?amount:0);if(!solidAt(nx,ny,.27)){me.x=nx;me.y=ny}else if(axis==='x')moveVx=0;else moveVy=0}
-function update(now){const dt=Math.min(.05,Math.max(.001,(now-lastUpdate)/1000||.016));lastUpdate=now;let dx=0,dy=0;if(keys.has('a')||keys.has('arrowleft'))dx--;if(keys.has('d')||keys.has('arrowright'))dx++;if(keys.has('w')||keys.has('arrowup'))dy--;if(keys.has('s')||keys.has('arrowdown'))dy++;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const accel=8.5,maxSpeed=3.8,friction=Math.pow(.0008,dt);moveVx=(moveVx+dx*accel*dt)*(dx?1:friction);moveVy=(moveVy+dy*accel*dt)*(dy?1:friction);const speed=Math.hypot(moveVx,moveVy);if(speed>maxSpeed){moveVx*=maxSpeed/speed;moveVy*=maxSpeed/speed}movePlayerAxis('x',moveVx*dt);movePlayerAxis('y',moveVy*dt);
-for(const [k,t] of world){if(t!=='whitehole')continue;const [x,y]=parse(k),vx=me.x-(x+.5),vy=me.y-(y+.5),d=Math.hypot(vx,vy);if(d>.1&&d<3){const nx=me.x+vx/d*.8*dt,ny=me.y+vy/d*.8*dt;if(!solidAt(nx,ny,.27)){me.x=nx;me.y=ny}}}
-if(!peer||isHost)updateBalls(dt);if(peer?.open){broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name});if((!peer||isHost)&&now-lastBallSync>90){lastBallSync=now;broadcast({t:'ball-state',balls:[...ballBodies].map(([k,v])=>[k,{...v}])})}}}
-function updateBalls(dt){for(const [k,b] of ballBodies){b.vx*=Math.pow(.985,dt*60);b.vy*=Math.pow(.985,dt*60);for(const [mk,mt] of world){if(!['magnet_plus','magnet_minus','magnet_ball_plus','magnet_ball_minus','iron_ball'].includes(mt)||mk===k)continue;const [mx0,my0]=parse(mk),mb=ballBodies.get(mk),mx=isBall(mt)?(mb?.x??mx0+.5):mx0+.5,my=isBall(mt)?(mb?.y??my0+.5):my0+.5,dx=mx-b.x,dy=my-b.y,d=Math.hypot(dx,dy);if(d<.08||d>8)continue;const pol=t=>t==='magnet_ball_plus'||t==='magnet_plus'?1:t==='magnet_ball_minus'||t==='magnet_minus'?-1:0,p=pol(world.get(k)),q=pol(mt),same=p&&q&&p===q,force=(1-d/8)*.65*(same?-1:1);b.vx+=dx/d*force*dt;b.vy+=dy/d*force*dt}
-const dx=me.x-b.x,dy=me.y-b.y,d=Math.hypot(dx,dy),min=.27+.44;if(d>0&&d<min){const nx=dx/d,ny=dy/d,over=min-d;me.x+=nx*over*.45;me.y+=ny*over*.45;b.vx-=nx*over*7;b.vy-=ny*over*7}
-for(const axis of ['x','y']){const v=axis==='x'?b.vx:b.vy,nx=b.x+(axis==='x'?v*dt:0),ny=b.y+(axis==='y'?v*dt:0);let hit=false;for(const [wk,wt] of world){if(wk===k||isBall(wt)||['force','force2','force3'].includes(wt))continue;const [wx,wy]=parse(wk),qx=Math.max(wx,Math.min(nx,wx+1)),qy=Math.max(wy,Math.min(ny,wy+1));if(Math.hypot(nx-qx,ny-qy)<.44){hit=true;break}}if(hit){if(axis==='x')b.vx*=-.62;else b.vy*=-.62}else{b.x=nx;b.y=ny}}
-const mag=Math.hypot(b.vx,b.vy);if(mag<.015)b.vx=b.vy=0;else if(mag>7){b.vx*=7/mag;b.vy*=7/mag}}}
-
+function update(now){
+ const dt=Math.min(.05,Math.max(.001,(now-lastUpdate)/1000||.016));lastUpdate=now;
+ let dx=0,dy=0;
+ if(keys.has('a')||keys.has('arrowleft'))dx--;
+ if(keys.has('d')||keys.has('arrowright'))dx++;
+ if(keys.has('w')||keys.has('arrowup'))dy--;
+ if(keys.has('s')||keys.has('arrowdown'))dy++;
+ const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+ const accel=8.5,maxSpeed=3.8,friction=Math.pow(.0008,dt);
+ moveVx=(moveVx+dx*accel*dt)*(dx?1:friction);
+ moveVy=(moveVy+dy*accel*dt)*(dy?1:friction);
+ const speed=Math.hypot(moveVx,moveVy);
+ if(speed>maxSpeed){moveVx*=maxSpeed/speed;moveVy*=maxSpeed/speed}
+ movePlayerAxis('x',moveVx*dt);movePlayerAxis('y',moveVy*dt);
+ for(const [k,t] of world){
+  if(t!=='whitehole')continue;
+  const [x,y]=parse(k),vx=me.x-(x+.5),vy=me.y-(y+.5),d=Math.hypot(vx,vy);
+  if(d>.1&&d<3){const nx=me.x+vx/d*.8*dt,ny=me.y+vy/d*.8*dt;if(!solidAt(nx,ny,.27)){me.x=nx;me.y=ny}}
+ }
+ if(!peer||isHost)updateBalls(dt);
+ if(peer?.open){
+  broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name});
+  if((!peer||isHost)&&now-lastBallSync>60){lastBallSync=now;broadcast({t:'ball-state',balls:[...ballBodies].map(([k,v])=>[k,{...v}])})}
+ }
+}
+function updateBalls(dt){
+ const radius=.44,gravity=9.8;
+ for(const [k,b] of ballBodies){
+  const type=world.get(k);if(!isBall(type))continue;
+  b.vy+=gravity*dt;
+  b.vx*=Math.pow(.992,dt*60);b.vy*=Math.pow(.992,dt*60);
+  // Magnetic balls attract the opposite pole and repel the same pole.
+  // Iron balls are neutral and are attracted to either magnetic pole.
+  for(const [mk,mt] of world){
+   if(!['magnet_plus','magnet_minus','magnet_ball_plus','magnet_ball_minus','iron_ball'].includes(mt)||mk===k)continue;
+   const [mx0,my0]=parse(mk),mb=ballBodies.get(mk);
+   const mx=isBall(mt)?(mb?.x??mx0+.5):mx0+.5,my=isBall(mt)?(mb?.y??my0+.5):my0+.5;
+   const dx=mx-b.x,dy=my-b.y,d=Math.hypot(dx,dy);if(d<.08||d>8)continue;
+   const polarity=t=>t==='magnet_ball_plus'||t==='magnet_plus'?1:t==='magnet_ball_minus'||t==='magnet_minus'?-1:0;
+   const p=polarity(type),q=polarity(mt);
+   const repel=p!==0&&q!==0&&p===q;
+   const force=(1-d/8)*5*(repel?-1:1);
+   b.vx+=dx/d*force*dt;b.vy+=dy/d*force*dt;
+  }
+  // Resolve collisions independently on each axis against solid tiles.
+  for(const axis of ['x','y']){
+   const v=axis==='x'?b.vx:b.vy,nx=b.x+(axis==='x'?v*dt:0),ny=b.y+(axis==='y'?v*dt:0);
+   let hit=false;
+   for(const [wk,wt] of world){
+    if(wk===k||isBall(wt)||['force','force2','force3'].includes(wt))continue;
+    const [wx,wy]=parse(wk),qx=Math.max(wx,Math.min(nx,wx+1)),qy=Math.max(wy,Math.min(ny,wy+1));
+    if(Math.hypot(nx-qx,ny-qy)<radius){hit=true;break}
+   }
+   if(hit){if(axis==='x'){b.vx*=-.45}else{b.vy*=-.38;if(b.vy>0)b.vy=0}}
+   else{b.x=nx;b.y=ny}
+  }
+  // A moving ball pushes the player instead of being intangible.
+  const dx=me.x-b.x,dy=me.y-b.y,d=Math.hypot(dx,dy),min=.27+radius;
+  if(d>0&&d<min){
+   const nx=dx/d,ny=dy/d,over=min-d;
+   const px=me.x+nx*over,py=me.y+ny*over;
+   if(!solidAt(px,py,.27)){me.x=px;me.y=py}
+   b.vx-=nx*over*5;b.vy-=ny*over*5;
+  }
+  const mag=Math.hypot(b.vx,b.vy);
+  if(mag<.02){b.vx=0;if(Math.abs(b.vy)<.08)b.vy=0}
+  else if(mag>8){b.vx*=8/mag;b.vy*=8/mag}
+ }
+}
 function drawBlock(x,y,t){const px=x*TILE,py=y*TILE,b=BLOCKS[t]||BLOCKS.stone,cx=px+16,cy=py+16;
   // Ball blocks use the same circular silhouette as the main game.
   if(t==='ball'||t==='magnet_ball_plus'||t==='magnet_ball_minus'||t==='iron_ball'){
