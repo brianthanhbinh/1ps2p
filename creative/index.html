@@ -416,7 +416,7 @@ if(m.t==='ball-state'&&Array.isArray(m.balls)){for(const [k,b] of m.balls){if(ba
  if(m.t==='hello'){if(m.id&&m.id!==peer?.id){const spawn=isHost?{x:me.x+1.1+((connections.size-1)%4)*.35,y:me.y+.15}: {x:Number.isFinite(m.x)?m.x:0,y:Number.isFinite(m.y)?m.y:0};players.set(m.id,{...spawn,name:m.name||'Builder',color:m.color||'#f2bd68',deviceId:m.deviceId||''});if(isHost){send(connections.get(from),{t:'spawn',x:spawn.x,y:spawn.y});broadcast({t:'player',id:m.id,...spawn,name:m.name||'Builder',color:m.color||'#f2bd68',deviceId:m.deviceId||''},from)}}renderSocial()}
  if(m.t==='spawn'&&!isHost&&Number.isFinite(m.x)&&Number.isFinite(m.y)){me.x=m.x;me.y=m.y;moveVx=moveVy=0;broadcast({t:'player',id:peer?.id,x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId})}
  if(m.t==='chat')addChat(m.name,m.text,false);
- if(m.t==='friend-dm'&&m.to===peer?.id){friends.set(from,{name:m.fromName||from});saveFriends();selectedFriend=from;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+(m.fromName||from);addDm(m.fromName,m.text,false);renderSocial()}
+ 
  if(isHost&&!['snapshot','hello'].includes(m.t))broadcast(m,from);
 }
 function createPeer(id){peer=new Peer(id);peer.on('open',()=>{status.textContent='Room '+roomCode+' · waiting for friends';document.getElementById('room').value=roomCode;document.getElementById('my-peer-id').textContent='Your Peer ID: '+peer.id;updateStatus()});peer.on('connection',accept);peer.on('error',e=>{status.textContent='Connection error: '+e.type;document.getElementById('my-peer-id').textContent='Peer ID unavailable · '+e.type});peer.on('disconnected',()=>status.textContent='Disconnected from room server')}
@@ -479,7 +479,7 @@ function startPresencePeer(){
 function currentPresence(){return {type:'friend_presence',deviceId:myDeviceId,username:me.name||'Builder',online:true,inGame:!!peer?.open,roomCode:peer?.open?roomCode:'',gameMode:'creative',isHost:!!isHost,updatedAt:Date.now()}}
 function attachFriendConnection(conn){
  if(!conn||!conn.peer)return;const id=String(conn.peer).toUpperCase();friendConnections[id]=conn;
- conn.on('open',()=>{if(conn.open)conn.send(currentPresence());friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};renderSocial()});
+ conn.__friendConnecting=Date.now();conn.on('open',()=>{conn.__friendConnecting=0;if(conn.open)conn.send(currentPresence());friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};renderSocial()});
  conn.on('data',data=>{
   if(!data)return;
   if(data.type==='friend_presence'){
@@ -498,7 +498,7 @@ function attachFriendConnection(conn){
 function friendHeartbeat(){
  if(!presencePeer?.open)return;const payload=currentPresence();
  for(const id of friends.keys()){
-  let conn=friendConnections[id];if(conn?.open){try{conn.send(payload)}catch{};friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};continue}
+  let conn=friendConnections[id];const connecting=conn&&conn.__friendConnecting&&Date.now()-conn.__friendConnecting<12000;if(conn&&connecting&&!conn.open)continue;if(conn?.open){try{conn.send(payload)}catch{};friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};continue}
   if(conn){try{conn.close()}catch{};delete friendConnections[id]}
   try{conn=presencePeer.connect(id,{reliable:true});attachFriendConnection(conn)}catch{friendPresence[id]={...(friendPresence[id]||{}),online:false}}
  }
@@ -589,7 +589,7 @@ function update(now){
  }
  if(!peer||isHost)updateBalls(dt);
  if(peer?.open){
-  broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name});
+  broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId});
   if(isHost&&now-lastBallSync>60){lastBallSync=now;broadcast({t:'ball-state',balls:[...ballBodies].map(([k,v])=>[k,{...v}])})}
  }
 }
