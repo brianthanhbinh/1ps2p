@@ -447,7 +447,7 @@ function openDm(id,name){selectedFriend=id;document.getElementById('friend-dm').
 function addDm(name,msg,sendIt=true){const feed=document.getElementById('dm-feed'),row=document.createElement('div');row.className='msg';row.innerHTML='<b>'+esc(name)+':</b> '+esc(msg);feed.append(row);feed.scrollTop=feed.scrollHeight;if(sendIt){const c=connections.get(selectedFriend);if(!c||!c.open){addChat('System','Friend is not connected to this room.');return}send(c,{t:'friend-dm',to:selectedFriend,fromName:me.name,text:msg})}}
 function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;addDm(me.name,v,true);input.value=''}
 document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});
-let moveVx=0,moveVy=0,lastUpdate=0,lastBallSync=0,currentForceAngle=0;
+let moveVx=0,moveVy=0,lastUpdate=0,lastBallSync=0,currentForceAngle=0,forceBoostUntil=0;
 function ballHitsBlocks(x,y,r,ignoreKey=null){
  for(const [k,t] of world){
   if(k===ignoreKey||isBall(t)||['force','force2','force3'].includes(t))continue;
@@ -507,14 +507,14 @@ function update(now){
  if(keys.has('w')||keys.has('arrowup'))dy--;
  if(keys.has('s')||keys.has('arrowdown'))dy++;
  const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
- const accel=8.5,maxSpeed=3.8,friction=Math.pow(.0008,dt);
+ const accel=8.5,maxSpeed=now<forceBoostUntil?14:3.8,friction=Math.pow(.0008,dt);
  moveVx=(moveVx+dx*accel*dt)*(dx?1:friction);
  moveVy=(moveVy+dy*accel*dt)*(dy?1:friction);
  const speed=Math.hypot(moveVx,moveVy);
  if(speed>maxSpeed){moveVx*=maxSpeed/speed;moveVy*=maxSpeed/speed}
  movePlayerAxis('x',moveVx*dt);movePlayerAxis('y',moveVy*dt);
   // Force pushes players; Force II/III launch with individual pad cooldowns.
-  for(const [fk,ft] of world){if(!['force','force2','force3'].includes(ft))continue;const [fx,fy]=parse(fk),dx=me.x-(fx+.5),dy=me.y-(fy+.5);if(Math.hypot(dx,dy)>=.775)continue;const a=forceAngles.get(fk)||0;if(ft==='force'){const push=9.75*dt,tx=me.x+Math.cos(a)*push,ty=me.y+Math.sin(a)*push;if(!solidAt(tx,me.y,.3125))me.x=tx;if(!solidAt(me.x,ty,.3125))me.y=ty}else if(now>=(forceCooldowns.get(fk)||0)){const impulse=ft==='force3'?40.5:27;moveVx+=Math.cos(a)*impulse;moveVy+=Math.sin(a)*impulse;forceCooldowns.set(fk,now+650)}}
+  for(const [fk,ft] of world){if(!['force','force2','force3'].includes(ft))continue;const [fx,fy]=parse(fk),dx=me.x-(fx+.5),dy=me.y-(fy+.5);if(Math.hypot(dx,dy)>=.775)continue;const a=forceAngles.get(fk)||0;if(ft==='force'){const push=9.75*dt,tx=me.x+Math.cos(a)*push,ty=me.y+Math.sin(a)*push;if(!solidAt(tx,me.y,.3125))me.x=tx;if(!solidAt(me.x,ty,.3125))me.y=ty}else if(now>=(forceCooldowns.get(fk)||0)){const impulse=ft==='force3'?40.5:27;moveVx+=Math.cos(a)*impulse;moveVy+=Math.sin(a)*impulse;forceBoostUntil=now+450;forceCooldowns.set(fk,now+650)}}
  for(const [k,t] of world){
   if(t!=='whitehole')continue;
   const [x,y]=parse(k),vx=me.x-(x+.5),vy=me.y-(y+.5),d=Math.hypot(vx,vy);
@@ -553,7 +553,7 @@ function updateBalls(dt){
    }
   }
   // Main-game directional force pads accelerate nearby balls.
-  for(const [fk,ft] of world){if(!['force','force2','force3'].includes(ft))continue;const [fx,fy]=parse(fk),dx=b.x-(fx+.5),dy=b.y-(fy+.5);if(Math.hypot(dx,dy)>1.45)continue;const a=forceAngles.get(fk)||0,accel=ft==='force3'?1.05:ft==='force2'?.72:.62;b.vx+=Math.cos(a)*accel*1.5*dt;b.vy+=Math.sin(a)*accel*1.5*dt;const cap=ft==='force3'?15:ft==='force2'?13:12,sp=Math.hypot(b.vx,b.vy);if(sp>cap){b.vx*=cap/sp;b.vy*=cap/sp}}
+  for(const [fk,ft] of world){if(!['force','force2','force3'].includes(ft))continue;const [fx,fy]=parse(fk),dx=b.x-(fx+.5),dy=b.y-(fy+.5);if(Math.hypot(dx,dy)>1.45)continue;const a=forceAngles.get(fk)||0,accel=ft==='force3'?1.05:ft==='force2'?.72:.62;b.vx+=Math.cos(a)*accel*1.875*dt;b.vy+=Math.sin(a)*accel*1.5*dt;const cap=ft==='force3'?15:ft==='force2'?13:12,sp=Math.hypot(b.vx,b.vy);if(sp>cap){b.vx*=cap/sp;b.vy*=cap/sp}}
   const speed=Math.hypot(b.vx,b.vy);
   if(speed>12){b.vx*=12/speed;b.vy*=12/speed}
  }
