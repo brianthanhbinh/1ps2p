@@ -356,7 +356,8 @@
 <div id="creative-status">Creative mode · Peaceful building</div>
 <div id="creative-social" style="position:fixed;left:14px;top:14px;z-index:50;width:min(320px,calc(100vw - 28px));background:rgba(8,12,20,.92);border:1px solid #53677b;border-radius:10px;padding:10px;color:#fff;pointer-events:auto">
  <div style="display:flex;justify-content:space-between;align-items:center"><b>Community</b><span id="online-count" style="font-size:11px;color:#8bd8a2">0 online</span></div>
- <div style="display:flex;gap:5px;align-items:center;margin-top:7px;background:#080c12;border-radius:6px;padding:6px"><span id="my-peer-id" style="font-size:10px;color:#c8d7e5;flex:1;overflow-wrap:anywhere">Your Peer ID: Not connected</span><button id="copy-peer-id" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 7px;font-size:10px">Copy ID</button></div>
+ <div style="display:flex;gap:5px;align-items:center;margin-top:7px;background:#080c12;border-radius:6px;padding:6px"><span id="my-peer-id" style="font-size:10px;color:#c8d7e5;flex:1;overflow-wrap:anywhere">Room Peer: Not connected</span><button id="copy-peer-id" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 7px;font-size:10px">Copy Room ID</button></div>
+ <div style="margin-top:7px;background:#080c12;border-radius:6px;padding:7px"><div style="font-size:10px;color:#c8d7e5;margin-bottom:5px">Your permanent 1PS2P ID (same format as the main game)</div><div style="display:flex;gap:5px"><input id="my-device-id" readonly style="min-width:0;flex:1;background:#171b27;color:#fff;border:1px solid #566;border-radius:5px;padding:6px;font-size:11px"><button id="copy-device-id" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 7px;font-size:10px">Copy</button></div><details style="margin-top:6px;font-size:10px;color:#bdc9d5"><summary>Already have an ID in the main game? Use it here</summary><div style="display:flex;gap:5px;margin-top:6px"><input id="import-device-id" maxlength="32" placeholder="Paste your main-game ID" style="min-width:0;flex:1;background:#171b27;color:#fff;border:1px solid #566;border-radius:5px;padding:6px;font-size:11px"><button id="import-device-id-button" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 7px;font-size:10px">Use ID</button></div><div style="margin-top:4px;color:#899aaa">Import the ID shown in the main game to use the same identity here.</div></details></div>
  <div id="chat-feed" style="height:112px;overflow:auto;background:#080c12;margin:8px 0;padding:7px;border-radius:6px;font-size:12px;display:flex;flex-direction:column;gap:5px"></div>
  <div style="display:flex;gap:5px"><input id="chat-input" maxlength="180" placeholder="Message everyone…" style="min-width:0;flex:1;background:#171b27;color:white;border:1px solid #566;border-radius:5px;padding:7px"><button id="chat-send" style="background:#286b9c;color:white;border:0;border-radius:5px;padding:7px 10px">Send</button></div>
  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><b style="font-size:12px">Players & friends</b><button id="friend-add-id" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 8px;font-size:11px">Add by ID</button></div>
@@ -380,7 +381,7 @@
 (()=>{
 'use strict';
 const canvas=document.getElementById('canvas-main'),ctx=canvas.getContext('2d'),status=document.getElementById('net-status');
-const TILE=32,world=new Map(),ballBodies=new Map(),forceAngles=new Map(),forceCooldowns=new Map(),players=new Map(),keys=new Set(),connections=new Map(),friends=new Map(),chatHistory=[];
+const TILE=32,world=new Map(),ballBodies=new Map(),forceAngles=new Map(),forceCooldowns=new Map(),players=new Map(),keys=new Set(),connections=new Map(),friends=new Map(),friendPresence=new Map(),friendMessages={},friendConnections={},chatHistory=[];
 const BLOCKS={
  grass:{name:'Grass',color:'#438b58'},stone:{name:'Stone',color:'#788792'},wood:{name:'Wood',color:'#9b7047'},
  reinforced:{name:'Reinforced',color:'#687786'},metal:{name:'Metal',color:'#aeb8c0'},healing:{name:'Healing',color:'#50c878'},
@@ -394,7 +395,7 @@ const BLOCKS={
  stop:{name:'Stop',color:'#42484f'},conveyor:{name:'Conveyor',color:'#c18b4b'},mud:{name:'Mud',color:'#66513e'},
  whitehole:{name:'White Hole',color:'#bdefff'}
 };
-let me={x:.5,y:.5,color:'#70d6c4',name:localStorage.getItem('creative-name')||'Builder'},tool='grass',peer=null,roomCode='',camera={x:0,y:0,zoom:1},selectedFriend=null,isHost=false;
+const DEVICE_ID_KEY='arena_device_id_v1',FRIENDS_KEY='arena_friends_v1',MESSAGES_KEY='arena_friend_messages_v1',DEVICE_ID_RE=/^[A-Z]{8}[A-Z0-9]{2,12}[0-9]{4}$/;let myDeviceId='',presencePeer=null,me={x:.5,y:.5,color:'#70d6c4',name:localStorage.getItem('creative-name')||'Builder'},tool='grass',peer=null,roomCode='',camera={x:0,y:0,zoom:1},selectedFriend=null,isHost=false;
 const key=(x,y)=>x+','+y,parse=k=>k.split(',').map(Number),valid=t=>Object.prototype.hasOwnProperty.call(BLOCKS,t);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=innerWidth*d;canvas.height=innerHeight*d;ctx.setTransform(d,0,0,d,0,0)}
@@ -404,16 +405,16 @@ function broadcast(m,except){for(const [id,c] of connections)if(id!==except)send
 function updateStatus(){status.textContent=roomCode?'Room '+roomCode+' · '+(connections.size+1)+' connected':'Offline sandbox';document.getElementById('online-count').textContent=(connections.size+1)+' online'}
 function isBall(t){return ['ball','magnet_ball_plus','magnet_ball_minus','iron_ball'].includes(t)}
 function setTile(x,y,type){const k=key(x,y);if(type&&valid(type)){world.set(k,type);if(isBall(type)&&!ballBodies.has(k))ballBodies.set(k,{x:x+.5,y:y+.5,vx:0,vy:0});if(['force','force2','force3'].includes(type))forceAngles.set(k,currentForceAngle);else forceAngles.delete(k)}else{world.delete(k);ballBodies.delete(k);forceAngles.delete(k);forceCooldowns.delete(k)}broadcast({t:'tile',x,y,type:type||null,angle:forceAngles.get(k)??0})}
-function snapshot(){return {t:'snapshot',tiles:[...world],balls:[...ballBodies].map(([k,b])=>[k,{...b}]),forceAngles:[...forceAngles],players:[...players].map(([id,p])=>[id,{...p}]).concat(peer?.id?[[peer.id,{x:me.x,y:me.y,color:me.color,name:me.name}]]:[])}}
-function accept(c,outgoing=false){connections.set(c.peer,c);c.on('open',()=>{if(isHost)send(c,snapshot());send(c,{t:'hello',id:peer.id,name:me.name,x:me.x,y:me.y,color:me.color});updateStatus();renderSocial()});c.on('data',m=>receive(m,c.peer));c.on('close',()=>{connections.delete(c.peer);players.delete(c.peer);if(isHost)broadcast({t:'leave',id:c.peer});updateStatus();renderSocial()});c.on('error',()=>{connections.delete(c.peer);updateStatus()})}
+function snapshot(){return {t:'snapshot',tiles:[...world],balls:[...ballBodies].map(([k,b])=>[k,{...b}]),forceAngles:[...forceAngles],players:[...players].map(([id,p])=>[id,{...p}]).concat(peer?.id?[[peer.id,{x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId}]]:[])}}
+function accept(c,outgoing=false){connections.set(c.peer,c);c.on('open',()=>{if(isHost)send(c,snapshot());send(c,{t:'hello',id:peer.id,name:me.name,deviceId:myDeviceId,x:me.x,y:me.y,color:me.color});updateStatus();renderSocial()});c.on('data',m=>receive(m,c.peer));c.on('close',()=>{connections.delete(c.peer);players.delete(c.peer);if(isHost)broadcast({t:'leave',id:c.peer});updateStatus();renderSocial()});c.on('error',()=>{connections.delete(c.peer);updateStatus()})}
 function receive(m,from){if(!m||typeof m!=='object')return;
  if(m.t==='snapshot'){world.clear();ballBodies.clear();forceAngles.clear();for(const [k,v] of m.tiles||[])if(valid(v)){world.set(k,v);if(isBall(v)){const [x,y]=parse(k);ballBodies.set(k,{x:x+.5,y:y+.5,vx:0,vy:0})}}for(const [k,a] of m.forceAngles||[])if(Number.isFinite(a))forceAngles.set(k,a);for(const [k,b] of m.balls||[])if(ballBodies.has(k)&&b&&Number.isFinite(b.x)&&Number.isFinite(b.y))ballBodies.set(k,{x:b.x,y:b.y,vx:b.vx||0,vy:b.vy||0});for(const [id,p] of m.players||[])if(id&&id!==peer?.id)players.set(id,p);renderSocial()}
  if(m.t==='tile'&&Number.isFinite(m.x)&&Number.isFinite(m.y)){const k=key(m.x,m.y);if(valid(m.type)){world.set(k,m.type);if(isBall(m.type)&&!ballBodies.has(k))ballBodies.set(k,{x:m.x+.5,y:m.y+.5,vx:0,vy:0});if(['force','force2','force3'].includes(m.type))forceAngles.set(k,Number.isFinite(m.angle)?m.angle:0);else forceAngles.delete(k)}else{world.delete(k);ballBodies.delete(k);forceAngles.delete(k)}}
 if(m.t==='ball-state'&&Array.isArray(m.balls)){for(const [k,b] of m.balls){if(ballBodies.has(k)&&b&&Number.isFinite(b.x)&&Number.isFinite(b.y))ballBodies.set(k,{x:b.x,y:b.y,vx:b.vx||0,vy:b.vy||0})}}
- if(m.t==='player'&&m.id!==peer?.id&&Number.isFinite(m.x)&&Number.isFinite(m.y)){players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68',name:m.name||'Builder'});renderSocial()}
+ if(m.t==='player'&&m.id!==peer?.id&&Number.isFinite(m.x)&&Number.isFinite(m.y)){players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68',name:m.name||'Builder',deviceId:m.deviceId||''});renderSocial()}
  if(m.t==='leave'){players.delete(m.id);renderSocial()}
- if(m.t==='hello'){if(m.id&&m.id!==peer?.id){const spawn=isHost?{x:me.x+1.1+((connections.size-1)%4)*.35,y:me.y+.15}: {x:Number.isFinite(m.x)?m.x:0,y:Number.isFinite(m.y)?m.y:0};players.set(m.id,{...spawn,name:m.name||'Builder',color:m.color||'#f2bd68'});if(isHost){send(connections.get(from),{t:'spawn',x:spawn.x,y:spawn.y});broadcast({t:'player',id:m.id,...spawn,name:m.name||'Builder',color:m.color||'#f2bd68'},from)}}renderSocial()}
- if(m.t==='spawn'&&!isHost&&Number.isFinite(m.x)&&Number.isFinite(m.y)){me.x=m.x;me.y=m.y;moveVx=moveVy=0;broadcast({t:'player',id:peer?.id,x:me.x,y:me.y,color:me.color,name:me.name})}
+ if(m.t==='hello'){if(m.id&&m.id!==peer?.id){const spawn=isHost?{x:me.x+1.1+((connections.size-1)%4)*.35,y:me.y+.15}: {x:Number.isFinite(m.x)?m.x:0,y:Number.isFinite(m.y)?m.y:0};players.set(m.id,{...spawn,name:m.name||'Builder',color:m.color||'#f2bd68',deviceId:m.deviceId||''});if(isHost){send(connections.get(from),{t:'spawn',x:spawn.x,y:spawn.y});broadcast({t:'player',id:m.id,...spawn,name:m.name||'Builder',color:m.color||'#f2bd68',deviceId:m.deviceId||''},from)}}renderSocial()}
+ if(m.t==='spawn'&&!isHost&&Number.isFinite(m.x)&&Number.isFinite(m.y)){me.x=m.x;me.y=m.y;moveVx=moveVy=0;broadcast({t:'player',id:peer?.id,x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId})}
  if(m.t==='chat')addChat(m.name,m.text,false);
  if(m.t==='friend-dm'&&m.to===peer?.id){friends.set(from,{name:m.fromName||from});saveFriends();selectedFriend=from;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+(m.fromName||from);addDm(m.fromName,m.text,false);renderSocial()}
  if(isHost&&!['snapshot','hello'].includes(m.t))broadcast(m,from);
@@ -438,15 +439,81 @@ addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 function addChat(name,msg,sendIt=true){if(!msg||!msg.trim())return;const entry={name:String(name||'Builder').slice(0,20),text:String(msg).slice(0,180)};const feed=document.getElementById('chat-feed');const row=document.createElement('div');row.className='msg';row.innerHTML='<b>'+esc(entry.name)+':</b> '+esc(entry.text);feed.append(row);feed.scrollTop=feed.scrollHeight;while(feed.children.length>60)feed.firstChild.remove();if(sendIt)broadcast({t:'chat',name:me.name,text:entry.text})}
 function sendChat(){const input=document.getElementById('chat-input'),v=input.value.trim();if(!v)return;addChat(me.name,v,true);input.value=''}
 document.getElementById('chat-send').onclick=sendChat;document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
-function renderSocial(){const p=document.getElementById('players-list');p.innerHTML='';for(const [id,v] of players){const row=document.createElement('div');row.className='social-row';row.innerHTML='<span class="muted">'+esc(v.name||id)+'</span><button>Add friend</button>';row.querySelector('button').onclick=()=>addFriend(id,v.name||id);p.append(row)}const f=document.getElementById('friends-list');f.innerHTML='<b>Friends</b>';for(const [id,v] of friends){const row=document.createElement('div');row.className='social-row';row.innerHTML='<span class="muted">'+esc(v.name)+'</span><button>Message</button><button>Remove</button>';const bs=row.querySelectorAll('button');bs[0].onclick=()=>openDm(id,v.name);bs[1].onclick=()=>{friends.delete(id);saveFriends();renderSocial()};f.append(row)}updateStatus()}
-function saveFriends(){localStorage.setItem('creative-friends',JSON.stringify([...friends]))}
-try{for(const [id,v] of JSON.parse(localStorage.getItem('creative-friends')||'[]'))if(id&&v?.name)friends.set(id,v)}catch{}
-function addFriend(id,name){if(!id||id===peer?.id)return;friends.set(id,{name:String(name).slice(0,24)});saveFriends();renderSocial()}
-document.getElementById('friend-add-id').onclick=()=>{const id=prompt('Enter your friend’s Peer ID:');if(id)addFriend(id.trim(),id.trim())};
-function openDm(id,name){selectedFriend=id;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+name;document.getElementById('dm-feed').innerHTML='';}
-function addDm(name,msg,sendIt=true){const feed=document.getElementById('dm-feed'),row=document.createElement('div');row.className='msg';row.innerHTML='<b>'+esc(name)+':</b> '+esc(msg);feed.append(row);feed.scrollTop=feed.scrollHeight;if(sendIt){const c=connections.get(selectedFriend);if(!c||!c.open){addChat('System','Friend is not connected to this room.');return}send(c,{t:'friend-dm',to:selectedFriend,fromName:me.name,text:msg})}}
-function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;addDm(me.name,v,true);input.value=''}
-document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});
+function renderSocial(){
+ const p=document.getElementById('players-list');p.replaceChildren();
+ for(const [id,v] of players){const row=document.createElement('div');row.className='social-row';const label=document.createElement('span');label.className='muted';label.textContent=v.name||id;const add=document.createElement('button');add.textContent='Add friend';add.disabled=!DEVICE_ID_RE.test(String(v.deviceId||''));add.title=add.disabled?'This player has not shared a permanent ID':'Add by permanent ID';add.onclick=()=>addFriend(v.deviceId,v.name||v.deviceId);row.append(label,add);p.append(row)}
+ const f=document.getElementById('friends-list');f.replaceChildren();const heading=document.createElement('b');heading.textContent='Friends';f.append(heading);
+ for(const [id,v] of friends){const info=friendPresence[id]||{},row=document.createElement('div');row.className='social-row';const label=document.createElement('span');label.className='muted';label.textContent=(info.username||v.name||id)+(info.online?' · Online':' · Offline');const msg=document.createElement('button');msg.textContent='Message';msg.onclick=()=>openDm(id,info.username||v.name||id);const remove=document.createElement('button');remove.textContent='Remove';remove.onclick=()=>{friends.delete(id);delete friendPresence[id];if(friendConnections[id]){try{friendConnections[id].close()}catch{};delete friendConnections[id]}saveFriends();renderSocial()};row.append(label,msg,remove);f.append(row)}
+ updateStatus();
+}
+function saveFriends(){try{localStorage.setItem(FRIENDS_KEY,JSON.stringify([...friends.keys()]))}catch{}}
+function saveFriendMessages(){try{localStorage.setItem(MESSAGES_KEY,JSON.stringify(friendMessages))}catch{}}
+function storeFriendMessage(id,msg){if(!friendMessages[id])friendMessages[id]=[];friendMessages[id].push(msg);if(friendMessages[id].length>100)friendMessages[id].splice(0,friendMessages[id].length-100);saveFriendMessages()}
+async function copyText(value,label){try{await navigator.clipboard.writeText(value);status.textContent=label+' copied'}catch{status.textContent=value}}
+function initFriendsSystem(){
+ try{myDeviceId=localStorage.getItem(DEVICE_ID_KEY)||'';const saved=JSON.parse(localStorage.getItem(FRIENDS_KEY)||'[]');for(const id of Array.isArray(saved)?saved:[])if(DEVICE_ID_RE.test(String(id).toUpperCase())&&String(id).toUpperCase()!==myDeviceId)friends.set(String(id).toUpperCase(),{name:String(id).toUpperCase()});const msgs=JSON.parse(localStorage.getItem(MESSAGES_KEY)||'{}');if(msgs&&typeof msgs==='object')Object.assign(friendMessages,msgs)}catch{}
+ if(!DEVICE_ID_RE.test(myDeviceId)){const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';myDeviceId=Array.from({length:8},()=>letters[Math.floor(Math.random()*letters.length)]).join('')+'MYPC'+String(Math.floor(Math.random()*10000)).padStart(4,'0');try{localStorage.setItem(DEVICE_ID_KEY,myDeviceId)}catch{}}
+ document.getElementById('my-device-id').value=myDeviceId;
+ document.getElementById('copy-device-id').onclick=()=>copyText(myDeviceId,'Permanent ID');
+ document.getElementById('import-device-id-button').onclick=()=>{
+  const id=String(document.getElementById('import-device-id').value||'').trim().toUpperCase().replace(/^[A-Z0-9_-]{1,12}-/,'');
+  if(!DEVICE_ID_RE.test(id)){status.textContent='Invalid ID. Paste the ID shown in the main game.';return}
+  if(id===myDeviceId){status.textContent='That is already your permanent ID.';return}
+  if(presencePeer){try{presencePeer.destroy()}catch{}presencePeer=null}
+  myDeviceId=id;try{localStorage.setItem(DEVICE_ID_KEY,id)}catch{}
+  document.getElementById('my-device-id').value=id;document.getElementById('import-device-id').value='';
+  startPresencePeer();status.textContent='Using your main-game ID: '+id;
+ };
+ startPresencePeer();setInterval(friendHeartbeat,4000);renderSocial();
+}
+function startPresencePeer(){
+ if(!window.Peer||presencePeer)return;
+ try{
+  presencePeer=new Peer(myDeviceId,{debug:0});
+  presencePeer.on('open',()=>{status.textContent='Permanent ID online · '+myDeviceId;friendHeartbeat();renderSocial()});
+  presencePeer.on('connection',conn=>attachFriendConnection(conn));
+  presencePeer.on('error',err=>{if(err?.type==='unavailable-id')status.textContent='This ID is already online in another tab/app. Close the other game tab, then refresh Creative.';else status.textContent='Friend service: '+(err?.type||'connection error')});
+  presencePeer.on('disconnected',()=>{try{presencePeer.reconnect()}catch{}});
+ }catch{presencePeer=null}
+}
+function currentPresence(){return {type:'friend_presence',deviceId:myDeviceId,username:me.name||'Builder',online:true,inGame:!!peer?.open,roomCode:peer?.open?roomCode:'',gameMode:'creative',isHost:!!isHost,updatedAt:Date.now()}}
+function attachFriendConnection(conn){
+ if(!conn||!conn.peer)return;const id=String(conn.peer).toUpperCase();friendConnections[id]=conn;
+ conn.on('open',()=>{if(conn.open)conn.send(currentPresence());friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};renderSocial()});
+ conn.on('data',data=>{
+  if(!data)return;
+  if(data.type==='friend_presence'){
+   if(String(data.deviceId||'').toUpperCase()!==id||!DEVICE_ID_RE.test(id))return;
+   if(!friends.has(id)&&friends.size<100){friends.set(id,{name:String(data.username||id).slice(0,24)});saveFriends()}
+   friendPresence[id]={online:true,username:String(data.username||id).slice(0,24),inGame:!!data.inGame,roomCode:String(data.roomCode||''),gameMode:String(data.gameMode||''),lastSeen:Date.now()};renderSocial();return;
+  }
+  if(data.type==='friend_dm'&&friends.has(id)){
+   storeFriendMessage(id,{from:id,username:String(data.username||'Friend').slice(0,24),text:String(data.message||'').slice(0,120),at:Number(data.at)||Date.now()});
+   if(selectedFriend===id)renderDmHistory();
+  }
+ });
+ conn.on('close',()=>{if(friendConnections[id]===conn)delete friendConnections[id];friendPresence[id]={...(friendPresence[id]||{}),online:false,lastSeen:Date.now()};renderSocial()});
+ conn.on('error',()=>{if(friendConnections[id]===conn)delete friendConnections[id];friendPresence[id]={...(friendPresence[id]||{}),online:false,lastSeen:Date.now()};renderSocial()});
+}
+function friendHeartbeat(){
+ if(!presencePeer?.open)return;const payload=currentPresence();
+ for(const id of friends.keys()){
+  let conn=friendConnections[id];if(conn?.open){try{conn.send(payload)}catch{};friendPresence[id]={...(friendPresence[id]||{}),online:true,lastSeen:Date.now()};continue}
+  if(conn){try{conn.close()}catch{};delete friendConnections[id]}
+  try{conn=presencePeer.connect(id,{reliable:true});attachFriendConnection(conn)}catch{friendPresence[id]={...(friendPresence[id]||{}),online:false}}
+ }
+ renderSocial();
+}
+function renderDmHistory(){
+ const feed=document.getElementById('dm-feed');if(!feed||!selectedFriend)return;feed.replaceChildren();
+ for(const msg of friendMessages[selectedFriend]||[]){const row=document.createElement('div');row.className='msg';const b=document.createElement('b');b.textContent=(msg.from===myDeviceId?'You':msg.username||'Friend')+': ';row.append(b,document.createTextNode(String(msg.text||'')));feed.append(row)}
+ feed.scrollTop=feed.scrollHeight;
+}
+function addFriend(id,name){id=String(id||'').trim().toUpperCase().replace(/^[A-Z0-9_-]{1,12}-/,'');if(!DEVICE_ID_RE.test(id)||id===myDeviceId)return;if(!friends.has(id)&&friends.size>=100){status.textContent='Friend list is full (100 max)';return}friends.set(id,{name:String(name||id).slice(0,24)});saveFriends();friendHeartbeat();renderSocial()}
+document.getElementById('friend-add-id').onclick=()=>{const id=prompt('Enter your permanent 1PS2P ID:');if(id)addFriend(id,id.trim().toUpperCase())};
+function openDm(id,name){selectedFriend=id;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+name;renderDmHistory()}
+function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;const conn=friendConnections[selectedFriend];if(!conn?.open){status.textContent='Friend is offline. They must be online to receive a message.';return}try{conn.send({type:'friend_dm',username:me.name||'Builder',message:v,at:Date.now()});storeFriendMessage(selectedFriend,{from:myDeviceId,username:me.name||'Builder',text:v,at:Date.now()});input.value='';renderDmHistory()}catch{status.textContent='Could not send private message.'}}
+document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});\ninitFriendsSystem();
 let moveVx=0,moveVy=0,lastUpdate=0,lastBallSync=0,currentForceAngle=0,forceBoostUntil=0;
 function ballHitsBlocks(x,y,r,ignoreKey=null){
  for(const [k,t] of world){
@@ -625,7 +692,7 @@ function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);const z=TILE*camera.zo
  ctx.strokeStyle='#263d4b';ctx.lineWidth=1;for(let x=left;x<=right;x++){ctx.beginPath();ctx.moveTo(x*TILE,top*TILE);ctx.lineTo(x*TILE,bottom*TILE);ctx.stroke()}for(let y=top;y<=bottom;y++){ctx.beginPath();ctx.moveTo(left*TILE,y*TILE);ctx.lineTo(right*TILE,y*TILE);ctx.stroke()}
  for(const [k,t] of world){const [x,y]=parse(k);if(isBall(t)){const b=ballBodies.get(k)||{x:x+.5,y:y+.5};drawBall(b.x*TILE,b.y*TILE,t)}else drawBlock(x,y,t)}for(const p of players.values())drawPlayer(p);drawPlayer(me);ctx.restore();requestAnimationFrame(loop)}
 function loop(t){update(t);draw()}
-const nameInput=document.getElementById('creative-name');nameInput.value=me.name;nameInput.addEventListener('change',()=>{me.name=(nameInput.value.trim()||'Builder').slice(0,20);localStorage.setItem('creative-name',me.name);if(peer?.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name});renderSocial()});
+const nameInput=document.getElementById('creative-name');nameInput.value=me.name;nameInput.addEventListener('change',()=>{me.name=(nameInput.value.trim()||'Builder').slice(0,20);localStorage.setItem('creative-name',me.name);if(peer?.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId});friendHeartbeat();renderSocial()});
 renderSocial();loop(0);
 })();
 </script>
