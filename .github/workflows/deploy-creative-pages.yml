@@ -37,7 +37,7 @@ jobs:
           import re
           from pathlib import Path
           html = Path("creative/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", html, re.S)
+          scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.S)
           inline = [script for script in scripts if script.strip()]
           if len(inline) != 1:
               raise SystemExit(f"Expected one inline app script, found {len(inline)}")
