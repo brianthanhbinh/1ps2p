@@ -513,7 +513,8 @@ function addFriend(id,name){id=String(id||'').trim().toUpperCase().replace(/^[A-
 document.getElementById('friend-add-id').onclick=()=>{const id=prompt('Enter your permanent 1PS2P ID:');if(id)addFriend(id,id.trim().toUpperCase())};
 function openDm(id,name){selectedFriend=id;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+name;renderDmHistory()}
 function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;const conn=friendConnections[selectedFriend];if(!conn?.open){status.textContent='Friend is offline. They must be online to receive a message.';return}try{conn.send({type:'friend_dm',username:me.name||'Builder',message:v,at:Date.now()});storeFriendMessage(selectedFriend,{from:myDeviceId,username:me.name||'Builder',text:v,at:Date.now()});input.value='';renderDmHistory()}catch{status.textContent='Could not send private message.'}}
-document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});\ninitFriendsSystem();
+document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});
+initFriendsSystem();
 let moveVx=0,moveVy=0,lastUpdate=0,lastBallSync=0,currentForceAngle=0,forceBoostUntil=0;
 function ballHitsBlocks(x,y,r,ignoreKey=null){
  for(const [k,t] of world){
