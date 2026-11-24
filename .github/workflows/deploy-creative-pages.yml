@@ -1,4 +1,5 @@
 name: Deploy Creative to GitHub Pages
+# Fresh workflow runs create a single Pages artifact; do not rerun a failed deployment attempt.
 
 on:
   push:
