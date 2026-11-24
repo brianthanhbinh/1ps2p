@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1ps2p Creative</title>
+<meta name="description" content="A friendly multiplayer building sandbox. Create worlds, build together, and experiment with physics.">
+<style>
+:root{color-scheme:dark;font-family:system-ui,Segoe UI,sans-serif;background:#101820;color:#eef5fa}
+*{box-sizing:border-box}body{margin:0;overflow:hidden}#game{display:block;width:100vw;height:100vh;background:#172633;touch-action:none}
+#top{position:fixed;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;z-index:2}
+.panel{background:#101820eF;border:1px solid #526675;border-radius:10px;padding:9px;box-shadow:0 5px 20px #0005}
+button,input{font:inherit;color:inherit;background:#263b49;border:1px solid #607d8b;border-radius:7px;padding:7px}
+button{cursor:pointer}button.active{background:#267b75;border-color:#73d6c5}
+#tools{position:fixed;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:min(720px,calc(100vw - 24px));z-index:2}
+#status{position:fixed;right:12px;top:12px;max-width:260px;z-index:2}
+#help{position:fixed;right:12px;bottom:12px;max-width:250px;z-index:2;font-size:12px;line-height:1.5}
+#join{width:90px;text-transform:uppercase}
+@media(max-width:600px){#help{display:none}#status{top:auto;bottom:100px;max-width:170px;font-size:12px}#top{right:8px}#tools{right:8px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="top" class="panel">
+<strong>1ps2p Creative</strong>
+<button id="host">Create room</button>
+<input id="room" maxlength="8" placeholder="Room code">
+<button id="join">Join</button>
+<button id="copy">Copy code</button>
+</div>
+<div id="status" class="panel">Offline sandbox · Create a room to invite a friend</div>
+<div id="tools" class="panel">
+<button data-tool="grass" class="active">Grass</button><button data-tool="stone">Stone</button><button data-tool="wood">Wood</button><button data-tool="glass">Glass</button><button data-tool="whitehole">White hole</button><button id="erase">Eraser</button>
+</div>
+<div id="help" class="panel">WASD / arrows: move · Click: place · Right-click: remove · Scroll: zoom<br>White holes gently push players away. No combat or damage.</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),status=document.getElementById('status');
+const TILE=32,world=new Map(),players=new Map(),keys=new Set();let me={x:0,y:0,color:'#70d6c4'},tool='grass',peer=null,host=false,roomCode='',camera={x:0,y:0,zoom:1},connections=[];
+const key=(x,y)=>x+','+y,parse=k=>k.split(',').map(Number);
+function setTile(x,y,type){if(type)world.set(key(x,y),type);else world.delete(key(x,y));broadcast({t:'tile',x,y,type:type||null});}
+function broadcast(msg){for(const c of connections)if(c.open)try{c.send(msg)}catch{}}
+function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=innerWidth*d;canvas.height=innerHeight*d;ctx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',resize);resize();
+function sendSnapshot(c){c.send({t:'snapshot',tiles:[...world],players:[...players]})}
+function accept(c){connections.push(c);c.on('open',()=>{sendSnapshot(c);status.textContent='Room '+roomCode+' · '+(connections.length+1)+' connected'});c.on('data',m=>receive(m,c));c.on('close',()=>{connections=connections.filter(x=>x!==c);status.textContent='Room '+roomCode+' · '+(connections.length+1)+' connected'});}
+function receive(m,c){if(!m||typeof m!=='object')return;
+ if(m.t==='snapshot'){world.clear();for(const [k,v] of m.tiles||[])if(['grass','stone','wood','glass','whitehole'].includes(v))world.set(k,v);for(const [id,p] of m.players||[])if(id!==peer.id)players.set(id,p);}
+ if(m.t==='tile'&&Number.isFinite(m.x)&&Number.isFinite(m.y)){if(m.type&&['grass','stone','wood','glass','whitehole'].includes(m.type))world.set(key(m.x,m.y),m.type);else world.delete(key(m.x,m.y));}
+ if(m.t==='player'&&m.id!==peer.id&&Number.isFinite(m.x)&&Number.isFinite(m.y))players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68'});
+ if(m.t==='leave')players.delete(m.id);
+ if(m.t==='hello')sendSnapshot(c);
+}
+function createPeer(id){peer=new Peer(id);peer.on('open',()=>{status.textContent='Room '+roomCode+' · waiting for friends';document.getElementById('room').value=roomCode;});peer.on('connection',accept);peer.on('error',e=>status.textContent='Connection error: '+e.type);peer.on('disconnected',()=>status.textContent='Disconnected from room server');}
+document.getElementById('host').onclick=()=>{if(peer)peer.destroy();host=true;roomCode=Math.random().toString(36).slice(2,7).toUpperCase();createPeer('1ps2p-creative-'+roomCode);};
+document.getElementById('join').onclick=()=>{const code=document.getElementById('room').value.trim().toUpperCase();if(!code)return;if(peer)peer.destroy();host=false;roomCode=code;createPeer('1ps2p-creative-'+roomCode);peer.on('open',()=>{const c=peer.connect('1ps2p-creative-'+roomCode,{reliable:true});accept(c);c.on('open',()=>{c.send({t:'hello'});status.textContent='Joined '+roomCode;});});};
+document.getElementById('copy').onclick=async()=>{if(roomCode)try{await navigator.clipboard.writeText(roomCode);status.textContent='Room code copied: '+roomCode}catch{status.textContent='Room code: '+roomCode}};
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));});
+document.getElementById('erase').onclick=()=>{tool='erase';document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));};
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+function screenToWorld(x,y){return {x:Math.floor((x-innerWidth/2)/ (TILE*camera.zoom)+camera.x),y:Math.floor((y-innerHeight/2)/(TILE*camera.zoom)+camera.y)}}
+canvas.addEventListener('pointerdown',e=>{const p=screenToWorld(e.clientX,e.clientY);if(e.button===2||tool==='erase')setTile(p.x,p.y,null);else setTile(p.x,p.y,tool);});
+canvas.addEventListener('wheel',e=>{camera.zoom=Math.max(.55,Math.min(1.8,camera.zoom+(e.deltaY<0?.1:-.1)))},{passive:true});
+addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
+addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+function update(){let dx=0,dy=0;if(keys.has('a')||keys.has('arrowleft'))dx--;if(keys.has('d')||keys.has('arrowright'))dx++;if(keys.has('w')||keys.has('arrowup'))dy--;if(keys.has('s')||keys.has('arrowdown'))dy++;const len=Math.hypot(dx,dy)||1;me.x+=dx/len*.12;me.y+=dy/len*.12;
+ for(const [k,t] of world){if(t!=='whitehole')continue;const [x,y]=parse(k),cx=x+.5,cy=y+.5,vx=me.x-cx,vy=me.y-cy,d=Math.hypot(vx,vy);if(d>0.1&&d<3){me.x+=vx/d*.035;me.y+=vy/d*.035}}
+ if(peer&&peer.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color});
+}
+function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);const z=TILE*camera.zoom;camera.x=me.x;camera.y=me.y;ctx.save();ctx.translate(innerWidth/2-camera.x*z,innerHeight/2-camera.y*z);ctx.scale(camera.zoom,camera.zoom);
+ const left=Math.floor(camera.x-innerWidth/(2*z))-1,right=Math.ceil(camera.x+innerWidth/(2*z))+1,top=Math.floor(camera.y-innerHeight/(2*z))-1,bottom=Math.ceil(camera.y+innerHeight/(2*z))+1;
+ ctx.strokeStyle='#263d4b';ctx.lineWidth=1;for(let x=left;x<=right;x++){ctx.beginPath();ctx.moveTo(x*TILE,top*TILE);ctx.lineTo(x*TILE,bottom*TILE);ctx.stroke()}for(let y=top;y<=bottom;y++){ctx.beginPath();ctx.moveTo(left*TILE,y*TILE);ctx.lineTo(right*TILE,y*TILE);ctx.stroke()}
+ const colors={grass:'#438b58',stone:'#788792',wood:'#9b7047',glass:'#86dbe0'};
+ for(const [k,t] of world){const [x,y]=parse(k),px=x*TILE,py=y*TILE;if(t==='whitehole'){const g=ctx.createRadialGradient(px+16,py+16,2,px+16,py+16,22);g.addColorStop(0,'#fff');g.addColorStop(.35,'#b7f5ff');g.addColorStop(1,'#4b8dff00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(px+16,py+16,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d8fbff';ctx.stroke();continue}ctx.fillStyle=colors[t]||'#888';ctx.fillRect(px+1,py+1,30,30);ctx.strokeStyle='#0b1720';ctx.strokeRect(px+1,py+1,30,30);if(t==='glass'){ctx.strokeStyle='#e0ffff';ctx.beginPath();ctx.moveTo(px+5,py+7);ctx.lineTo(px+24,py+7);ctx.stroke()}}
+ for(const p of players.values())drawPlayer(p);drawPlayer(me);ctx.restore();requestAnimationFrame(loop)}
+function drawPlayer(p){ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x*TILE+16,p.y*TILE+16,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eaf7ff';ctx.lineWidth=2;ctx.stroke()}
+let last=0;function loop(t){if(t-last>40){update();last=t}draw()}
+loop(0);
+})();
+</script>
+</body></html>
