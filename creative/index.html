@@ -349,7 +349,7 @@
 <input id="room" maxlength="8" placeholder="ROOM CODE" aria-label="Room code">
 <button id="join">Join</button>
 </div>
-<button id="copy" style="margin-top:8px">Copy Room Code</button>
+<input id="creative-name" maxlength="20" placeholder="Your display name" aria-label="Your display name" style="margin-top:8px;background:#252533;color:#fff;border:1px solid #444;text-align:center;padding:9px;border-radius:7px;width:100%"><button id="copy" style="margin-top:8px">Copy Room Code</button>
 <div id="net-status">Offline sandbox · Create a room to invite a friend</div>
 </div>
 <div id="creative-status">Creative mode · Peaceful building</div>
@@ -410,7 +410,7 @@ function receive(m,from){if(!m||typeof m!=='object')return;
  if(m.t==='leave'){players.delete(m.id);renderSocial()}
  if(m.t==='hello'){if(m.id)players.set(m.id,{x:0,y:0,name:m.name||'Builder',color:'#f2bd68'});send(connections.get(from),snapshot());renderSocial()}
  if(m.t==='chat')addChat(m.name,m.text,false);
- if(m.t==='friend-dm'&&m.to===peer?.id)addDm(m.fromName,m.text,false);
+ if(m.t==='friend-dm'&&m.to===peer?.id){friends.set(from,{name:m.fromName||from});saveFriends();selectedFriend=from;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+(m.fromName||from);addDm(m.fromName,m.text,false);renderSocial()}
 }
 function createPeer(id){peer=new Peer(id);peer.on('open',()=>{status.textContent='Room '+roomCode+' · waiting for friends';document.getElementById('room').value=roomCode;updateStatus()});peer.on('connection',accept);peer.on('error',e=>status.textContent='Connection error: '+e.type);peer.on('disconnected',()=>status.textContent='Disconnected from room server')}
 document.getElementById('host').onclick=()=>{document.getElementById('lobby-box').style.display='none';if(peer)peer.destroy();roomCode=Math.random().toString(36).slice(2,7).toUpperCase();createPeer('1ps2p-creative-'+roomCode)};
@@ -456,7 +456,7 @@ function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);const z=TILE*camera.zo
  ctx.strokeStyle='#263d4b';ctx.lineWidth=1;for(let x=left;x<=right;x++){ctx.beginPath();ctx.moveTo(x*TILE,top*TILE);ctx.lineTo(x*TILE,bottom*TILE);ctx.stroke()}for(let y=top;y<=bottom;y++){ctx.beginPath();ctx.moveTo(left*TILE,y*TILE);ctx.lineTo(right*TILE,y*TILE);ctx.stroke()}
  for(const [k,t] of world){const [x,y]=parse(k);drawBlock(x,y,t)}for(const p of players.values())drawPlayer(p);drawPlayer(me);ctx.restore();requestAnimationFrame(loop)}
 let last=0;function loop(t){if(t-last>40){update();last=t}draw()}
-renderSocial();loop(0);
+const nameInput=document.getElementById('creative-name');nameInput.value=me.name;nameInput.addEventListener('change',()=>{me.name=(nameInput.value.trim()||'Builder').slice(0,20);localStorage.setItem('creative-name',me.name);if(peer?.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name});renderSocial()});\nrenderSocial();loop(0);
 })();
 </script>
 </body></html>
