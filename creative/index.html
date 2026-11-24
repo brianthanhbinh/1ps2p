@@ -544,7 +544,8 @@ function updateBalls(dt){
     const q=polarity(mt),samePole=p!==0&&q!==0&&p===q;
     // Main game uses 0.34 for magnet balls and 0.42 for magnet blocks
     // in pixels/frame. Convert to Creative's tile/second units.
-    const strength=(1-d/range)*(mt==='magnet_plus'||mt==='magnet_minus'?.42:.34)*60/32;
+    const baseStrength=(mt==='magnet_plus'||mt==='magnet_minus')?0.42:0.34;
+    const strength=(1-d/range)*baseStrength*60/32;
     const force=samePole?-strength:strength;
     b.vx+=dx/d*force*dt;b.vy+=dy/d*force*dt;
    }
