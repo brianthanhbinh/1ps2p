@@ -326,6 +326,8 @@
 #creative-tools{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96vw;z-index:30;pointer-events:auto}
 #creative-tools button{background:rgba(25,25,35,.94);border:1px solid #555;color:#eee;border-radius:7px;padding:9px 12px;font-weight:bold}
 #creative-tools button.active{background:#4caf50;border-color:#81c784}
+#creative-social input{font:inherit}#creative-social button{cursor:pointer}#creative-social .social-row{display:flex;gap:5px;align-items:center;padding:4px;border-bottom:1px solid #263545}#creative-social .social-row button{font-size:10px;padding:4px 6px;border:0;border-radius:4px;background:#315b7e;color:#fff}#creative-social .social-row .muted{color:#91a2b4;flex:1;overflow:hidden;text-overflow:ellipsis}#creative-social .msg{overflow-wrap:anywhere}#more-blocks{background:#315b7e!important}#area-tool-hint{pointer-events:none}
+@media(max-width:650px){#creative-social{width:235px!important;max-height:43vh;overflow:auto}#creative-social #chat-feed{height:70px!important}#creative-tools{left:50%;bottom:10px;width:96vw}#creative-tools button{font-size:10px;padding:7px 8px}}
 #creative-status{position:fixed;right:16px;top:16px;z-index:30;background:rgba(0,0,0,.72);border:1px solid #546e7a;border-radius:7px;padding:8px 12px;color:white;font-size:12px;max-width:240px}
 #creative-help{position:fixed;right:16px;bottom:90px;z-index:30;background:rgba(0,0,0,.72);border:1px solid #546e7a;border-radius:7px;padding:9px 12px;color:#ddd;font-size:11px;line-height:1.5;max-width:240px}
 #creative-room-controls{display:flex;gap:6px}
@@ -351,62 +353,110 @@
 <div id="net-status">Offline sandbox · Create a room to invite a friend</div>
 </div>
 <div id="creative-status">Creative mode · Peaceful building</div>
+<div id="creative-social" style="position:fixed;left:14px;top:14px;z-index:50;width:min(320px,calc(100vw - 28px));background:rgba(8,12,20,.92);border:1px solid #53677b;border-radius:10px;padding:10px;color:#fff;pointer-events:auto">
+ <div style="display:flex;justify-content:space-between;align-items:center"><b>Community</b><span id="online-count" style="font-size:11px;color:#8bd8a2">0 online</span></div>
+ <div id="chat-feed" style="height:112px;overflow:auto;background:#080c12;margin:8px 0;padding:7px;border-radius:6px;font-size:12px;display:flex;flex-direction:column;gap:5px"></div>
+ <div style="display:flex;gap:5px"><input id="chat-input" maxlength="180" placeholder="Message everyone…" style="min-width:0;flex:1;background:#171b27;color:white;border:1px solid #566;border-radius:5px;padding:7px"><button id="chat-send" style="background:#286b9c;color:white;border:0;border-radius:5px;padding:7px 10px">Send</button></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><b style="font-size:12px">Players & friends</b><button id="friend-add-id" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:5px 8px;font-size:11px">Add by ID</button></div>
+ <div id="players-list" style="max-height:90px;overflow:auto;font-size:11px;margin-top:5px"></div>
+ <div id="friends-list" style="max-height:90px;overflow:auto;font-size:11px;margin-top:5px;border-top:1px solid #344;padding-top:5px"></div>
+ <div id="friend-dm" style="display:none;margin-top:7px;border-top:1px solid #344;padding-top:7px"><b id="dm-title" style="font-size:11px">Friend chat</b><div id="dm-feed" style="height:75px;overflow:auto;background:#080c12;padding:6px;margin:5px 0;font-size:11px"></div><div style="display:flex;gap:4px"><input id="dm-input" maxlength="180" placeholder="Private message" style="min-width:0;flex:1;background:#171b27;color:white;border:1px solid #566;border-radius:5px;padding:6px"><button id="dm-send" style="background:#315b7e;color:white;border:0;border-radius:5px;padding:6px">Send</button></div></div>
+</div>
+<div id="area-tool-hint" style="position:fixed;right:14px;top:190px;z-index:30;background:#101923e8;border:1px solid #7b8794;color:white;border-radius:7px;padding:8px 10px;font-size:11px;display:none">Area Block Destroyer: click to clear a 5×5 block area. Players are unaffected.</div>
 <div id="creative-tools">
 <button data-tool="grass" class="active">Grass</button>
 <button data-tool="stone">Stone</button>
 <button data-tool="wood">Wood</button>
-<button data-tool="glass">Glass</button>
+<button data-tool="glass">Glass</button><button id="more-blocks">More Blocks ▾</button><button data-tool="area-clear">Area Block Destroyer</button>
 <button data-tool="whitehole">White Hole</button>
 <button id="erase">Eraser</button>
 </div>
-<div id="creative-help">WASD / arrows: move · Click: place block · Right-click: erase · Scroll: zoom<br>White holes gently push players away.</div>
+<div id="creative-help">WASD / arrows: move · Click: place · Right-click: erase · Scroll: zoom<br>Area Block Destroyer clears a 5×5 area. White holes gently push players away.</div>
 </div>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-
 (()=>{
+'use strict';
 const canvas=document.getElementById('canvas-main'),ctx=canvas.getContext('2d'),status=document.getElementById('net-status');
-const TILE=32,world=new Map(),players=new Map(),keys=new Set();let me={x:0,y:0,color:'#70d6c4'},tool='grass',peer=null,host=false,roomCode='',camera={x:0,y:0,zoom:1},connections=[];
-const key=(x,y)=>x+','+y,parse=k=>k.split(',').map(Number);
-function setTile(x,y,type){if(type)world.set(key(x,y),type);else world.delete(key(x,y));broadcast({t:'tile',x,y,type:type||null});}
-function broadcast(msg){for(const c of connections)if(c.open)try{c.send(msg)}catch{}}
+const TILE=32,world=new Map(),players=new Map(),keys=new Set(),connections=new Map(),friends=new Map(),chatHistory=[];
+const BLOCKS={
+ grass:{name:'Grass',color:'#438b58'},stone:{name:'Stone',color:'#788792'},wood:{name:'Wood',color:'#9b7047'},
+ reinforced:{name:'Reinforced',color:'#687786'},metal:{name:'Metal',color:'#aeb8c0'},healing:{name:'Healing',color:'#50c878'},
+ obsidian:{name:'Obsidian',color:'#29233f'},glass:{name:'Glass',color:'#86dbe0'},bounce:{name:'Bounce',color:'#e7a83b'},
+ ice:{name:'Ice',color:'#a9e6f4'},crystal:{name:'Crystal',color:'#bd8cff'},bunker:{name:'Bunker',color:'#555b64'},
+ force:{name:'Force',color:'#48a9df'},ball:{name:'Ball',color:'#d8b15a'},magnet_ball_plus:{name:'Magnet Ball +',color:'#e75c62'},
+ magnet_ball_minus:{name:'Magnet Ball −',color:'#5c8fe7'},iron_ball:{name:'Iron Ball',color:'#7f8994'},
+ magnet_plus:{name:'Magnet Block +',color:'#d45a62'},magnet_minus:{name:'Magnet Block −',color:'#527bd1'},
+ force2:{name:'Force II',color:'#3c83cb'},force3:{name:'Force III',color:'#7655c9'},
+ oneway:{name:'One-Way',color:'#d4c16d'},damage:{name:'Soft Pad',color:'#db8eac'},
+ stop:{name:'Stop',color:'#42484f'},conveyor:{name:'Conveyor',color:'#c18b4b'},mud:{name:'Mud',color:'#66513e'},
+ whitehole:{name:'White Hole',color:'#bdefff'}
+};
+let me={x:0,y:0,color:'#70d6c4',name:localStorage.getItem('creative-name')||'Builder'},tool='grass',peer=null,roomCode='',camera={x:0,y:0,zoom:1},selectedFriend=null;
+const key=(x,y)=>x+','+y,parse=k=>k.split(',').map(Number),valid=t=>Object.prototype.hasOwnProperty.call(BLOCKS,t);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function resize(){const d=Math.min(devicePixelRatio||1,2);canvas.width=innerWidth*d;canvas.height=innerHeight*d;ctx.setTransform(d,0,0,d,0,0)}
 addEventListener('resize',resize);resize();
-function sendSnapshot(c){c.send({t:'snapshot',tiles:[...world],players:[...players]})}
-function accept(c){connections.push(c);c.on('open',()=>{sendSnapshot(c);status.textContent='Room '+roomCode+' · '+(connections.length+1)+' connected'});c.on('data',m=>receive(m,c));c.on('close',()=>{connections=connections.filter(x=>x!==c);status.textContent='Room '+roomCode+' · '+(connections.length+1)+' connected'});}
-function receive(m,c){if(!m||typeof m!=='object')return;
- if(m.t==='snapshot'){world.clear();for(const [k,v] of m.tiles||[])if(['grass','stone','wood','glass','whitehole'].includes(v))world.set(k,v);for(const [id,p] of m.players||[])if(id!==peer.id)players.set(id,p);}
- if(m.t==='tile'&&Number.isFinite(m.x)&&Number.isFinite(m.y)){if(m.type&&['grass','stone','wood','glass','whitehole'].includes(m.type))world.set(key(m.x,m.y),m.type);else world.delete(key(m.x,m.y));}
- if(m.t==='player'&&m.id!==peer.id&&Number.isFinite(m.x)&&Number.isFinite(m.y))players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68'});
- if(m.t==='leave')players.delete(m.id);
- if(m.t==='hello')sendSnapshot(c);
+function send(c,m){if(c&&c.open)try{c.send(m)}catch{}}
+function broadcast(m,except){for(const [id,c] of connections)if(id!==except)send(c,m)}
+function updateStatus(){status.textContent=roomCode?'Room '+roomCode+' · '+(connections.size+1)+' connected':'Offline sandbox';document.getElementById('online-count').textContent=(connections.size+1)+' online'}
+function setTile(x,y,type){if(type&&valid(type))world.set(key(x,y),type);else world.delete(key(x,y));broadcast({t:'tile',x,y,type:type||null})}
+function snapshot(){return {t:'snapshot',tiles:[...world],players:[[peer?.id,{x:me.x,y:me.y,color:me.color,name:me.name}]]}}
+function accept(c){connections.set(c.peer,c);c.on('open',()=>{send(c,snapshot());send(c,{t:'hello',id:peer.id,name:me.name});updateStatus();renderSocial()});c.on('data',m=>receive(m,c.peer));c.on('close',()=>{connections.delete(c.peer);players.delete(c.peer);updateStatus();renderSocial()});c.on('error',()=>{connections.delete(c.peer);updateStatus()})}
+function receive(m,from){if(!m||typeof m!=='object')return;
+ if(m.t==='snapshot'){world.clear();for(const [k,v] of m.tiles||[])if(valid(v))world.set(k,v);for(const [id,p] of m.players||[])if(id&&id!==peer?.id)players.set(id,p);renderSocial()}
+ if(m.t==='tile'&&Number.isFinite(m.x)&&Number.isFinite(m.y)){if(valid(m.type))world.set(key(m.x,m.y),m.type);else world.delete(key(m.x,m.y))}
+ if(m.t==='player'&&m.id!==peer?.id&&Number.isFinite(m.x)&&Number.isFinite(m.y)){players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68',name:m.name||'Builder'});renderSocial()}
+ if(m.t==='leave'){players.delete(m.id);renderSocial()}
+ if(m.t==='hello'){if(m.id)players.set(m.id,{x:0,y:0,name:m.name||'Builder',color:'#f2bd68'});send(connections.get(from),snapshot());renderSocial()}
+ if(m.t==='chat')addChat(m.name,m.text,false);
+ if(m.t==='friend-dm'&&m.to===peer?.id)addDm(m.fromName,m.text,false);
 }
-function createPeer(id){peer=new Peer(id);peer.on('open',()=>{status.textContent='Room '+roomCode+' · waiting for friends';document.getElementById('room').value=roomCode;});peer.on('connection',accept);peer.on('error',e=>status.textContent='Connection error: '+e.type);peer.on('disconnected',()=>status.textContent='Disconnected from room server');}
-document.getElementById('host').onclick=()=>{document.getElementById('lobby-box').style.display='none';if(peer)peer.destroy();host=true;roomCode=Math.random().toString(36).slice(2,7).toUpperCase();createPeer('1ps2p-creative-'+roomCode);};
-document.getElementById('join').onclick=()=>{const code=document.getElementById('room').value.trim().toUpperCase();if(!code)return;document.getElementById('lobby-box').style.display='none';if(peer)peer.destroy();host=false;roomCode=code;createPeer('1ps2p-creative-'+roomCode);peer.on('open',()=>{const c=peer.connect('1ps2p-creative-'+roomCode,{reliable:true});accept(c);c.on('open',()=>{c.send({t:'hello'});status.textContent='Joined '+roomCode;});});};
+function createPeer(id){peer=new Peer(id);peer.on('open',()=>{status.textContent='Room '+roomCode+' · waiting for friends';document.getElementById('room').value=roomCode;updateStatus()});peer.on('connection',accept);peer.on('error',e=>status.textContent='Connection error: '+e.type);peer.on('disconnected',()=>status.textContent='Disconnected from room server')}
+document.getElementById('host').onclick=()=>{document.getElementById('lobby-box').style.display='none';if(peer)peer.destroy();roomCode=Math.random().toString(36).slice(2,7).toUpperCase();createPeer('1ps2p-creative-'+roomCode)};
+document.getElementById('join').onclick=()=>{const code=document.getElementById('room').value.trim().toUpperCase();if(!code)return;document.getElementById('lobby-box').style.display='none';if(peer)peer.destroy();roomCode=code;createPeer('1ps2p-creative-'+roomCode);peer.on('open',()=>{const c=peer.connect('1ps2p-creative-'+roomCode,{reliable:true});accept(c);c.on('open',()=>{send(c,{t:'hello',id:peer.id,name:me.name});status.textContent='Joined '+roomCode})})};
 document.getElementById('copy').onclick=async()=>{if(roomCode)try{await navigator.clipboard.writeText(roomCode);status.textContent='Room code copied: '+roomCode}catch{status.textContent='Room code: '+roomCode}};
-document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));});
-document.getElementById('erase').onclick=()=>{tool='erase';document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));};
+const toolbar=document.getElementById('creative-tools');
+toolbar.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>chooseTool(b.dataset.tool,b));
+function chooseTool(t,b){tool=t;toolbar.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));document.getElementById('area-tool-hint').style.display=t==='area-clear'?'block':'none'}
+document.getElementById('erase').onclick=()=>{tool='erase';toolbar.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));document.getElementById('area-tool-hint').style.display='none'};
+const more=document.getElementById('more-blocks');let extraOpen=false;
+more.onclick=()=>{extraOpen=!extraOpen;document.getElementById('extra-blocks')?.remove();if(extraOpen){const box=document.createElement('div');box.id='extra-blocks';box.style.cssText='position:fixed;bottom:75px;left:50%;transform:translateX(-50%);z-index:80;background:#101923f5;border:1px solid #71869a;border-radius:9px;padding:8px;display:grid;grid-template-columns:repeat(4,minmax(72px,1fr));gap:5px;max-height:45vh;overflow:auto';for(const [id,b] of Object.entries(BLOCKS)){if(['grass','stone','wood','glass','whitehole'].includes(id))continue;const el=document.createElement('button');el.textContent=b.name;el.style.cssText='background:'+b.color+';color:#111;border:1px solid #fff6;border-radius:5px;padding:8px 5px;font-size:10px';el.onclick=()=>{chooseTool(id,null);box.remove();extraOpen=false;more.textContent=b.name+' ▾'};box.append(el)}document.body.append(box)}};
+function screenToWorld(x,y){return {x:Math.floor((x-innerWidth/2)/(TILE*camera.zoom)+camera.x),y:Math.floor((y-innerHeight/2)/(TILE*camera.zoom)+camera.y)}}
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-function screenToWorld(x,y){return {x:Math.floor((x-innerWidth/2)/ (TILE*camera.zoom)+camera.x),y:Math.floor((y-innerHeight/2)/(TILE*camera.zoom)+camera.y)}}
-canvas.addEventListener('pointerdown',e=>{const p=screenToWorld(e.clientX,e.clientY);if(e.button===2||tool==='erase')setTile(p.x,p.y,null);else setTile(p.x,p.y,tool);});
-canvas.addEventListener('wheel',e=>{camera.zoom=Math.max(.55,Math.min(1.8,camera.zoom+(e.deltaY<0?.1:-.1)))},{passive:true});
-addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
+canvas.addEventListener('pointerdown',e=>{const p=screenToWorld(e.clientX,e.clientY);if(e.button===2||tool==='erase'){setTile(p.x,p.y,null);return}if(tool==='area-clear'){for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)setTile(p.x+x,p.y+y,null);return}setTile(p.x,p.y,tool)});
+canvas.addEventListener('wheel',e=>{camera.zoom=Math.max(.5,Math.min(2,camera.zoom+(e.deltaY<0?.1:-.1)))},{passive:true});
+addEventListener('keydown',e=>{if(document.activeElement?.tagName==='INPUT')return;keys.add(e.key.toLowerCase());if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+function addChat(name,msg,sendIt=true){if(!msg||!msg.trim())return;const entry={name:String(name||'Builder').slice(0,20),text:String(msg).slice(0,180)};const feed=document.getElementById('chat-feed');const row=document.createElement('div');row.className='msg';row.innerHTML='<b>'+esc(entry.name)+':</b> '+esc(entry.text);feed.append(row);feed.scrollTop=feed.scrollHeight;while(feed.children.length>60)feed.firstChild.remove();if(sendIt)broadcast({t:'chat',name:me.name,text:entry.text})}
+function sendChat(){const input=document.getElementById('chat-input'),v=input.value.trim();if(!v)return;addChat(me.name,v,true);input.value=''}
+document.getElementById('chat-send').onclick=sendChat;document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+function renderSocial(){const p=document.getElementById('players-list');p.innerHTML='';for(const [id,v] of players){const row=document.createElement('div');row.className='social-row';row.innerHTML='<span class="muted">'+esc(v.name||id)+'</span><button>Add friend</button>';row.querySelector('button').onclick=()=>addFriend(id,v.name||id);p.append(row)}const f=document.getElementById('friends-list');f.innerHTML='<b>Friends</b>';for(const [id,v] of friends){const row=document.createElement('div');row.className='social-row';row.innerHTML='<span class="muted">'+esc(v.name)+'</span><button>Message</button><button>Remove</button>';const bs=row.querySelectorAll('button');bs[0].onclick=()=>openDm(id,v.name);bs[1].onclick=()=>{friends.delete(id);saveFriends();renderSocial()};f.append(row)}updateStatus()}
+function saveFriends(){localStorage.setItem('creative-friends',JSON.stringify([...friends]))}
+try{for(const [id,v] of JSON.parse(localStorage.getItem('creative-friends')||'[]'))if(id&&v?.name)friends.set(id,v)}catch{}
+function addFriend(id,name){if(!id||id===peer?.id)return;friends.set(id,{name:String(name).slice(0,24)});saveFriends();renderSocial()}
+document.getElementById('friend-add-id').onclick=()=>{const id=prompt('Enter your friend’s Peer ID:');if(id)addFriend(id.trim(),id.trim())};
+function openDm(id,name){selectedFriend=id;document.getElementById('friend-dm').style.display='block';document.getElementById('dm-title').textContent='Private chat · '+name;document.getElementById('dm-feed').innerHTML='';}
+function addDm(name,msg,sendIt=true){const feed=document.getElementById('dm-feed'),row=document.createElement('div');row.className='msg';row.innerHTML='<b>'+esc(name)+':</b> '+esc(msg);feed.append(row);feed.scrollTop=feed.scrollHeight;if(sendIt){const c=connections.get(selectedFriend);if(!c||!c.open){addChat('System','Friend is not connected to this room.');return}send(c,{t:'friend-dm',to:selectedFriend,fromName:me.name,text:msg})}}
+function sendDm(){const input=document.getElementById('dm-input'),v=input.value.trim();if(!v||!selectedFriend)return;addDm(me.name,v,true);input.value=''}
+document.getElementById('dm-send').onclick=sendDm;document.getElementById('dm-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendDm()});
 function update(){let dx=0,dy=0;if(keys.has('a')||keys.has('arrowleft'))dx--;if(keys.has('d')||keys.has('arrowright'))dx++;if(keys.has('w')||keys.has('arrowup'))dy--;if(keys.has('s')||keys.has('arrowdown'))dy++;const len=Math.hypot(dx,dy)||1;me.x+=dx/len*.12;me.y+=dy/len*.12;
- for(const [k,t] of world){if(t!=='whitehole')continue;const [x,y]=parse(k),cx=x+.5,cy=y+.5,vx=me.x-cx,vy=me.y-cy,d=Math.hypot(vx,vy);if(d>0.1&&d<3){me.x+=vx/d*.035;me.y+=vy/d*.035}}
- if(peer&&peer.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color});
+ for(const [k,t] of world){if(t!=='whitehole')continue;const [x,y]=parse(k),vx=me.x-(x+.5),vy=me.y-(y+.5),d=Math.hypot(vx,vy);if(d>.1&&d<3){me.x+=vx/d*.035;me.y+=vy/d*.035}}
+ if(peer?.open)broadcast({t:'player',id:peer.id,x:me.x,y:me.y,color:me.color,name:me.name})
 }
+function drawBlock(x,y,t){const px=x*TILE,py=y*TILE,b=BLOCKS[t]||BLOCKS.stone;ctx.fillStyle=b.color;ctx.fillRect(px+1,py+1,30,30);ctx.strokeStyle='#0b1720';ctx.lineWidth=1;ctx.strokeRect(px+1,py+1,30,30);
+ if(t==='glass'){ctx.strokeStyle='#eaffff';ctx.beginPath();ctx.moveTo(px+5,py+7);ctx.lineTo(px+24,py+7);ctx.stroke()}
+ if(t.includes('magnet')){ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText(t.endsWith('plus')?'+':'−',px+16,py+22)}
+ if(t.startsWith('force')){ctx.strokeStyle='#e7f6ff';ctx.beginPath();ctx.arc(px+16,py+16,8,0,Math.PI*2);ctx.stroke()}
+ if(t==='whitehole'){const g=ctx.createRadialGradient(px+16,py+16,2,px+16,py+16,22);g.addColorStop(0,'#fff');g.addColorStop(.35,'#b7f5ff');g.addColorStop(1,'#4b8dff00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(px+16,py+16,22,0,Math.PI*2);ctx.fill()}
+}
+function drawPlayer(p){ctx.fillStyle=p.color||'#70d6c4';ctx.beginPath();ctx.arc(p.x*TILE+16,p.y*TILE+16,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eaf7ff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='white';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText(p.name||'Builder',p.x*TILE+16,p.y*TILE+4)}
 function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);const z=TILE*camera.zoom;camera.x=me.x;camera.y=me.y;ctx.save();ctx.translate(innerWidth/2-camera.x*z,innerHeight/2-camera.y*z);ctx.scale(camera.zoom,camera.zoom);
  const left=Math.floor(camera.x-innerWidth/(2*z))-1,right=Math.ceil(camera.x+innerWidth/(2*z))+1,top=Math.floor(camera.y-innerHeight/(2*z))-1,bottom=Math.ceil(camera.y+innerHeight/(2*z))+1;
  ctx.strokeStyle='#263d4b';ctx.lineWidth=1;for(let x=left;x<=right;x++){ctx.beginPath();ctx.moveTo(x*TILE,top*TILE);ctx.lineTo(x*TILE,bottom*TILE);ctx.stroke()}for(let y=top;y<=bottom;y++){ctx.beginPath();ctx.moveTo(left*TILE,y*TILE);ctx.lineTo(right*TILE,y*TILE);ctx.stroke()}
- const colors={grass:'#438b58',stone:'#788792',wood:'#9b7047',glass:'#86dbe0'};
- for(const [k,t] of world){const [x,y]=parse(k),px=x*TILE,py=y*TILE;if(t==='whitehole'){const g=ctx.createRadialGradient(px+16,py+16,2,px+16,py+16,22);g.addColorStop(0,'#fff');g.addColorStop(.35,'#b7f5ff');g.addColorStop(1,'#4b8dff00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(px+16,py+16,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d8fbff';ctx.stroke();continue}ctx.fillStyle=colors[t]||'#888';ctx.fillRect(px+1,py+1,30,30);ctx.strokeStyle='#0b1720';ctx.strokeRect(px+1,py+1,30,30);if(t==='glass'){ctx.strokeStyle='#e0ffff';ctx.beginPath();ctx.moveTo(px+5,py+7);ctx.lineTo(px+24,py+7);ctx.stroke()}}
- for(const p of players.values())drawPlayer(p);drawPlayer(me);ctx.restore();requestAnimationFrame(loop)}
-function drawPlayer(p){ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x*TILE+16,p.y*TILE+16,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eaf7ff';ctx.lineWidth=2;ctx.stroke()}
+ for(const [k,t] of world){const [x,y]=parse(k);drawBlock(x,y,t)}for(const p of players.values())drawPlayer(p);drawPlayer(me);ctx.restore();requestAnimationFrame(loop)}
 let last=0;function loop(t){if(t-last>40){update();last=t}draw()}
-loop(0);
+renderSocial();loop(0);
 })();
-
 </script>
 </body></html>
