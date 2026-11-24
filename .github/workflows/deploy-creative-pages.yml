@@ -1,12 +1,11 @@
-name: Deploy Creative to GitHub Pages
-# Fresh workflow runs create a single Pages artifact; do not rerun a failed deployment attempt.
+name: Deploy Main + Creative to GitHub Pages
+# Publish the repository website at /1ps2p/ and Creative at /1ps2p/creative/.
 
 on:
   push:
     branches: [main]
     paths:
-      - "creative/**"
-      - ".github/workflows/deploy-creative-pages.yml"
+      - "**"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +14,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: creative-pages
+  group: 1ps2p-pages
   cancel-in-progress: true
 
 jobs:
@@ -31,24 +30,48 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Validate Creative JavaScript
+      - name: Validate Main and Creative JavaScript
         run: |
           python3 - <<'PY'
           import re
           from pathlib import Path
-          html = Path("creative/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.S)
-          inline = [script for script in scripts if script.strip()]
-          if len(inline) != 1:
-              raise SystemExit(f"Expected one inline app script, found {len(inline)}")
-          Path("/tmp/creative-inline.js").write_text(inline[0], encoding="utf-8")
-          PY
-          node --check /tmp/creative-inline.js
 
-      - name: Upload Creative site only
+          for source, prefix in [
+              (Path("index.html"), "main"),
+              (Path("creative/index.html"), "creative"),
+          ]:
+              html = source.read_text(encoding="utf-8")
+              scripts = re.findall(r"<script\\b[^>]*>([\\s\\S]*?)</script>", html, re.I)
+              inline = [script for script in scripts if script.strip()]
+              if not inline:
+                  raise SystemExit(f"No inline JavaScript found in {source}")
+              for index, script in enumerate(inline):
+                  Path(f"/tmp/{prefix}-{index}.js").write_text(script, encoding="utf-8")
+          PY
+          for script in /tmp/main-*.js /tmp/creative-*.js; do
+            node --check "$script"
+          done
+
+      - name: Prepare both websites
+        run: |
+          mkdir -p _site
+          git ls-files -z | while IFS= read -r -d '' file; do
+            case "$file" in
+              .github/*) continue ;;
+            esac
+            mkdir -p "_site/$(dirname "$file")"
+            cp "$file" "_site/$file"
+          done
+          # GitHub Pages is hosted below /1ps2p/, so root-absolute favicon URLs
+          # must become paths relative to the deployed repository directory.
+          sed -i 's|href="/favicon.png"|href="favicon.png"|g; s|href="/favicon.svg"|href="favicon.svg"|g' _site/index.html
+          test -f _site/index.html
+          test -f _site/creative/index.html
+
+      - name: Upload both websites
         uses: actions/upload-pages-artifact@v3
         with:
-          path: creative
+          path: _site
 
       - name: Wait for Pages artifact registration
         run: sleep 10
