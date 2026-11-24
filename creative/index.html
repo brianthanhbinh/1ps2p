@@ -365,7 +365,7 @@
 <script>
 
 (()=>{
-const canvas=document.getElementById('canvas-main'),ctx=canvas.getContext('2d'),status=document.getElementById('status');
+const canvas=document.getElementById('canvas-main'),ctx=canvas.getContext('2d'),status=document.getElementById('net-status');
 const TILE=32,world=new Map(),players=new Map(),keys=new Set();let me={x:0,y:0,color:'#70d6c4'},tool='grass',peer=null,host=false,roomCode='',camera={x:0,y:0,zoom:1},connections=[];
 const key=(x,y)=>x+','+y,parse=k=>k.split(',').map(Number);
 function setTile(x,y,type){if(type)world.set(key(x,y),type);else world.delete(key(x,y));broadcast({t:'tile',x,y,type:type||null});}
