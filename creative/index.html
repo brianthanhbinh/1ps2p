@@ -367,6 +367,10 @@
 </div>
 <div id="area-tool-hint" style="position:fixed;right:14px;top:190px;z-index:30;background:#101923e8;border:1px solid #7b8794;color:white;border-radius:7px;padding:8px 10px;font-size:11px;display:none">Area Block Destroyer: click to clear a 5×5 block area. Players are unaffected.</div>
 <div id="creative-tools">
+<button id="arena-save" type="button">⬇ Save .arena</button>
+<button id="arena-load" type="button">📂 Load .arena</button>
+<input id="arena-file" type="file" accept=".arena,application/json" hidden>
+
 <button data-tool="grass" class="active">Grass</button>
 <button data-tool="stone">Stone</button>
 <button data-tool="wood">Wood</button>
@@ -404,6 +408,53 @@ function send(c,m){if(c&&c.open)try{c.send(m)}catch{}}
 function broadcast(m,except){for(const [id,c] of connections)if(id!==except)send(c,m)}
 function updateStatus(){status.textContent=roomCode?'Room '+roomCode+' · '+(connections.size+1)+' connected':'Offline sandbox';document.getElementById('online-count').textContent=(connections.size+1)+' online'}
 function isBall(t){return ['ball','magnet_ball_plus','magnet_ball_minus','iron_ball'].includes(t)}
+
+const ARENA_FORMAT='arena-world',ARENA_VERSION=1;
+function arenaPlayerData(){return {hp:300,stamina:100,coins:999999,pos:{x:me.x*40,y:me.y*40},weaponBarSlots:[],backpackInventory:[],grenadesCount:0,bandagesCount:0,smokeBombsCount:0,trapInventory:{},blockInventory:{},selectedBuildBlock:tool,selectedTrapType:'mine',activeHotbar:0,ammoByWeapon:{}}}
+async function saveArenaWorld(){
+ const name=(prompt('Name this map:','My Creative World')||'').trim().slice(0,40);if(!name)return;
+ try{
+  const blocks={};
+  for(const [k,type] of world){const [x,y]=parse(k);const b={type,hp:100,maxHp:100,team:'Red'};
+   if(isBall(type)){const ball=ballBodies.get(k);b.x=(ball?.x??x+.5)*40;b.y=(ball?.y??y+.5)*40;b.vx=(ball?.vx??0)*40;b.vy=(ball?.vy??0)*40}
+   if(forceAngles.has(k))b.angle=forceAngles.get(k);
+   blocks[k]=b;
+  }
+  const worldFile={format:ARENA_FORMAT,version:ARENA_VERSION,name,worldMode:'creative',mapSize:1000000000,spawnPoint:{x:me.x*40,y:me.y*40},player:arenaPlayerData(),blocks,traps:{},savedAt:new Date().toISOString()};
+  const json=JSON.stringify(worldFile);let payload=new Blob([json],{type:'application/json'});let compressed=false;
+  if(typeof CompressionStream!=='undefined'){payload=await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).blob();compressed=true}
+  const url=URL.createObjectURL(payload),a=document.createElement('a'),safe=name.replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'')||'world';
+  a.href=url;a.download=safe+'.arena';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  status.textContent='Saved '+safe+'.arena'+(compressed?' (compressed)':'');
+ }catch(e){console.error('Arena save failed',e);status.textContent='Could not save .arena world'}
+}
+async function loadArenaWorld(file){
+ const bytes=await file.arrayBuffer(),head=new Uint8Array(bytes,0,Math.min(2,bytes.byteLength));let json;
+ if(head.length===2&&head[0]===0x1f&&head[1]===0x8b){if(typeof DecompressionStream==='undefined')throw Error('Gzip decompression is not supported in this browser');json=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}
+ else json=new TextDecoder().decode(bytes);
+ const data=JSON.parse(json);
+ if(!data||data.format!==ARENA_FORMAT||data.version!==ARENA_VERSION||!data.blocks||typeof data.blocks!=='object'||Array.isArray(data.blocks))throw Error('Unsupported .arena format');
+ const next=new Map(),nextBalls=new Map(),nextAngles=new Map();
+ for(const [k,raw] of Object.entries(data.blocks)){
+  if(!/^-?\\d+,-?\\d+$/.test(k)||!raw||typeof raw!=='object')continue;
+  const type=String(raw.type||'');if(!valid(type))continue;
+  next.set(k,type);
+  const [x,y]=parse(k);
+  if(isBall(type))nextBalls.set(k,{x:Number.isFinite(Number(raw.x))?Number(raw.x)/40:x+.5,y:Number.isFinite(Number(raw.y))?Number(raw.y)/40:y+.5,vx:(Number(raw.vx)||0)/40,vy:(Number(raw.vy)||0)/40});
+  if(Number.isFinite(Number(raw.angle))&&['force','force2','force3'].includes(type))nextAngles.set(k,Number(raw.angle));
+ }
+ world.clear();ballBodies.clear();forceAngles.clear();forceCooldowns.clear();
+ for(const [k,v] of next)world.set(k,v);for(const [k,v] of nextBalls)ballBodies.set(k,v);for(const [k,v] of nextAngles)forceAngles.set(k,v);
+ const spawn=data.spawnPoint||data.player?.pos;if(spawn&&Number.isFinite(Number(spawn.x))&&Number.isFinite(Number(spawn.y))){me.x=Number(spawn.x)/40;me.y=Number(spawn.y)/40}
+ camera.x=me.x;camera.y=me.y;
+ if(isHost)broadcast(snapshot());else for(const [k,type] of world){const [x,y]=parse(k);broadcast({t:'tile',x,y,type,angle:forceAngles.get(k)??0})}
+ if(isHost)broadcast({t:'arena-reset'});
+ status.textContent='Loaded '+(data.name||file.name)+' · '+world.size+' blocks';
+}
+document.getElementById('arena-save').addEventListener('click',saveArenaWorld);
+document.getElementById('arena-load').addEventListener('click',()=>{const f=document.getElementById('arena-file');f.value='';f.click()});
+document.getElementById('arena-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{await loadArenaWorld(file)}catch(err){console.error('Arena load failed',err);status.textContent='Could not load .arena: '+err.message}finally{e.target.value=''}});
+
 function setTile(x,y,type){const k=key(x,y);if(type&&valid(type)){world.set(k,type);if(isBall(type)&&!ballBodies.has(k))ballBodies.set(k,{x:x+.5,y:y+.5,vx:0,vy:0});if(['force','force2','force3'].includes(type))forceAngles.set(k,currentForceAngle);else forceAngles.delete(k)}else{world.delete(k);ballBodies.delete(k);forceAngles.delete(k);forceCooldowns.delete(k)}broadcast({t:'tile',x,y,type:type||null,angle:forceAngles.get(k)??0})}
 function snapshot(){return {t:'snapshot',tiles:[...world],balls:[...ballBodies].map(([k,b])=>[k,{...b}]),forceAngles:[...forceAngles],players:[...players].map(([id,p])=>[id,{...p}]).concat(peer?.id?[[peer.id,{x:me.x,y:me.y,color:me.color,name:me.name,deviceId:myDeviceId}]]:[])}}
 function accept(c,outgoing=false){connections.set(c.peer,c);c.on('open',()=>{if(isHost)send(c,snapshot());send(c,{t:'hello',id:peer.id,name:me.name,deviceId:myDeviceId,x:me.x,y:me.y,color:me.color});updateStatus();renderSocial()});c.on('data',m=>receive(m,c.peer));c.on('close',()=>{connections.delete(c.peer);players.delete(c.peer);if(isHost)broadcast({t:'leave',id:c.peer});updateStatus();renderSocial()});c.on('error',()=>{connections.delete(c.peer);updateStatus()})}
