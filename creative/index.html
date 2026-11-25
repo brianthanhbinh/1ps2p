@@ -447,8 +447,7 @@ async function loadArenaWorld(file){
  for(const [k,v] of next)world.set(k,v);for(const [k,v] of nextBalls)ballBodies.set(k,v);for(const [k,v] of nextAngles)forceAngles.set(k,v);
  const spawn=data.spawnPoint||data.player?.pos;if(spawn&&Number.isFinite(Number(spawn.x))&&Number.isFinite(Number(spawn.y))){me.x=Number(spawn.x)/40;me.y=Number(spawn.y)/40}
  camera.x=me.x;camera.y=me.y;
- if(isHost)broadcast(snapshot());else for(const [k,type] of world){const [x,y]=parse(k);broadcast({t:'tile',x,y,type,angle:forceAngles.get(k)??0})}
- if(isHost)broadcast({t:'arena-reset'});
+ if(isHost)broadcast(snapshot());else{const host=[...connections.values()][0];if(host)send(host,{t:'arena-replace',...snapshot()})}
  status.textContent='Loaded '+(data.name||file.name)+' · '+world.size+' blocks';
 }
 document.getElementById('arena-save').addEventListener('click',saveArenaWorld);
@@ -460,6 +459,7 @@ function snapshot(){return {t:'snapshot',tiles:[...world],balls:[...ballBodies].
 function accept(c,outgoing=false){connections.set(c.peer,c);c.on('open',()=>{if(isHost)send(c,snapshot());send(c,{t:'hello',id:peer.id,name:me.name,deviceId:myDeviceId,x:me.x,y:me.y,color:me.color});updateStatus();renderSocial()});c.on('data',m=>receive(m,c.peer));c.on('close',()=>{connections.delete(c.peer);players.delete(c.peer);if(isHost)broadcast({t:'leave',id:c.peer});updateStatus();renderSocial()});c.on('error',()=>{connections.delete(c.peer);updateStatus()})}
 function receive(m,from){if(!m||typeof m!=='object')return;
  if(m.t==='snapshot'){world.clear();ballBodies.clear();forceAngles.clear();for(const [k,v] of m.tiles||[])if(valid(v)){world.set(k,v);if(isBall(v)){const [x,y]=parse(k);ballBodies.set(k,{x:x+.5,y:y+.5,vx:0,vy:0})}}for(const [k,a] of m.forceAngles||[])if(Number.isFinite(a))forceAngles.set(k,a);for(const [k,b] of m.balls||[])if(ballBodies.has(k)&&b&&Number.isFinite(b.x)&&Number.isFinite(b.y))ballBodies.set(k,{x:b.x,y:b.y,vx:b.vx||0,vy:b.vy||0});for(const [id,p] of m.players||[])if(id&&id!==peer?.id)players.set(id,p);renderSocial()}
+ if(m.t==='arena-replace'&&isHost){world.clear();ballBodies.clear();forceAngles.clear();forceCooldowns.clear();for(const [k,v] of m.tiles||[])if(valid(v)){world.set(k,v);if(isBall(v)){const [x,y]=parse(k);ballBodies.set(k,{x:x+.5,y:y+.5,vx:0,vy:0})}}for(const [k,a] of m.forceAngles||[])if(Number.isFinite(a))forceAngles.set(k,a);for(const [k,b] of m.balls||[])if(ballBodies.has(k)&&b&&Number.isFinite(b.x)&&Number.isFinite(b.y))ballBodies.set(k,{x:b.x,y:b.y,vx:b.vx||0,vy:b.vy||0});broadcast(snapshot(),from)}
  if(m.t==='tile'&&Number.isFinite(m.x)&&Number.isFinite(m.y)){const k=key(m.x,m.y);if(valid(m.type)){world.set(k,m.type);if(isBall(m.type)&&!ballBodies.has(k))ballBodies.set(k,{x:m.x+.5,y:m.y+.5,vx:0,vy:0});if(['force','force2','force3'].includes(m.type))forceAngles.set(k,Number.isFinite(m.angle)?m.angle:0);else forceAngles.delete(k)}else{world.delete(k);ballBodies.delete(k);forceAngles.delete(k)}}
 if(m.t==='ball-state'&&Array.isArray(m.balls)){for(const [k,b] of m.balls){if(ballBodies.has(k)&&b&&Number.isFinite(b.x)&&Number.isFinite(b.y))ballBodies.set(k,{x:b.x,y:b.y,vx:b.vx||0,vy:b.vy||0})}}
  if(m.t==='player'&&m.id!==peer?.id&&Number.isFinite(m.x)&&Number.isFinite(m.y)){players.set(m.id,{x:m.x,y:m.y,color:m.color||'#f2bd68',name:m.name||'Builder',deviceId:m.deviceId||''});renderSocial()}
