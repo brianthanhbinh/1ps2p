@@ -4214,6 +4214,13 @@
                     if (data.ctfFlags) ctfFlags = data.ctfFlags;
                     if (data.ctfScores) ctfScores = data.ctfScores;
                     promptTeamSelection();
+                } else if (data.type === 'respawn_confirm') {
+                    if (Number.isFinite(Number(data.x)) && Number.isFinite(Number(data.y))) {
+                        posX = Number(data.x);
+                        posY = Number(data.y);
+                    }
+                    if (Number.isFinite(Number(data.hp))) currentHp = Number(data.hp);
+                    playerMomentumX = 0; playerMomentumY = 0;
                 } else if (data.type === 'server_state') {
                     if (Array.isArray(data.aiBots)) aiBots = data.aiBots;
                     if (data.boss !== undefined) bossEntity = data.boss;
