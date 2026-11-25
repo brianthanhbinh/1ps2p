@@ -1324,6 +1324,7 @@
         // traps, loot and temporary entities from leaking in from the previous match.
         function flushPreviousMap() {
             worldBlocks = {};
+            activeRespawnBlockKey = null;
             activeTraps = {};
             droppedLoot = {};
             supplyCrates = [];
@@ -1348,7 +1349,7 @@
 
         let worldBlocks = {};
         let activeRespawnBlockKey = null;
-        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, iron_ball: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0 };
+        let blockInventory = { reinforced: 0, metal: 0, healing: 0, obsidian: 0, glass: 0, bounce: 0, ice: 0, crystal: 0, bunker: 0, force: 0, ball: 0, magnet_ball_plus: 0, magnet_ball_minus: 0, iron_ball: 0, magnet_plus: 0, magnet_minus: 0, force2: 0, force3: 0, oneway: 0, damage: 0, stop: 0, conveyor: 0, mud: 0, respawnpoint: 0 };
         let forceBlockRotation = 0;
         // Launch velocity from Force II / Force III blocks.
         let playerMomentumX = 0, playerMomentumY = 0;
