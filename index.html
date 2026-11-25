@@ -3954,6 +3954,13 @@
                         damageBlocksInRocketBlast(ex,ey);
                         const dSelf=Math.hypot(posX-ex,posY-ey);if(dSelf<radius&&(p.team==='FFA'||p.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(damage*(1-dSelf/radius))));
                         for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);
+                        if (currentMode === 'zombie' && isHosting) {
+                            aiBots.forEach(bot => {
+                                if (!bot || !bot.isZombie || bot.hp <= 0) return;
+                                const d = Math.hypot(bot.x - ex, bot.y - ey);
+                                if (d < radius && !projectileCrossesEnemyBase(p.x, p.y, bot.x, bot.y, p.team)) damagePracticeBot(bot, Math.max(1, Math.round(damage * (1 - d / radius))));
+                            });
+                        }
                         if (bossEntity && bossEntity.hp > 0) {
                             const d = Math.hypot(bossEntity.x-ex,bossEntity.y-ey);
                             if (d < radius) damageRaidBoss(Math.max(1,Math.round(damage*(1-d/radius))));
@@ -3966,6 +3973,14 @@
                     if (attacker && attacker.hp > 0 && Number.isFinite(hitX) && Number.isFinite(hitY) &&
                         Math.hypot(attacker.x - hitX, attacker.y - hitY) <= 90) {
                         let hitCount = 0;
+                        if (currentMode === 'zombie' && isHosting) {
+                            aiBots.forEach(bot => {
+                                if (bot && bot.isZombie && bot.hp > 0 && Math.hypot(bot.x - hitX, bot.y - hitY) <= 45 && Math.hypot(bot.x - attacker.x, bot.y - attacker.y) <= 105) {
+                                    damagePracticeBot(bot, 40);
+                                    hitCount++;
+                                }
+                            });
+                        }
                         for (const targetId in remotePlayers) {
                             if (targetId === conn.peer) continue;
                             const target = remotePlayers[targetId];
@@ -5781,9 +5796,9 @@
 
             if (activeHotbar === 0 && !actionCdAttack) {
                 let swordHits = 0;
-                if (isPractice) {
+                if (isPractice || (isHosting && currentMode === 'zombie')) {
                     aiBots.forEach(bot => {
-                        if (bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45) {
+                        if (bot.isZombie && bot.hp > 0 && Math.hypot(bot.x - targetWorldX, bot.y - targetWorldY) < 45 && Math.hypot(bot.x - posX, bot.y - posY) <= 105) {
                             damagePracticeBot(bot, 40);
                             swordHits++;
                         }
@@ -6619,9 +6634,9 @@
                             if (isHosting) damageRaidBoss(amount);
                         }
                     }
-                    if (isPractice) {
+                    if (isPractice || (isHosting && currentMode === 'zombie')) {
                         aiBots.forEach(bot => {
-                            if (bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
+                            if (bot.isZombie && bot.hp > 0 && Math.hypot(g.x - bot.x, g.y - bot.y) < explRadius) {
                                 damagePracticeBot(bot, 80);
                             }
                         });
