@@ -3112,6 +3112,43 @@
             return false;
         }
 
+        // A projectile cannot cross into an enemy team's protected base.
+        // Segment/rectangle intersection catches fast bullets that might skip
+        // over the base boundary between simulation frames.
+        function segmentIntersectsBaseRect(x1, y1, x2, y2, rect) {
+            let tMin = 0, tMax = 1;
+            const dx = x2 - x1, dy = y2 - y1;
+            for (const [p, q] of [
+                [-dx, x1 - rect.x1],
+                [ dx, rect.x2 - x1],
+                [-dy, y1 - rect.y1],
+                [ dy, rect.y2 - y1]
+            ]) {
+                if (Math.abs(p) < 1e-9) {
+                    if (q < 0) return false;
+                    continue;
+                }
+                const t = q / p;
+                if (p < 0) tMin = Math.max(tMin, t);
+                else tMax = Math.min(tMax, t);
+                if (tMin > tMax) return false;
+            }
+            return true;
+        }
+
+        function projectileCrossesEnemyBase(x1, y1, x2, y2, projectileTeam) {
+            const teams = ['Red', 'Blue', 'Green', 'Yellow'];
+            if (!teams.includes(projectileTeam)) return teams.some(team => {
+                const rect = getTeamBaseRegion(team);
+                return rect && segmentIntersectsBaseRect(x1, y1, x2, y2, rect);
+            });
+            return teams.some(team => {
+                if (team === projectileTeam) return false;
+                const rect = getTeamBaseRegion(team);
+                return rect && segmentIntersectsBaseRect(x1, y1, x2, y2, rect);
+            });
+        }
+
         function initJoinRoom(autoHostIfEmpty = false) {
             myUsername = document.getElementById('input-username').value.trim() || ('Player' + (Math.floor(Math.random() * 1000) + 1));
             roomCode = document.getElementById('input-room').value.trim();
@@ -3827,7 +3864,7 @@
                     const p=remotePlayers[conn.peer],ex=Number(data.x),ey=Number(data.y);
                     if(p&&Number.isFinite(ex)&&Number.isFinite(ey)&&Math.hypot(p.x-ex,p.y-ey)<900){
                         const radius=Math.min(140,Math.max(40,Number(data.radius)||100)),damage=Math.min(120,Math.max(1,Number(data.damage)||50));
-                        const apply=t=>{if(!t||t.hp<=0||(p.team!=='FFA'&&t.team===p.team))return;const d=Math.hypot(t.x-ex,t.y-ey);if(d<radius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(damage*(1-d/radius))));};
+                        const apply=t=>{if(!t||t.hp<=0||(p.team!=='FFA'&&t.team===p.team)||projectileCrossesEnemyBase(p.x,p.y,t.x,t.y,p.team))return;const d=Math.hypot(t.x-ex,t.y-ey);if(d<radius)t.hp=Math.max(0,t.hp-Math.max(1,Math.round(damage*(1-d/radius))));};
                         damageBlocksInRocketBlast(ex,ey);
                         const dSelf=Math.hypot(posX-ex,posY-ey);if(dSelf<radius&&(p.team==='FFA'||p.team!==playerTeam))currentHp=Math.max(0,currentHp-Math.max(1,Math.round(damage*(1-dSelf/radius))));
                         for(const pid in remotePlayers)if(pid!==conn.peer)apply(remotePlayers[pid]);
@@ -3889,6 +3926,7 @@
                         Number.isFinite(hitX) && Number.isFinite(hitY) &&
                         Math.hypot(shooter.x-hitX, shooter.y-hitY) < 1000 &&
                         Math.hypot(target.x-hitX, target.y-hitY) < RADIUS_PLAYER + 48 &&
+                        !projectileCrossesEnemyBase(shooter.x, shooter.y, hitX, hitY, shooter.team) &&
                         (shooter.team === 'FFA' || shooter.team !== target.team);
                     if (validHit) {
                         if (weapon === 'gravity') { target.slowUntil = Date.now() + 2600; if (targetIsHost) window.localSlowUntil = Date.now() + 2600; }
@@ -6529,8 +6567,13 @@
 
             for (let i = bulletsList.length - 1; i >= 0; i--) {
                 const b = bulletsList[i];
+                const previousBulletX = b.x, previousBulletY = b.y;
                 b.x += b.vx;
                 b.y += b.vy;
+                if (projectileCrossesEnemyBase(previousBulletX, previousBulletY, b.x, b.y, b.team)) {
+                    bulletsList.splice(i, 1);
+                    continue;
+                }
                 if (b.type === 'freeze' && Math.random() < 0.9) floatingParticles.push({x:b.x,y:b.y,vx:(Math.random()-.5)*1.4,vy:(Math.random()-.5)*1.4,radius:2+Math.random()*3,alpha:.9,ice:true});
                 b.distanceTravelled = (b.distanceTravelled || 0) + Math.hypot(b.vx, b.vy);
                 if (b.distanceTravelled > (b.maxDistance || 900)) { bulletsList.splice(i, 1); continue; }
