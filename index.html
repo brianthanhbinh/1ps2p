@@ -6924,13 +6924,11 @@
                             for (const trapKey in activeTraps) {
                                 const trap = activeTraps[trapKey];
                                 if (!trap || Math.hypot(bot.x - trap.x, bot.y - trap.y) > 23 || Date.now() < (trap.nextReadyAt || 0)) continue;
-                                bot.hp -= trap.type === 'mine' ? 80 : trap.type === 'bear' ? 65 : 60;
+                                // Route trap damage through the shared elimination handler so
+                                // trap kills grant the same +10 coin reward as other zombie kills.
+                                damagePracticeBot(bot, trap.type === 'mine' ? 80 : trap.type === 'bear' ? 65 : 60);
                                 if (trap.type === 'glue') bot.frozenUntil = Date.now() + 1800;
                                 trap.nextReadyAt=Date.now()+(trap.cooldownMs||1800);
-                                if (bot.hp <= 0) {
-                                    bot.hp = 0;
-                                    bot.respawnAt = Date.now() + 5000;
-                                }
                                 break;
                             }
                             if (Math.hypot(posX - bot.x, posY - bot.y) < RADIUS_PLAYER * 1.8) {
