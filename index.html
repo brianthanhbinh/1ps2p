@@ -728,6 +728,76 @@
             } catch (_) {}
         }
 
+
+        // Each weapon gets its own short synthesized firing signature.
+        // These sounds use Web Audio, so no external audio files are needed.
+        function playGunSound(weapon) {
+            if (!arenaSoundEnabled) return;
+            const sounds = {
+                smg:      { start: 250, end: 105, duration: 0.075, wave: 'sawtooth', volume: 0.035 },
+                ak:       { start: 185, end: 72,  duration: 0.115, wave: 'square',   volume: 0.045 },
+                shotgun:  { start: 115, end: 42,  duration: 0.19,  wave: 'sawtooth', volume: 0.075, noise: true },
+                sniper:   { start: 95,  end: 28,  duration: 0.30,  wave: 'triangle', volume: 0.085, noise: true },
+                burst:    { start: 220, end: 90,  duration: 0.09,  wave: 'square',   volume: 0.045 },
+                minigun:  { start: 290, end: 135, duration: 0.055, wave: 'sawtooth', volume: 0.032 },
+                rocket:   { start: 82,  end: 34,  duration: 0.38,  wave: 'sawtooth', volume: 0.085, noise: true },
+                laser:    { start: 1150,end: 260, duration: 0.16,  wave: 'sawtooth', volume: 0.035 },
+                plasma:   { start: 520, end: 150, duration: 0.22,  wave: 'triangle', volume: 0.045 },
+                flame:    { start: 150, end: 65,  duration: 0.12,  wave: 'sawtooth', volume: 0.028 },
+                freeze:   { start: 900, end: 420, duration: 0.20,  wave: 'sine',     volume: 0.035 },
+                ricochet: { start: 720, end: 310, duration: 0.13,  wave: 'triangle', volume: 0.04 },
+                gravity:  { start: 130, end: 38,  duration: 0.34,  wave: 'sine',     volume: 0.055 },
+                sonic:    { start: 480, end: 1050,duration: 0.24,  wave: 'sine',     volume: 0.05 },
+                warp:     { start: 300, end: 1250,duration: 0.28,  wave: 'sine',     volume: 0.045 }
+            };
+            const p = sounds[weapon] || sounds.ak;
+            try {
+                const AudioCtor = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtor) return;
+                if (!arenaAudioContext) arenaAudioContext = new AudioCtor();
+                const ctx = arenaAudioContext;
+                if (ctx.state === 'suspended') ctx.resume();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                osc.type = p.wave;
+                osc.frequency.setValueAtTime(p.start, now);
+                osc.frequency.exponentialRampToValueAtTime(Math.max(1, p.end), now + p.duration);
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(weapon === 'laser' || weapon === 'sonic' || weapon === 'warp' ? 4200 : 1800, now);
+                filter.frequency.exponentialRampToValueAtTime(weapon === 'laser' || weapon === 'sonic' || weapon === 'warp' ? 650 : 240, now + p.duration);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(p.volume, now + 0.006);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + p.duration);
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + p.duration + 0.01);
+
+                if (p.noise) {
+                    const length = Math.max(1, Math.floor(ctx.sampleRate * Math.min(p.duration, 0.16)));
+                    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+                    const source = ctx.createBufferSource();
+                    const noiseGain = ctx.createGain();
+                    const noiseFilter = ctx.createBiquadFilter();
+                    source.buffer = buffer;
+                    noiseFilter.type = 'lowpass';
+                    noiseFilter.frequency.setValueAtTime(weapon === 'rocket' ? 900 : 1500, now);
+                    noiseGain.gain.setValueAtTime(p.volume * 0.55, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + Math.min(p.duration, 0.16));
+                    source.connect(noiseFilter);
+                    noiseFilter.connect(noiseGain);
+                    noiseGain.connect(ctx.destination);
+                    source.start(now);
+                    source.stop(now + Math.min(p.duration, 0.16));
+                }
+            } catch (_) {}
+        }
+
         document.addEventListener('DOMContentLoaded', updateArenaSoundButton);
         document.addEventListener('click', event => {
             if (event.target.closest('button') && !event.target.closest('#sound-toggle-btn')) playArenaSound('click');
@@ -5674,6 +5744,7 @@
                 }
                 if (!actionCdAttack) {
                     currentAmmo--;
+                    playGunSound(gunEquipped);
                     saveSelectedAmmo();
                     refreshAmmoHud();
                     let cdTime = 250;
