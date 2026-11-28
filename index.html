@@ -346,14 +346,8 @@
 </style>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" onerror="window.peerJsLoadFailed = true;"></script>
 
-  <!-- Google AdSense H5 Games Ads -->
-  <script>
-    window.adsbygoogle = window.adsbygoogle || [];
-    window.adBreak = window.adConfig = function(options) {
-      window.adsbygoogle.push(options);
-    };
-    window.adConfig({ preloadAdBreaks: 'on', sound: 'off' });
-  </script>
+  <!-- Standard AdSense display ads only -->
+  <script>window.adsbygoogle = window.adsbygoogle || [];</script>
   <script async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3425065480295617"
     crossorigin="anonymous"
@@ -413,7 +407,7 @@
             <div>Velocity X: <span id="velocity-x">0.00</span></div>
             <div>Velocity Y: <span id="velocity-y">0.00</span></div>
         </div>
-        <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span> <button id="watch-coins-btn" onclick="watchRewardedCoins()" style="pointer-events:auto;margin-left:8px;padding:5px 8px;background:#1976d2;color:white;border:1px solid #64b5f6;border-radius:5px;font-weight:bold;cursor:pointer;">+50 Coins · Watch</button></div>
+        <div id="wallet-badge">🪙 Coins: <span id="coin-num">100</span> </div>
         <button id="shop-toggle-btn" onclick="toggleShopPanel()">🛒 Shop (B)</button>
         <button id="skin-toggle-btn" onclick="toggleSkinModal()">🎨 Custom PNG Skin</button>
 
@@ -446,8 +440,8 @@
                 <div class="shop-item-card"><span>Sonic Emitter</span><div><b class="shop-price" data-base-price="1050" style="color:#ffca28;">1050 🪙</b> <button onclick="buyStoreItemBatch('gun', 'sonic', 1050)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🌀 Warp Gun (2 shots — opens a linked portal pair)</span><div><b class="shop-price" data-base-price="1200" style="color:#ffca28;">1200 🪙</b> <button onclick="buyStoreItemBatch('gun', 'warp', 1200)">Buy</button></div></div>
                 <div class="shop-item-card"><span>Grenade Pack (+3)</span><div><b class="shop-price" data-base-price="60" style="color:#ffca28;">60 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'grenade', 60)">Buy</button></div></div>
-                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItemBatch('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'bandage', 40)">Buy</button> <button onclick="watchRewardedItem('bandage')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>🩹 Medkit (+1 · heals 70 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'medkit', 100)">Buy</button></div></div><div class="shop-item-card"><span>🧰 Trauma Kit (+1 · 100 total healing, reusable)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'trauma_kit', 180)">Buy</button></div></div><div class="shop-item-card"><span>💉 HP Injection (+50 HP, up to 150)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'hp_injection', 140)">Buy</button></div></div>
-                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'teleport_orb', 90)">Buy</button> <button onclick="watchRewardedItem('teleport_orb')" style="background:#1976d2;">Watch</button></div></div>
+                <div class="shop-item-card"><span>📡 Metal Detector (mine traps only)</span><div><b class="shop-price" data-base-price="750" style="color:#ffca28;">750 🪙</b> <button onclick="buyStoreItemBatch('tool', 'metal_detector', 750)">Buy</button></div></div><div class="shop-item-card"><span>Bandage Pack (+2)</span><div><b class="shop-price" data-base-price="40" style="color:#ffca28;">40 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'bandage', 40)">Buy</button> </div></div><div class="shop-item-card"><span>🩹 Medkit (+1 · heals 70 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'medkit', 100)">Buy</button></div></div><div class="shop-item-card"><span>🧰 Trauma Kit (+1 · 100 total healing, reusable)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'trauma_kit', 180)">Buy</button></div></div><div class="shop-item-card"><span>💉 HP Injection (+50 HP, up to 150)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'hp_injection', 140)">Buy</button></div></div>
+                <div class="shop-item-card"><span>Smoke Bomb Pack (+2)</span><div><b class="shop-price" data-base-price="55" style="color:#ffca28;">55 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'smoke_bomb', 55)">Buy</button></div></div><div class="shop-item-card"><span>🌀 Teleport Orb Pack (+2)</span><div><b class="shop-price" data-base-price="90" style="color:#ffca28;">90 🪙</b> <button onclick="buyStoreItemBatch('consumable', 'teleport_orb', 90)">Buy</button> </div></div>
             </div>
 
             <div id="shop-tab-traps" class="shop-content">
@@ -471,13 +465,13 @@
                 <div class="shop-item-card"><span>💚 Healing Block (160 HP · continuously heals nearby owner)</span><div><b class="shop-price" data-base-price="1000" style="color:#ffca28;">1000 🪙</b> <button onclick="buyStoreItemBatch('block', 'healing', 1000)">Buy</button></div></div>
                 <div class="shop-item-card"><span>⬛ Obsidian Block (650 HP)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('block', 'obsidian', 180)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🪟 Glass Block (90 HP)</span><div><b class="shop-price" data-base-price="35" style="color:#ffca28;">35 🪙</b> <button onclick="buyStoreItemBatch('block', 'glass', 35)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('block', 'bounce', 100)">Buy</button> <button onclick="watchRewardedItem('bounce')" style="background:#1976d2;">Watch</button></div></div>
+                <div class="shop-item-card"><span>🟣 Bounce Block (180 HP)</span><div><b class="shop-price" data-base-price="100" style="color:#ffca28;">100 🪙</b> <button onclick="buyStoreItemBatch('block', 'bounce', 100)">Buy</button> </div></div>
                 <div class="shop-item-card"><span>🧊 Ice Block (260 HP)</span><div><b class="shop-price" data-base-price="75" style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItemBatch('block', 'ice', 75)">Buy</button></div></div>
                 <div class="shop-item-card"><span>💎 Crystal Block (320 HP)</span><div><b class="shop-price" data-base-price="125" style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItemBatch('block', 'crystal', 125)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🏰 Bunker Block (900 HP)</span><div><b class="shop-price" data-base-price="240" style="color:#ffca28;">240 🪙</b> <button onclick="buyStoreItemBatch('block', 'bunker', 240)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('block', 'force', 180)">Buy</button> <button onclick="watchRewardedItem('force')" style="background:#1976d2;">Watch</button></div></div>
+                <div class="shop-item-card"><span>🧭 Force Block (pushes players)</span><div><b class="shop-price" data-base-price="180" style="color:#ffca28;">180 🪙</b> <button onclick="buyStoreItemBatch('block', 'force', 180)">Buy</button> </div></div>
                 <div class="shop-item-card"><span>⚽ Ball Block (push it around)</span><div><b class="shop-price" data-base-price="75" style="color:#ffca28;">75 🪙</b> <button onclick="buyStoreItemBatch('block', 'ball', 75)">Buy</button></div></div>
-                <div class="shop-item-card"><span>🧲 Magnet Ball + (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_ball_plus', 110)">Buy</button> <button onclick="watchRewardedItem('magnet_ball_plus')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>🧲 Magnet Ball − (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_ball_minus', 110)">Buy</button> <button onclick="watchRewardedItem('magnet_ball_minus')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>⚙️ Iron Ball (attracted to either magnet pole)</span><div><b class="shop-price" data-base-price="125" style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItemBatch('block', 'iron_ball', 125)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block + (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_plus', 140)">Buy</button> <button onclick="watchRewardedItem('magnet_plus')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block − (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_minus', 140)">Buy</button> <button onclick="watchRewardedItem('magnet_minus')" style="background:#1976d2;">Watch</button></div></div><div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b class="shop-price" data-base-price="260" style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItemBatch('block', 'force2', 260)">Buy</button></div></div>
+                <div class="shop-item-card"><span>🧲 Magnet Ball + (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_ball_plus', 110)">Buy</button> </div></div><div class="shop-item-card"><span>🧲 Magnet Ball − (attracts opposite, repels same)</span><div><b class="shop-price" data-base-price="110" style="color:#ffca28;">110 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_ball_minus', 110)">Buy</button> </div></div><div class="shop-item-card"><span>⚙️ Iron Ball (attracted to either magnet pole)</span><div><b class="shop-price" data-base-price="125" style="color:#ffca28;">125 🪙</b> <button onclick="buyStoreItemBatch('block', 'iron_ball', 125)">Buy</button></div></div><div class="shop-item-card"><span>🧲 Magnet Block + (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_plus', 140)">Buy</button> </div></div><div class="shop-item-card"><span>🧲 Magnet Block − (affects magnet balls)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('block', 'magnet_minus', 140)">Buy</button> </div></div><div class="shop-item-card"><span>🧭 Force II (momentum launcher)</span><div><b class="shop-price" data-base-price="260" style="color:#ffca28;">260 🪙</b> <button onclick="buyStoreItemBatch('block', 'force2', 260)">Buy</button></div></div>
                 <div class="shop-item-card"><span>🧭 Force III (power launcher)</span><div><b class="shop-price" data-base-price="380" style="color:#ffca28;">380 🪙</b> <button onclick="buyStoreItemBatch('block', 'force3', 380)">Buy</button></div></div>
                 <div class="shop-item-card"><span>↧ One-Way Block (pass from below)</span><div><b class="shop-price" data-base-price="85" style="color:#ffca28;">85 🪙</b> <button onclick="buyStoreItemBatch('block', 'oneway', 85)">Buy</button></div></div>
                 <div class="shop-item-card"><span>☠ Damage Block (hurts on touch)</span><div><b class="shop-price" data-base-price="140" style="color:#ffca28;">140 🪙</b> <button onclick="buyStoreItemBatch('block', 'damage', 140)">Buy</button></div></div>
@@ -1109,10 +1103,7 @@
         let playerCoins = 100;
         let playerKills = 0;
         let teamKillScores = { Red: 0, Blue: 0 };
-        let hostStartAdRequested = false;
-        let deathsSinceLastAd = 0;
-        let deathAdCounted = false;
-        let activeRide = null;
+        let let activeRide = null;
         let boardedVehicle = null;
         let cameraScoped = false;
 
@@ -2288,8 +2279,6 @@
             baseLockedOut = false;
             inGameActive = true;
             showUIInGame(true);
-            requestHostStartAd();
-
             if (isPractice || (isHosting && activeMode === 'zombie')) {
                 spawnPracticeBots();
             }
@@ -2326,8 +2315,6 @@
             if (!roomCode) { showNotificationBox('Enter a room name first.'); return; }
             isHosting = true;
             isPractice = false;
-            hostStartAdRequested = false;
-
             document.getElementById('net-status').innerText = 'Initializing Host Peer...';
             if (peerInstance) peerInstance.destroy();
 
@@ -3036,185 +3023,6 @@
         }
         // Shop buttons call buyStoreItemBatch directly so quantity selection is never bypassed.
 
-        function requestHostStartAd() {
-            if (!isHosting || hostStartAdRequested) return;
-            hostStartAdRequested = true;
-            if (typeof window.adBreak !== 'function') {
-                console.warn('[P2A Ads] Host-start ad API is unavailable.');
-                return;
-            }
-            try {
-                window.adBreak({
-                    type: 'start',
-                    name: 'host_game_start',
-                    beforeAd: () => { inGameActive = false; },
-                    afterAd: () => { inGameActive = true; },
-                    adBreakDone: (info) => {
-                        console.info('[P2A Ads] Host-start ad finished:', info || 'No status returned');
-                    }
-                });
-            } catch (error) {
-                console.error('[P2A Ads] Host-start ad request failed:', error);
-            }
-        }
-
-        function watchRewardedCoins() {
-            const coinButton = document.getElementById('watch-coins-btn');
-            if (typeof window.adBreak !== 'function') {
-                console.warn('[P2A Ads] Rewarded ad API is not available.', {
-                    scriptLoaded: !!window.adsbygoogle,
-                    loadError: !!window.__p2aAdsLoadError
-                });
-                showNotificationBox('Ads are unavailable right now. Please try again later.');
-                return;
-            }
-
-            if (coinButton) coinButton.disabled = true;
-            let rewardGranted = false;
-            let completed = false;
-            const finish = (message) => {
-                if (completed) return;
-                completed = true;
-                if (coinButton) coinButton.disabled = false;
-                if (message) showNotificationBox(message);
-            };
-
-            try {
-                window.adBreak({
-                    type: 'reward',
-                    name: 'reward_50_coins',
-                    beforeReward: (showAdFn) => {
-                        console.info('[P2A Ads] Coin reward ad is ready.');
-                        showAdFn();
-                    },
-                    beforeAd: () => { inGameActive = false; },
-                    afterAd: () => { inGameActive = true; },
-                    adViewed: () => {
-                        if (rewardGranted) return;
-                        rewardGranted = true;
-                        const creativeRules = currentMode === 'creative' || hostGameMode === 'creative' ||
-                            (currentMode === 'flatworld' && flatWorldRules === 'creative');
-                        if (!creativeRules) {
-                            playerCoins += 50;
-                            const coinDisplay = document.getElementById('coin-num');
-                            if (coinDisplay) coinDisplay.innerText = String(playerCoins);
-                        }
-                        finish(creativeRules ? 'Creative mode already has unlimited coins.' : 'Reward received: +50 coins!');
-                    },
-                    adDismissed: () => finish('Ad closed early. No coins were awarded.'),
-                    adBreakDone: (info) => {
-                        console.info('[P2A Ads] Coin reward ad finished:', info || 'No status returned');
-                        if (!rewardGranted) {
-                            const status = info && info.breakStatus ? info.breakStatus : 'unknown';
-                            finish('No rewarded ad was shown (' + status + '). Try again later.');
-                        } else {
-                            finish();
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('[P2A Ads] Coin reward request failed:', error);
-                finish('Could not start the ad. Please try again later.');
-            }
-
-            window.setTimeout(() => {
-                if (!completed) {
-                    console.warn('[P2A Ads] Coin reward request timed out.');
-                    finish('Ad service did not respond. Please try again later.');
-                }
-            }, 15000);
-        }
-
-        function requestDeathMilestoneAd() {
-            if (typeof adBreak !== 'function') return;
-            adBreak({
-                type: 'next',
-                name: 'every_four_deaths',
-                adBreakDone: (info) => {
-                    if (info && info.breakStatus) console.info('Death milestone ad:', info.breakStatus);
-                }
-            });
-        }
-
-        function watchRewardedItem(itemType) {
-            const allowed = ['bandage', 'force', 'magnet_ball_plus', 'magnet_ball_minus', 'magnet_plus', 'magnet_minus', 'bounce', 'teleport_orb'];
-            if (!allowed.includes(itemType)) {
-                console.warn('[P2A Ads] Unknown rewarded item:', itemType);
-                return;
-            }
-            if (typeof window.adBreak !== 'function') {
-                console.warn('[P2A Ads] Rewarded item API is not available.', {
-                    scriptLoaded: !!window.adsbygoogle,
-                    loadError: !!window.__p2aAdsLoadError
-                });
-                showNotificationBox('Ads are unavailable right now. Please try again later.');
-                return;
-            }
-
-            const gameWasActive = inGameActive;
-            let rewardGranted = false;
-            let completed = false;
-            const finish = (message) => {
-                if (completed) return;
-                completed = true;
-                if (message) showNotificationBox(message);
-            };
-
-            try {
-                window.adBreak({
-                    type: 'reward',
-                    name: 'free_item_' + itemType,
-                    beforeReward: (showAdFn) => {
-                        console.info('[P2A Ads] Rewarded item ad is ready:', itemType);
-                        showAdFn();
-                    },
-                    beforeAd: () => { if (gameWasActive) inGameActive = false; },
-                    afterAd: () => { if (gameWasActive) inGameActive = true; },
-                    adViewed: () => {
-                        if (rewardGranted) return;
-                        rewardGranted = true;
-                        if (itemType === 'bandage') {
-                            bandagesCount += 2;
-                            refreshHotbarUI();
-                            finish('Reward received: +2 bandages!');
-                        } else if (itemType === 'teleport_orb') {
-                            teleportOrbsCount += 1;
-                            selectedThrowable = 'teleport_orb';
-                            selectHotbarSlot(6);
-                            refreshHotbarUI();
-                            finish('Reward received: 1 teleport orb!');
-                        } else if (Object.prototype.hasOwnProperty.call(blockInventory, itemType)) {
-                            blockInventory[itemType] = (blockInventory[itemType] || 0) + 1;
-                            selectedBuildBlock = itemType;
-                            selectHotbarSlot(2);
-                            refreshHotbarUI();
-                            finish('Reward received: 1 ' + itemType.replaceAll('_', ' ') + ' block!');
-                        } else {
-                            finish('The requested reward is unavailable.');
-                        }
-                    },
-                    adDismissed: () => finish('Ad closed early. No item was awarded.'),
-                    adBreakDone: (info) => {
-                        console.info('[P2A Ads] Rewarded item ad finished:', itemType, info || 'No status returned');
-                        if (!rewardGranted) {
-                            const status = info && info.breakStatus ? info.breakStatus : 'unknown';
-                            finish('No rewarded ad was shown (' + status + '). No item was awarded.');
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('[P2A Ads] Rewarded item request failed:', error);
-                finish('Could not start the ad. Please try again later.');
-            }
-
-            window.setTimeout(() => {
-                if (!completed) {
-                    console.warn('[P2A Ads] Rewarded item request timed out:', itemType);
-                    finish('Ad service did not respond. Please try again later.');
-                }
-            }, 15000);
-        }
-
         function showNotificationBox(msg) {
             const statusEl = document.getElementById('room-notification');
             if (statusEl) {
@@ -3381,7 +3189,6 @@
         }
 
         function respawnPlayer() {
-            deathAdCounted = false;
             document.getElementById('death-modal').style.display = 'none';
             currentHp = (localCreativeMode || (playerGameMode === 'creative' && (currentMode === 'creative' || hostGameMode === 'creative'))) ? 300 : 100;
             currentStamina = 100;
@@ -6417,14 +6224,6 @@
             if (currentHp <= 0) {
                 dropAllPlayerLoot();
                 document.getElementById('death-modal').style.display = 'flex';
-                if (!deathAdCounted) {
-                    deathAdCounted = true;
-                    deathsSinceLastAd++;
-                    if (deathsSinceLastAd >= 4) {
-                        deathsSinceLastAd = 0;
-                        requestDeathMilestoneAd();
-                    }
-                }
                 return;
             }
 
