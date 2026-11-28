@@ -3039,18 +3039,23 @@
         function requestHostStartAd() {
             if (!isHosting || hostStartAdRequested) return;
             hostStartAdRequested = true;
-            if (typeof adBreak !== 'function') return;
-            adBreak({
-                type: 'start',
-                name: 'host_game_start',
-                beforeAd: () => { inGameActive = false; },
-                afterAd: () => { inGameActive = true; },
-                adBreakDone: (info) => {
-                    if (info && info.breakStatus && !['viewed'].includes(info.breakStatus)) {
-                        console.info('Host start ad placement:', info.breakStatus);
+            if (typeof window.adBreak !== 'function') {
+                console.warn('[P2A Ads] Host-start ad API is unavailable.');
+                return;
+            }
+            try {
+                window.adBreak({
+                    type: 'start',
+                    name: 'host_game_start',
+                    beforeAd: () => { inGameActive = false; },
+                    afterAd: () => { inGameActive = true; },
+                    adBreakDone: (info) => {
+                        console.info('[P2A Ads] Host-start ad finished:', info || 'No status returned');
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error('[P2A Ads] Host-start ad request failed:', error);
+            }
         }
 
         function watchRewardedCoins() {
