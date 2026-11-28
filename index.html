@@ -347,11 +347,17 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" onerror="window.peerJsLoadFailed = true;"></script>
 
   <!-- Google AdSense H5 Games Ads -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3425065480295617" crossorigin="anonymous"></script>
   <script>
     window.adsbygoogle = window.adsbygoogle || [];
-    var adBreak = adConfig = function(o) { adsbygoogle.push(o); };
-    adConfig({ preloadAdBreaks: 'on', sound: 'off' });
+    window.adBreak = window.adConfig = function(options) {
+      window.adsbygoogle.push(options);
+    };
+    window.adConfig({ preloadAdBreaks: 'on', sound: 'off' });
+  </script>
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3425065480295617"
+    crossorigin="anonymous"
+    onerror="window.__p2aAdsLoadError = true; console.error('[P2A Ads] AdSense script failed to load.');">
   </script>
 </head>
 
@@ -3048,41 +3054,70 @@
         }
 
         function watchRewardedCoins() {
-            if (typeof adBreak !== 'function') {
-                showNotificationBox('Rewarded ads are not ready yet. Please try again later.');
+            const coinButton = document.getElementById('watch-coins-btn');
+            if (typeof window.adBreak !== 'function') {
+                console.warn('[P2A Ads] Rewarded ad API is not available.', {
+                    scriptLoaded: !!window.adsbygoogle,
+                    loadError: !!window.__p2aAdsLoadError
+                });
+                showNotificationBox('Ads are unavailable right now. Please try again later.');
                 return;
             }
-            const coinButton = document.getElementById('watch-coins-btn');
+
             if (coinButton) coinButton.disabled = true;
             let rewardGranted = false;
-            adBreak({
-                type: 'reward',
-                name: 'reward_50_coins',
-                beforeReward: (showAdFn) => { showAdFn(); },
-                beforeAd: () => { inGameActive = false; },
-                afterAd: () => { inGameActive = true; },
-                adViewed: () => {
-                    if (rewardGranted) return;
-                    rewardGranted = true;
-                    const creativeRules = currentMode === 'creative' || hostGameMode === 'creative' ||
-                        (currentMode === 'flatworld' && flatWorldRules === 'creative');
-                    if (!creativeRules) {
-                        playerCoins += 50;
-                        const coinDisplay = document.getElementById('coin-num');
-                        if (coinDisplay) coinDisplay.innerText = String(playerCoins);
+            let completed = false;
+            const finish = (message) => {
+                if (completed) return;
+                completed = true;
+                if (coinButton) coinButton.disabled = false;
+                if (message) showNotificationBox(message);
+            };
+
+            try {
+                window.adBreak({
+                    type: 'reward',
+                    name: 'reward_50_coins',
+                    beforeReward: (showAdFn) => {
+                        console.info('[P2A Ads] Coin reward ad is ready.');
+                        showAdFn();
+                    },
+                    beforeAd: () => { inGameActive = false; },
+                    afterAd: () => { inGameActive = true; },
+                    adViewed: () => {
+                        if (rewardGranted) return;
+                        rewardGranted = true;
+                        const creativeRules = currentMode === 'creative' || hostGameMode === 'creative' ||
+                            (currentMode === 'flatworld' && flatWorldRules === 'creative');
+                        if (!creativeRules) {
+                            playerCoins += 50;
+                            const coinDisplay = document.getElementById('coin-num');
+                            if (coinDisplay) coinDisplay.innerText = String(playerCoins);
+                        }
+                        finish(creativeRules ? 'Creative mode already has unlimited coins.' : 'Reward received: +50 coins!');
+                    },
+                    adDismissed: () => finish('Ad closed early. No coins were awarded.'),
+                    adBreakDone: (info) => {
+                        console.info('[P2A Ads] Coin reward ad finished:', info || 'No status returned');
+                        if (!rewardGranted) {
+                            const status = info && info.breakStatus ? info.breakStatus : 'unknown';
+                            finish('No rewarded ad was shown (' + status + '). Try again later.');
+                        } else {
+                            finish();
+                        }
                     }
-                    showNotificationBox(creativeRules ? 'Creative mode already has unlimited coins.' : 'Reward received: +50 coins!');
-                },
-                adDismissed: () => {
-                    showNotificationBox('Ad closed early. No coins were awarded.');
-                },
-                adBreakDone: (info) => {
-                    if (!rewardGranted && info && !['dismissed', 'viewed'].includes(info.breakStatus)) {
-                        showNotificationBox('No rewarded ad is available right now. No coins were awarded.');
-                    }
-                    if (coinButton) coinButton.disabled = false;
+                });
+            } catch (error) {
+                console.error('[P2A Ads] Coin reward request failed:', error);
+                finish('Could not start the ad. Please try again later.');
+            }
+
+            window.setTimeout(() => {
+                if (!completed) {
+                    console.warn('[P2A Ads] Coin reward request timed out.');
+                    finish('Ad service did not respond. Please try again later.');
                 }
-            });
+            }, 15000);
         }
 
         function requestDeathMilestoneAd() {
@@ -3098,50 +3133,81 @@
 
         function watchRewardedItem(itemType) {
             const allowed = ['bandage', 'force', 'magnet_ball_plus', 'magnet_ball_minus', 'magnet_plus', 'magnet_minus', 'bounce', 'teleport_orb'];
-            if (!allowed.includes(itemType)) return;
-            if (typeof adBreak !== 'function') {
-                showNotificationBox('Rewarded ads are not ready yet. Please try again later.');
+            if (!allowed.includes(itemType)) {
+                console.warn('[P2A Ads] Unknown rewarded item:', itemType);
                 return;
             }
-            let gameWasActive = inGameActive;
+            if (typeof window.adBreak !== 'function') {
+                console.warn('[P2A Ads] Rewarded item API is not available.', {
+                    scriptLoaded: !!window.adsbygoogle,
+                    loadError: !!window.__p2aAdsLoadError
+                });
+                showNotificationBox('Ads are unavailable right now. Please try again later.');
+                return;
+            }
+
+            const gameWasActive = inGameActive;
             let rewardGranted = false;
-            adBreak({
-                type: 'reward',
-                name: 'free_item_' + itemType,
-                beforeAd: () => { if (gameWasActive) inGameActive = false; },
-                afterAd: () => { if (gameWasActive) inGameActive = true; },
-                beforeReward: (showAdFn) => { showAdFn(); },
-                adViewed: () => {
-                    if (rewardGranted) return;
-                    rewardGranted = true;
-                    if (itemType === 'bandage') {
-                        bandagesCount += 2;
-                        refreshHotbarUI();
-                        showNotificationBox('Reward received: +2 bandages!');
-                    } else if (itemType === 'teleport_orb') {
-                        teleportOrbsCount += 1;
-                        selectedThrowable = 'teleport_orb';
-                        selectHotbarSlot(6);
-                        refreshHotbarUI();
-                        showNotificationBox('Reward received: 1 teleport orb!');
-                    } else {
-                        if (!Object.prototype.hasOwnProperty.call(blockInventory, itemType)) return;
-                        blockInventory[itemType] = (blockInventory[itemType] || 0) + 1;
-                        selectedBuildBlock = itemType;
-                        selectHotbarSlot(2);
-                        refreshHotbarUI();
-                        showNotificationBox('Reward received: 1 ' + itemType.replaceAll('_', ' ') + ' block!');
+            let completed = false;
+            const finish = (message) => {
+                if (completed) return;
+                completed = true;
+                if (message) showNotificationBox(message);
+            };
+
+            try {
+                window.adBreak({
+                    type: 'reward',
+                    name: 'free_item_' + itemType,
+                    beforeReward: (showAdFn) => {
+                        console.info('[P2A Ads] Rewarded item ad is ready:', itemType);
+                        showAdFn();
+                    },
+                    beforeAd: () => { if (gameWasActive) inGameActive = false; },
+                    afterAd: () => { if (gameWasActive) inGameActive = true; },
+                    adViewed: () => {
+                        if (rewardGranted) return;
+                        rewardGranted = true;
+                        if (itemType === 'bandage') {
+                            bandagesCount += 2;
+                            refreshHotbarUI();
+                            finish('Reward received: +2 bandages!');
+                        } else if (itemType === 'teleport_orb') {
+                            teleportOrbsCount += 1;
+                            selectedThrowable = 'teleport_orb';
+                            selectHotbarSlot(6);
+                            refreshHotbarUI();
+                            finish('Reward received: 1 teleport orb!');
+                        } else if (Object.prototype.hasOwnProperty.call(blockInventory, itemType)) {
+                            blockInventory[itemType] = (blockInventory[itemType] || 0) + 1;
+                            selectedBuildBlock = itemType;
+                            selectHotbarSlot(2);
+                            refreshHotbarUI();
+                            finish('Reward received: 1 ' + itemType.replaceAll('_', ' ') + ' block!');
+                        } else {
+                            finish('The requested reward is unavailable.');
+                        }
+                    },
+                    adDismissed: () => finish('Ad closed early. No item was awarded.'),
+                    adBreakDone: (info) => {
+                        console.info('[P2A Ads] Rewarded item ad finished:', itemType, info || 'No status returned');
+                        if (!rewardGranted) {
+                            const status = info && info.breakStatus ? info.breakStatus : 'unknown';
+                            finish('No rewarded ad was shown (' + status + '). No item was awarded.');
+                        }
                     }
-                },
-                adDismissed: () => {
-                    showNotificationBox('Ad closed early. No item was awarded.');
-                },
-                adBreakDone: (info) => {
-                    if (!rewardGranted && info && !['dismissed', 'viewed'].includes(info.breakStatus)) {
-                        showNotificationBox('No rewarded ad is available right now. No item was awarded.');
-                    }
+                });
+            } catch (error) {
+                console.error('[P2A Ads] Rewarded item request failed:', error);
+                finish('Could not start the ad. Please try again later.');
+            }
+
+            window.setTimeout(() => {
+                if (!completed) {
+                    console.warn('[P2A Ads] Rewarded item request timed out:', itemType);
+                    finish('Ad service did not respond. Please try again later.');
                 }
-            });
+            }, 15000);
         }
 
         function showNotificationBox(msg) {
